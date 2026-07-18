@@ -1,0 +1,303 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Municipality {
+  id                         Int                      @id @default(autoincrement())
+  municipalityCode           String?                  @unique @map("municipality_code")
+  prefectureCode             String?                  @map("prefecture_code")
+  prefectureName             String                   @map("prefecture_name")
+  municipalityName           String                   @map("municipality_name")
+  municipalityNameKana       String?                  @map("municipality_name_kana")
+  latitude                   Float?
+  longitude                  Float?
+  population                 Int?
+  createdAt                  DateTime                 @default(now()) @map("created_at")
+  updatedAt                  DateTime                 @updatedAt @map("updated_at")
+  businesses                 SewerBusiness[]
+  revisionEvents             FeeRevisionEvent[]
+  tariffTables               TariffTable[]
+  operatedServiceMemberships SewerServiceMembership[] @relation("SewerServiceOperator")
+  servedServiceMemberships   SewerServiceMembership[] @relation("SewerServiceMember")
+
+  @@map("municipalities")
+}
+
+model SewerBusiness {
+  id                    Int                @id @default(autoincrement())
+  municipalityId        Int                @map("municipality_id")
+  businessKey           String             @map("business_key")
+  businessName          String?            @map("business_name")
+  businessType          String?            @map("business_type")
+  accountingType        String             @map("accounting_type")
+  estatBusinessCategory String?            @map("estat_business_category")
+  isActive              Boolean            @default(true) @map("is_active")
+  notes                 String?
+  createdAt             DateTime           @default(now()) @map("created_at")
+  updatedAt             DateTime           @updatedAt @map("updated_at")
+  municipality          Municipality       @relation(fields: [municipalityId], references: [id])
+  annualFinancials      AnnualFinancial[]
+  diagnosisResults      DiagnosisResult[]
+  revisionEvents        FeeRevisionEvent[]
+  tariffTables          TariffTable[]
+
+  @@unique([municipalityId, businessKey, accountingType])
+  @@map("sewer_businesses")
+}
+
+model SewerServiceMembership {
+  id                     Int          @id @default(autoincrement())
+  operatorMunicipalityId Int          @map("operator_municipality_id")
+  businessKey            String       @map("business_key")
+  servedMunicipalityId   Int          @map("served_municipality_id")
+  validFromSurveyYear    Int?         @map("valid_from_survey_year")
+  validToSurveyYear      Int?         @map("valid_to_survey_year")
+  metricScope            String       @default("consolidated") @map("metric_scope")
+  sourceUrl              String       @map("source_url")
+  sourceLabel            String       @map("source_label")
+  sourceCheckedAt        String?      @map("source_checked_at")
+  notes                  String?
+  createdAt              DateTime     @default(now()) @map("created_at")
+  updatedAt              DateTime     @updatedAt @map("updated_at")
+  operatorMunicipality   Municipality @relation("SewerServiceOperator", fields: [operatorMunicipalityId], references: [id], onDelete: Cascade)
+  servedMunicipality     Municipality @relation("SewerServiceMember", fields: [servedMunicipalityId], references: [id], onDelete: Cascade)
+
+  @@unique([operatorMunicipalityId, businessKey, servedMunicipalityId])
+  @@index([servedMunicipalityId, validFromSurveyYear, validToSurveyYear], map: "idx_sewer_service_memberships_member")
+  @@map("sewer_service_memberships")
+}
+
+model SourceFile {
+  id                      Int                      @id @default(autoincrement())
+  surveyYear              Int                      @map("survey_year")
+  fiscalYearLabel         String?                  @map("fiscal_year_label")
+  governmentStatCode      String                   @map("government_stat_code")
+  governmentStatName      String                   @map("government_stat_name")
+  providedStatName        String                   @map("provided_stat_name")
+  category1               String?                  @map("category_1")
+  category2               String?                  @map("category_2")
+  tableNo                 Int?                     @map("table_no")
+  tableName               String?                  @map("table_name")
+  accountingType          String?                  @map("accounting_type")
+  estatStatInfid          String?                  @map("estat_stat_infid")
+  estatStatsDataId        String?                  @map("estat_stats_data_id")
+  sourceUrl               String?                  @map("source_url")
+  localPath               String?                  @map("local_path")
+  fileFormat              String?                  @map("file_format")
+  publishedAt             String?                  @map("published_at")
+  downloadedAt            DateTime?                @map("downloaded_at")
+  sha256                  String?
+  createdAt               DateTime                 @default(now()) @map("created_at")
+  rawStatCells            RawStatCell[]
+  financialStatementItems FinancialStatementItem[]
+
+  @@unique([surveyYear, accountingType, tableNo, tableName, sha256])
+  @@map("source_files")
+}
+
+model FieldMapping {
+  id               Int      @id @default(autoincrement())
+  surveyYear       Int      @map("survey_year")
+  accountingType   String   @map("accounting_type")
+  standardField    String   @map("standard_field")
+  tableNo          Int      @map("table_no")
+  tableName        String?  @map("table_name")
+  rowNo            Int?     @map("row_no")
+  colNo            Int?     @map("col_no")
+  itemNameOriginal String?  @map("item_name_original")
+  unit             String?
+  confidence       Float    @default(0)
+  mappingSource    String?  @map("mapping_source")
+  notes            String?
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  @@unique([surveyYear, accountingType, standardField, tableNo, rowNo, colNo])
+  @@map("field_mappings")
+}
+
+model RawStatCell {
+  id               Int        @id @default(autoincrement())
+  sourceFileId     Int        @map("source_file_id")
+  surveyYear       Int        @map("survey_year")
+  municipalityCode String?    @map("municipality_code")
+  municipalityName String?    @map("municipality_name")
+  prefectureName   String?    @map("prefecture_name")
+  businessKey      String?    @map("business_key")
+  businessName     String?    @map("business_name")
+  businessType     String?    @map("business_type")
+  accountingType   String     @map("accounting_type")
+  tableNo          Int        @map("table_no")
+  rowNo            Int?       @map("row_no")
+  colNo            Int?       @map("col_no")
+  itemNameOriginal String?    @map("item_name_original")
+  valueRaw         String?    @map("value_raw")
+  valueNumeric     Float?     @map("value_numeric")
+  unit             String?
+  sheetName        String?    @map("sheet_name")
+  cellAddress      String?    @map("cell_address")
+  createdAt        DateTime   @default(now()) @map("created_at")
+  sourceFile       SourceFile @relation(fields: [sourceFileId], references: [id])
+
+  @@index([surveyYear, accountingType, tableNo, municipalityCode, businessKey], map: "idx_raw_stat_cells_lookup")
+  @@map("raw_stat_cells")
+}
+
+model AnnualFinancial {
+  id                      Int                      @id @default(autoincrement())
+  sewerBusinessId         Int                      @map("sewer_business_id")
+  surveyYear              Int                      @map("survey_year")
+  fiscalYearLabel         String?                  @map("fiscal_year_label")
+  accountingType          String                   @map("accounting_type")
+  sewerFeeRevenue         Float?                   @map("sewer_fee_revenue")
+  householdFee20m3Yen     Float?                   @map("household_fee_20m3_yen")
+  annualBillableVolume    Float?                   @map("annual_billable_volume")
+  wastewaterTreatmentCost Float?                   @map("wastewater_treatment_cost")
+  opexComponent           Float?                   @map("opex_component")
+  capitalCostComponent    Float?                   @map("capital_cost_component")
+  operatingRevenue        Float?                   @map("operating_revenue")
+  operatingExpense        Float?                   @map("operating_expense")
+  ordinaryRevenue         Float?                   @map("ordinary_revenue")
+  ordinaryExpense         Float?                   @map("ordinary_expense")
+  ordinaryProfitLoss      Float?                   @map("ordinary_profit_loss")
+  netIncome               Float?                   @map("net_income")
+  accumulatedDeficit      Float?                   @map("accumulated_deficit")
+  totalRevenueNonLegal    Float?                   @map("total_revenue_non_legal")
+  totalExpenseNonLegal    Float?                   @map("total_expense_non_legal")
+  realBalance             Float?                   @map("real_balance")
+  revenueExpenditureRatio Float?                   @map("revenue_expenditure_ratio")
+  generalAccountTransfer  Float?                   @map("general_account_transfer")
+  standardTransfer        Float?                   @map("standard_transfer")
+  nonStandardTransfer     Float?                   @map("non_standard_transfer")
+  bondBalance             Float?                   @map("bond_balance")
+  bondIssued              Float?                   @map("bond_issued")
+  bondRedemption          Float?                   @map("bond_redemption")
+  servicePopulation       Float?                   @map("service_population")
+  connectedPopulation     Float?                   @map("connected_population")
+  treatedVolume           Float?                   @map("treated_volume")
+  dataQualityStatus       String                   @default("unchecked") @map("data_quality_status")
+  flagsJson               String?                  @map("flags_json")
+  sourceTraceJson         String?                  @map("source_trace_json")
+  createdAt               DateTime                 @default(now()) @map("created_at")
+  updatedAt               DateTime                 @updatedAt @map("updated_at")
+  sewerBusiness           SewerBusiness            @relation(fields: [sewerBusinessId], references: [id])
+  diagnosisResult         DiagnosisResult?
+  financialStatementItems FinancialStatementItem[]
+
+  @@unique([sewerBusinessId, surveyYear])
+  @@map("annual_financials")
+}
+
+model FinancialStatementItem {
+  id                Int             @id @default(autoincrement())
+  annualFinancialId Int             @map("annual_financial_id")
+  sourceFileId      Int             @map("source_file_id")
+  statementType     String          @map("statement_type")
+  section           String
+  itemCode          String          @map("item_code")
+  label             String
+  amount            Float
+  parentItemCode    String?         @map("parent_item_code")
+  displayOrder      Int             @map("display_order")
+  tableNo           Int             @map("table_no")
+  rowNo             Int             @map("row_no")
+  colNo             Int             @map("col_no")
+  unit              String          @default("thousand_yen")
+  sourceTraceJson   String?         @map("source_trace_json")
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+  annualFinancial   AnnualFinancial @relation(fields: [annualFinancialId], references: [id], onDelete: Cascade)
+  sourceFile        SourceFile      @relation(fields: [sourceFileId], references: [id], onDelete: Restrict)
+
+  @@unique([annualFinancialId, statementType, itemCode])
+  @@index([annualFinancialId, statementType, section, displayOrder], map: "idx_financial_statement_items_annual")
+  @@index([sourceFileId], map: "idx_financial_statement_items_source")
+  @@index([statementType, itemCode], map: "idx_financial_statement_items_code")
+  @@map("financial_statement_items")
+}
+
+model DiagnosisResult {
+  id                           Int             @id @default(autoincrement())
+  annualFinancialId            Int             @unique @map("annual_financial_id")
+  sewerBusinessId              Int             @map("sewer_business_id")
+  surveyYear                   Int             @map("survey_year")
+  feeUnitPriceYenPerM3         Float?          @map("fee_unit_price_yen_per_m3")
+  treatmentCostYenPerM3        Float?          @map("treatment_cost_yen_per_m3")
+  expenseRecoveryRate          Float?          @map("expense_recovery_rate")
+  requiredRevisionRateTo80     Float?          @map("required_revision_rate_to_80")
+  requiredRevisionRateTo100    Float?          @map("required_revision_rate_to_100")
+  requiredRevisionRateTo150yen Float?          @map("required_revision_rate_to_150yen")
+  accountingBalanceLabel       String?         @map("accounting_balance_label")
+  feeAdequacyLabel             String?         @map("fee_adequacy_label")
+  revisionRiskScore            Int?            @map("revision_risk_score")
+  revisionRiskLabel            String?         @map("revision_risk_label")
+  diagnosisComment             String?         @map("diagnosis_comment")
+  calculationTraceJson         String?         @map("calculation_trace_json")
+  createdAt                    DateTime        @default(now()) @map("created_at")
+  updatedAt                    DateTime        @updatedAt @map("updated_at")
+  annualFinancial              AnnualFinancial @relation(fields: [annualFinancialId], references: [id])
+  sewerBusiness                SewerBusiness   @relation(fields: [sewerBusinessId], references: [id])
+
+  @@map("diagnosis_results")
+}
+
+model FeeRevisionEvent {
+  id                   Int            @id @default(autoincrement())
+  municipalityId       Int            @map("municipality_id")
+  sewerBusinessId      Int?           @map("sewer_business_id")
+  status               String
+  effectiveDate        String?        @map("effective_date")
+  announcedDate        String?        @map("announced_date")
+  averageRevisionRate  Float?         @map("average_revision_rate")
+  targetBusiness       String?        @map("target_business")
+  title                String?
+  summary              String?
+  sourceUrl            String         @map("source_url")
+  sourceType           String         @default("municipality_official") @map("source_type")
+  extractionConfidence Float          @default(0) @map("extraction_confidence")
+  checkedAt            String?        @map("checked_at")
+  createdAt            DateTime       @default(now()) @map("created_at")
+  updatedAt            DateTime       @updatedAt @map("updated_at")
+  municipality         Municipality   @relation(fields: [municipalityId], references: [id])
+  sewerBusiness        SewerBusiness? @relation(fields: [sewerBusinessId], references: [id])
+  tariffTables         TariffTable[]
+
+  @@map("fee_revision_events")
+}
+
+model TariffTable {
+  id                 Int               @id @default(autoincrement())
+  feeRevisionEventId Int?              @map("fee_revision_event_id")
+  municipalityId     Int               @map("municipality_id")
+  sewerBusinessId    Int?              @map("sewer_business_id")
+  effectiveDate      String?           @map("effective_date")
+  customerCategory   String?           @map("customer_category")
+  waterVolumeFromM3  Float?            @map("water_volume_from_m3")
+  waterVolumeToM3    Float?            @map("water_volume_to_m3")
+  baseFeeYen         Float?            @map("base_fee_yen")
+  meteredFeeYen      Float?            @map("metered_fee_yen")
+  taxIncluded        Boolean?          @map("tax_included")
+  notes              String?
+  createdAt          DateTime          @default(now()) @map("created_at")
+  municipality       Municipality      @relation(fields: [municipalityId], references: [id])
+  sewerBusiness      SewerBusiness?    @relation(fields: [sewerBusinessId], references: [id])
+  feeRevisionEvent   FeeRevisionEvent? @relation(fields: [feeRevisionEventId], references: [id])
+
+  @@map("tariff_tables")
+}
+
+model EtlRun {
+  id           Int       @id @default(autoincrement())
+  command      String
+  status       String
+  startedAt    DateTime  @default(now()) @map("started_at")
+  finishedAt   DateTime? @map("finished_at")
+  logJson      String?   @map("log_json")
+  errorMessage String?   @map("error_message")
+
+  @@map("etl_runs")
+}

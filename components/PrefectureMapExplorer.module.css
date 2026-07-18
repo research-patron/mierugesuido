@@ -1,0 +1,544 @@
+.explorer {
+  display: grid;
+  gap: 16px;
+}
+
+.mapPanel,
+.comparisonPanel {
+  min-width: 0;
+  border: 1px solid #d4e2ea;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 10px 28px rgba(15, 46, 77, 0.055);
+}
+
+.mapPanel {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  gap: 12px;
+  padding: 16px;
+}
+
+.panelHeader,
+.comparisonPanel > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.eyebrow {
+  margin: 0 0 3px;
+  color: #078891;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1.3;
+}
+
+.panelHeader h2,
+.comparisonPanel h2 {
+  margin: 0;
+  color: #0b1f4d;
+  font-size: 19px;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
+.mapControls {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid #c9dbe5;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.mapControls button,
+.mapControls > span {
+  display: inline-flex;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-right: 1px solid #dce7ed;
+  background: #fff;
+  color: #10264c;
+}
+
+.mapControls button {
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.mapControls button:last-child {
+  border-right: 0;
+}
+
+.mapControls button:hover:not(:disabled),
+.mapControls button:focus-visible {
+  background: #ebf9fa;
+  color: #067c85;
+  outline: none;
+}
+
+.mapControls button:focus-visible {
+  box-shadow: inset 0 0 0 2px #0b9aa3;
+}
+
+.mapControls button:disabled {
+  cursor: not-allowed;
+  color: #a8b6c2;
+}
+
+.mapControls > span {
+  width: 50px;
+  color: #607287;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.legend {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 7px 10px;
+  padding: 9px 11px;
+  border: 1px solid #e1eaf0;
+  border-radius: 6px;
+  background: #f8fbfc;
+}
+
+.legend span {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 1px 6px;
+  color: #52647a;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.legend i {
+  grid-row: 1 / span 2;
+  width: 9px;
+  height: 9px;
+  flex: 0 0 auto;
+  border: 1px solid rgba(11, 31, 77, 0.16);
+  border-radius: 2px;
+}
+
+.legend b {
+  overflow: hidden;
+  color: #344a63;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.legend small {
+  color: #7b8b9d;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.mapSurface {
+  position: relative;
+  min-width: 0;
+  height: clamp(600px, 44vw, 640px);
+  overflow: hidden;
+  border: 1px solid #dce7ed;
+  border-radius: 7px;
+  background:
+    radial-gradient(circle at 50% 44%, rgba(221, 248, 248, 0.56), transparent 55%),
+    linear-gradient(180deg, #fbfefe 0%, #f4fbfc 100%);
+  isolation: isolate;
+}
+
+.mapSurface::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(rgba(16, 92, 111, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(16, 92, 111, 0.035) 1px, transparent 1px);
+  background-size: 44px 44px;
+  content: "";
+  pointer-events: none;
+}
+
+.mapSurface > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  shape-rendering: geometricPrecision;
+}
+
+.mapSurface[data-pannable="true"] {
+  cursor: grab;
+  touch-action: none;
+}
+
+.mapSurface[data-panning="true"] {
+  cursor: grabbing;
+}
+
+.mapRegion {
+  cursor: pointer;
+  outline: none;
+  transition: opacity 150ms ease;
+}
+
+.shape,
+.excludedShape {
+  stroke: rgba(255, 255, 255, 0.84);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 0.78;
+  shape-rendering: geometricPrecision;
+  transition: filter 150ms ease, stroke 150ms ease, stroke-width 150ms ease;
+}
+
+.excludedShape {
+  pointer-events: none;
+}
+
+.mapRegion:hover .shape,
+.mapRegion:focus-visible .shape,
+.active .shape {
+  stroke: #0b315b;
+  stroke-width: 1.45;
+  filter: brightness(1.03);
+}
+
+.mapRegion:focus-visible .shape {
+  filter: drop-shadow(0 0 2px rgba(6, 50, 91, 0.32));
+}
+
+.mapLabelLayer {
+  pointer-events: none;
+}
+
+.mapLabel {
+  fill: #0a2447;
+  font-weight: 900;
+  paint-order: stroke;
+  pointer-events: none;
+  stroke: rgba(255, 255, 255, 0.95);
+  stroke-linejoin: round;
+  stroke-width: 2.8px;
+  vector-effect: non-scaling-stroke;
+}
+
+.mapLabelCallout {
+  stroke: rgba(10, 36, 71, 0.46);
+  stroke-linecap: round;
+  stroke-width: 0.8px;
+  pointer-events: none;
+}
+
+.mapNote {
+  margin: 0;
+  color: #6b7d90;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.7;
+}
+
+.loading,
+.fallback {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  padding: 24px;
+  color: #617488;
+  font-size: 13px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.fallback strong {
+  color: #0b1f4d;
+}
+
+.fallback p {
+  margin: 6px 0 0;
+  font-size: 12px;
+}
+
+.tooltip {
+  position: absolute;
+  z-index: 5;
+  width: 252px;
+  padding: 14px;
+  border: 1px solid rgba(208, 250, 254, 0.15);
+  border-radius: 7px;
+  background: #071d3f;
+  color: #fff;
+  box-shadow: 0 18px 36px rgba(7, 29, 63, 0.25);
+  pointer-events: auto;
+}
+
+.tooltipTitle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.tooltipTitle strong {
+  overflow: hidden;
+  font-size: 15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tooltipTitle span {
+  flex: 0 0 auto;
+  border-radius: 3px;
+  background: #dcf5ef;
+  padding: 3px 6px;
+  color: #075f64;
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.tooltip dl {
+  display: grid;
+  gap: 5px;
+  margin: 11px 0 0;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.tooltip dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.tooltip dt {
+  color: #b9cbe0;
+}
+
+.tooltip dd {
+  margin: 0;
+  font-weight: 900;
+}
+
+.tooltip > a {
+  display: flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  margin-top: 9px;
+  border-top: 1px solid rgba(207, 250, 254, 0.2);
+  color: #d7fcfd;
+  font-size: 10px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.tooltip > a svg {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+}
+
+.emptyState {
+  display: grid;
+  min-height: 92px;
+  place-content: center;
+  padding: 18px;
+  color: #6e8094;
+  font-size: 11px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.comparisonPanel {
+  overflow: hidden;
+}
+
+.comparisonPanel > header {
+  padding: 14px 16px;
+  border-bottom: 1px solid #dce7ed;
+}
+
+.comparisonPanel h2 span {
+  margin-left: 5px;
+  color: #718297;
+  font-size: 10px;
+}
+
+.comparisonPanel > header > a {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  gap: 6px;
+  color: #078891;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.comparisonPanel > header > a:hover,
+.comparisonPanel > header > a:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  outline: none;
+}
+
+.tableScroll {
+  overflow-x: auto;
+}
+
+.comparisonPanel table {
+  width: 100%;
+  min-width: 1050px;
+  border-collapse: collapse;
+}
+
+.comparisonPanel th,
+.comparisonPanel td {
+  border-right: 1px solid #e0e9ef;
+  border-bottom: 1px solid #e0e9ef;
+  padding: 10px 12px;
+  color: #203755;
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.comparisonPanel th {
+  background: #f5f9fb;
+  color: #52647a;
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.comparisonPanel th:first-child,
+.comparisonPanel td:first-child {
+  min-width: 230px;
+  text-align: left;
+}
+
+.comparisonPanel th:last-child,
+.comparisonPanel td:last-child {
+  border-right: 0;
+}
+
+.comparisonPanel tbody tr:hover td {
+  background: #f4fbfc;
+}
+
+.comparisonPanel td > strong {
+  display: inline-block;
+  min-width: 46px;
+  margin-right: 7px;
+  color: #0b1f4d;
+  font-variant-numeric: tabular-nums;
+  font-weight: 900;
+}
+
+.comparisonPanel td:first-child a {
+  display: grid;
+  gap: 2px;
+  color: #0b1f4d;
+  font-weight: 900;
+}
+
+.comparisonPanel td:first-child a:hover {
+  color: #078891;
+}
+
+.comparisonPanel td:first-child small {
+  color: #7b8a9c;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+@media (max-width: 1180px) {
+  .mapSurface {
+    height: clamp(560px, 56vw, 600px);
+  }
+}
+
+@media (max-width: 767px) {
+  .explorer {
+    gap: 12px;
+  }
+
+  .mapPanel {
+    padding: 12px;
+  }
+
+  .panelHeader {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .panelHeader h2,
+  .comparisonPanel h2 {
+    font-size: 17px;
+  }
+
+  .mapControls button {
+    width: 44px;
+    height: 44px;
+  }
+
+  .mapControls > span {
+    display: inline-flex;
+    width: 46px;
+    height: 44px;
+  }
+
+  .legend {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow: visible;
+    padding: 8px 9px;
+  }
+
+  .mapSurface {
+    min-height: 380px;
+    height: min(64vh, 470px);
+  }
+
+  .comparisonPanel > header {
+    align-items: flex-start;
+  }
+
+  .comparisonPanel > header > a {
+    max-width: 145px;
+    justify-content: flex-end;
+    text-align: right;
+  }
+}
+
+@media (max-width: 390px) {
+  .mapSurface {
+    min-height: 360px;
+    height: min(58vh, 420px);
+  }
+
+  .comparisonPanel > header {
+    display: grid;
+  }
+
+  .comparisonPanel > header > a {
+    max-width: none;
+    justify-content: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mapRegion,
+  .shape {
+    transition: none;
+  }
+}

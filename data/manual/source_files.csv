@@ -1,0 +1,2 @@
+survey_year,fiscal_year_label,government_stat_code,government_stat_name,provided_stat_name,category_1,category_2,table_no,table_name,accounting_type,source_url,local_path,file_format,published_at
+2024,令和5年度,00200251,地方財政状況調査,地方公営企業決算状況調査,手動配置,標準化CSV,32,検証用標準化CSV,legal_applied,manual://data/raw/manual/2024/sewer_financials_sample.csv,data/raw/manual/2024/sewer_financials_sample.csv,csv,2026-06-01

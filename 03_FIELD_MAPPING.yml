@@ -1,0 +1,303 @@
+# フィールドマッピング初期案
+# 注意:
+# - 年度やファイルによりレイアウトが変わる可能性があるため、Codexは必ず調査表レイアウトExcelを読み、表番号・行・列・項目名を検証すること。
+# - ここにある row/col は既存資料で確認できた代表例または設計上の初期値。実装では layout parser で照合・補正する。
+# - コードに直書きせず、このYAMLまたはDBテーブルから読み込む。
+
+standard_fields:
+  household_fee_20m3_yen:
+    label: 一般家庭用20m³／月使用料
+    unit: yen_per_month_tax_included
+    description: 一般家庭が1か月に20m³使用した場合の料金表上の税込額。使用料単価とは別指標。
+    sources:
+      legal_applied:
+        preferred:
+          table_no: 33
+          table_name: 経営分析に関する調（二）
+          item_keywords: [一般家庭用, 20m³, 使用料]
+          known_position_examples:
+            - source_note: 総務省地方公営企業決算状況調査。R2-R6共通。
+              row_no: 1
+              col_no: 13
+      non_legal_applied:
+        preferred:
+          table_no: 33
+          table_name: 経営分析に関する調（二）
+          item_keywords: [一般家庭用, 20m³, 使用料]
+          known_position_examples:
+            - source_note: 総務省地方公営企業決算状況調査。R2-R6共通。
+              row_no: 1
+              col_no: 13
+
+  sewer_fee_revenue:
+    label: 下水道使用料収入
+    unit: thousand_yen
+    description: 下水道使用料収入。使用料単価・経費回収率の分子。
+    sources:
+      legal_applied:
+        preferred:
+          table_no: 20
+          table_name: 損益計算書
+          item_keywords: [下水道使用料]
+          known_position_examples:
+            - source_note: 国交省資料例。20表1行3列 下水道使用料。
+              row_no: 1
+              col_no: 3
+      non_legal_applied:
+        preferred:
+          table_no: 26
+          table_name: 歳入歳出決算に関する調
+          item_keywords: [下水道使用料]
+          known_position_examples:
+            - source_note: 交付税関係資料例。26表1行3列 下水道使用料。
+              row_no: 1
+              col_no: 3
+        exceptional:
+          - condition: 法適用移行年度の打切決算で未収分料金収入が発生する場合
+            table_no: 26
+            item_keywords: [打切決算, 未収, 料金収入, 下水道使用料]
+            known_position_examples:
+              - row_no: 2
+                col_no: 70
+
+  annual_billable_volume:
+    label: 年間有収水量
+    unit: cubic_meter
+    description: 使用料徴収対象となった年間有収水量。使用料単価・汚水処理原価の分母。
+    sources:
+      legal_applied:
+        preferred:
+          table_no: 19
+          table_name: 施設及び業務概況に関する調
+          item_keywords: [年間有収水量, 有収水量]
+      non_legal_applied:
+        preferred:
+          table_no: 10
+          table_name: 施設及び業務概況に関する調
+          item_keywords: [年間有収水量, 有収水量]
+          known_position_examples:
+            - source_note: 交付税関係資料例。10表1行52列 年間有収水量。
+              row_no: 1
+              col_no: 52
+
+  wastewater_treatment_cost:
+    label: 汚水処理費
+    unit: thousand_yen
+    description: 公費負担分等を除いた汚水処理費。経費回収率の分母。
+    sources:
+      legal_applied:
+        preferred:
+          table_no: 32
+          table_name: 経営分析に関する調（一）
+          item_keywords: [汚水処理費]
+          known_position_examples:
+            - source_note: 総務省地方公営企業決算状況調査。32表2行16列 汚水処理費合計。
+              row_no: 2
+              col_no: 16
+      non_legal_applied:
+        preferred:
+          table_no: 32
+          table_name: 経営分析に関する調（一）
+          item_keywords: [汚水処理費]
+          known_position_examples:
+            - source_note: 総務省地方公営企業決算状況調査。R2-R6共通。32表2行16列 汚水処理費合計。
+              row_no: 2
+              col_no: 16
+
+  opex_component:
+    label: 汚水処理費_維持管理費分
+    unit: thousand_yen
+    description: 汚水処理費のうち維持管理費分。
+    sources:
+      legal_applied:
+        preferred:
+          table_no: 32
+          table_name: 経営分析に関する調（一）
+          item_keywords: [維持管理費分, 維持管理費]
+          known_position_examples:
+            - source_note: 総務省地方公営企業決算状況調査。32表1行44列 維持管理費分。
+              row_no: 1
+              col_no: 44
+      non_legal_applied:
+        preferred:
+          table_no: 32
+          table_name: 経営分析に関する調（一）
+          item_keywords: [維持管理費分, 維持管理費]
+          known_position_examples:
+            - source_note: 総務省地方公営企業決算状況調査。R2-R6共通。32表1行44列 維持管理費分。
+              row_no: 1
+              col_no: 44
+
+  capital_cost_component:
+    label: 汚水処理費_資本費分
+    unit: thousand_yen
+    description: 汚水処理費のうち資本費分。
+    sources:
+      legal_applied:
+        preferred:
+          table_no: 32
+          table_name: 経営分析に関する調（一）
+          item_keywords: [資本費分, 資本費]
+          known_position_examples:
+            - source_note: 総務省地方公営企業決算状況調査。32表2行8列 資本費分。
+              row_no: 2
+              col_no: 8
+      non_legal_applied:
+        preferred:
+          table_no: 32
+          table_name: 経営分析に関する調（一）
+          item_keywords: [資本費分, 資本費]
+          known_position_examples:
+            - source_note: 総務省地方公営企業決算状況調査。R2-R6共通。32表2行8列 資本費分。
+              row_no: 2
+              col_no: 8
+
+  ordinary_revenue:
+    label: 経常収益
+    unit: thousand_yen
+    sources:
+      legal_applied:
+        preferred:
+          table_no: 20
+          table_name: 損益計算書
+          item_keywords: [経常収益]
+
+  ordinary_expense:
+    label: 経常費用
+    unit: thousand_yen
+    sources:
+      legal_applied:
+        preferred:
+          table_no: 20
+          table_name: 損益計算書
+          item_keywords: [経常費用]
+
+  net_income:
+    label: 当年度純損益
+    unit: thousand_yen
+    sources:
+      legal_applied:
+        preferred:
+          table_no: 20
+          table_name: 損益計算書
+          item_keywords: [当年度純利益, 当年度純損失, 純利益, 純損失]
+
+  real_balance:
+    label: 実質収支
+    unit: thousand_yen
+    sources:
+      non_legal_applied:
+        preferred:
+          table_no: 26
+          table_name: 歳入歳出決算に関する調
+          item_keywords: [実質収支]
+
+  total_revenue_non_legal:
+    label: 総収益_法非適用
+    unit: thousand_yen
+    sources:
+      non_legal_applied:
+        preferred:
+          table_no: 26
+          table_name: 歳入歳出決算に関する調
+          item_keywords: [総収益]
+
+  total_expense_non_legal:
+    label: 総費用_法非適用
+    unit: thousand_yen
+    sources:
+      non_legal_applied:
+        preferred:
+          table_no: 26
+          table_name: 歳入歳出決算に関する調
+          item_keywords: [総費用]
+
+  general_account_transfer:
+    label: 一般会計繰入金
+    unit: thousand_yen
+    sources:
+      legal_applied:
+        preferred:
+          table_no: 40
+          table_name: 繰入金に関する調
+          item_keywords: [他会計繰入金, 一般会計繰入金, 繰入金]
+      non_legal_applied:
+        preferred:
+          table_no: 40
+          table_name: 繰入金に関する調
+          item_keywords: [他会計繰入金, 一般会計繰入金, 繰入金]
+
+  non_standard_transfer:
+    label: 基準外繰入金
+    unit: thousand_yen
+    sources:
+      legal_applied:
+        preferred:
+          table_no: 40
+          table_name: 繰入金に関する調
+          item_keywords: [基準外, 繰出基準以外]
+      non_legal_applied:
+        preferred:
+          table_no: 40
+          table_name: 繰入金に関する調
+          item_keywords: [基準外, 繰出基準以外]
+
+  bond_balance:
+    label: 企業債・地方債残高
+    unit: thousand_yen
+    sources:
+      legal_applied:
+        preferred:
+          table_no: 24
+          table_name: 企業債に関する調
+          item_keywords: [企業債現在高, 企業債残高, 未償還残高]
+      non_legal_applied:
+        preferred:
+          table_no: 24
+          table_name: 地方債に関する調
+          item_keywords: [地方債現在高, 地方債残高, 未償還残高]
+
+  service_population:
+    label: 処理区域内人口
+    unit: people
+    sources:
+      legal_applied:
+        preferred:
+          table_no: 19
+          table_name: 施設及び業務概況に関する調
+          item_keywords: [現在処理区域内人口, 処理区域内人口]
+      non_legal_applied:
+        preferred:
+          table_no: 10
+          table_name: 施設及び業務概況に関する調
+          item_keywords: [現在処理区域内人口, 処理区域内人口]
+
+  connected_population:
+    label: 水洗便所設置済人口
+    unit: people
+    sources:
+      legal_applied:
+        preferred:
+          table_no: 19
+          table_name: 施設及び業務概況に関する調
+          item_keywords: [現在水洗便所設置済人口, 水洗化人口]
+      non_legal_applied:
+        preferred:
+          table_no: 10
+          table_name: 施設及び業務概況に関する調
+          item_keywords: [現在水洗便所設置済人口, 水洗化人口]
+
+  treated_volume:
+    label: 汚水処理水量
+    unit: cubic_meter
+    sources:
+      legal_applied:
+        preferred:
+          table_no: 19
+          table_name: 施設及び業務概況に関する調
+          item_keywords: [汚水処理水量, 年間汚水処理水量]
+      non_legal_applied:
+        preferred:
+          table_no: 10
+          table_name: 施設及び業務概況に関する調
+          item_keywords: [汚水処理水量, 年間汚水処理水量]

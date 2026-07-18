@@ -1,0 +1,65 @@
+export type CliArgs = {
+  command: string;
+  years: number[];
+  manual: boolean;
+  allowManualFallback: boolean;
+};
+
+export type SourceFileInput = {
+  surveyYear: number;
+  fiscalYearLabel?: string | null;
+  governmentStatCode: string;
+  governmentStatName: string;
+  providedStatName: string;
+  category1?: string | null;
+  category2?: string | null;
+  tableNo?: number | null;
+  tableName?: string | null;
+  accountingType?: "legal_applied" | "non_legal_applied" | null;
+  estatStatInfid?: string | null;
+  estatStatsDataId?: string | null;
+  sourceUrl?: string | null;
+  localPath?: string | null;
+  fileFormat?: string | null;
+  publishedAt?: string | null;
+  sha256?: string | null;
+};
+
+export type StandardFinancialRow = {
+  municipalityCode: string;
+  prefectureCode?: string | null;
+  prefectureName: string;
+  municipalityName: string;
+  municipalityNameKana?: string | null;
+  businessKey: string;
+  businessName?: string | null;
+  businessType?: string | null;
+  accountingType: "legal_applied" | "non_legal_applied";
+  surveyYear: number;
+  fiscalYearLabel?: string | null;
+  sewerFeeRevenue?: number | null;
+  householdFee20m3Yen?: number | null;
+  annualBillableVolume?: number | null;
+  wastewaterTreatmentCost?: number | null;
+  opexComponent?: number | null;
+  capitalCostComponent?: number | null;
+  operatingRevenue?: number | null;
+  operatingExpense?: number | null;
+  ordinaryRevenue?: number | null;
+  ordinaryExpense?: number | null;
+  netIncome?: number | null;
+  accumulatedDeficit?: number | null;
+  totalRevenueNonLegal?: number | null;
+  totalExpenseNonLegal?: number | null;
+  realBalance?: number | null;
+  revenueExpenditureRatio?: number | null;
+  generalAccountTransfer?: number | null;
+  standardTransfer?: number | null;
+  nonStandardTransfer?: number | null;
+  bondBalance?: number | null;
+  bondIssued?: number | null;
+  bondRedemption?: number | null;
+  servicePopulation?: number | null;
+  connectedPopulation?: number | null;
+  treatedVolume?: number | null;
+};

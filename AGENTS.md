@@ -22,6 +22,43 @@
 - Iterate from real rendered screenshots at the 1491 x 1055 reference viewport, compare source and implementation in a combined visual, and continue until `design-qa.md` ends with `final result: passed`.
 - This extension explicitly permits the minimum necessary schema, migration, ETL, imported-data, and database changes for the R2-R6/R6 accounting work. It does not permit unrelated data edits or changes made only to force reference mock values.
 
+# GitHub Commit, Push, and Confidentiality Policy (2026-07-18)
+
+## Separate Development Completion From Publication
+
+- Completing implementation, tests, screenshots, documentation, or QA does not authorize `git add`, `git commit`, `git push`, force-push, pull-request creation, merge, release, or deployment.
+- When the requested development work is complete, first report the changed-file scope, validation results, secret-scan result, intended repository, and intended branch. Then ask the user explicitly: `この変更をコミットして GitHub にプッシュしますか？`
+- Do not create a commit or push anything until the user gives an explicit affirmative answer to that question. Silence, an ambiguous reply, `続けて`, `完了して`, or a request to finish development is not publication approval.
+- A publication approval applies only to the exact diff, repository, and branch described immediately before the question. If files change after approval, or the target repository/branch changes, present the new scope and ask again.
+- If the user declines or has not answered, leave the worktree changes local and uncommitted. Report their status without repeatedly asking.
+- Once explicitly approved, stage only the reviewed files, create an intentional commit, push the approved branch, and verify the remote commit SHA. Do not open or merge a pull request unless the user separately requests it.
+
+## Mandatory Pre-Commit and Pre-Push Checks
+
+- Inspect `git status`, the complete diff, untracked files, ignored-file rules, file sizes, and the remote/branch before staging. Never assume the whole worktree belongs to the task.
+- Prefer explicit paths when staging. Use `git add -A` only after confirming that every unignored change is in scope.
+- Before committing, run a dedicated secret scan such as Gitleaks against the staged change and relevant Git history, plus targeted checks for credentials, personal information, and local paths. A clean typecheck/test/build does not replace this security check.
+- Before pushing, re-check the staged diff, commit metadata, repository visibility, remote URL, target branch, and whether the local branch is based on the current remote branch.
+- Do not create a new commit if the configured author email exposes a personal address. Use the user's GitHub-provided `users.noreply.github.com` address unless the user explicitly approves another identity.
+- After pushing, confirm that the remote SHA equals the intended local commit and report the repository, branch, commit link, validation results, and anything intentionally excluded.
+- Never use force-push or rewrite published history without describing the exact impact and receiving separate explicit approval.
+
+## Information That Must Never Be Committed or Pushed
+
+- Never commit actual API keys, access tokens, refresh tokens, passwords, private keys, certificates, signing material, cookies, session data, OAuth credentials, webhook secrets, database credentials, GitHub credentials, Cloudflare credentials, or secret-manager exports.
+- Never commit `.env` values or environment-specific secret files. Example files are allowed only when every value is an unmistakable non-secret placeholder.
+- Never commit local or production database files, database dumps, raw private datasets, user records, unpublished source material, or unreviewed downloaded data. Public-source datasets may be committed only when their licensing, provenance, size, and absence of sensitive content have been checked.
+- Never commit personal email addresses, phone numbers, account identifiers, local operating-system usernames, home-directory paths, absolute local paths, Codex attachment paths/IDs, browser profiles, device identifiers, or screenshots/logs containing such information unless the user explicitly requires that exact item to be published.
+- Never commit `node_modules`, build outputs, caches, temporary files, local QA artifacts, editor metadata, OS metadata, or large generated files unless they are required deliverables and the user approves them after seeing the scope.
+- Store deployment secrets in the target platform's encrypted environment-variable or secret-management facility, never in Git. Keep the repository private unless the user explicitly authorizes a visibility change.
+
+## If Sensitive Information Is Detected
+
+- Stop staging, committing, and pushing immediately. Report the category and affected file or commit without reproducing the secret value in chat, logs, commit messages, or reports.
+- If the information has not been pushed, remove or sanitize it, update ignore rules when appropriate, rerun the full scan, and request publication approval again if the reviewed diff changed.
+- If the information has already been pushed, do not assume a private repository makes it safe. Tell the user, recommend revoking or rotating credentials first when applicable, and obtain explicit approval before rewriting history or force-pushing.
+- Do not weaken ignore rules, disable security checks, suppress a scanner finding, or mark a secret as a false positive merely to make a commit or CI check pass.
+
 # Previous Goal: UI Fidelity Rebuild
 
 ## Objective
@@ -33,13 +70,15 @@
 
 ## Updated Reference Images
 
-- `/Users/niigatadaigakukenkyuuyou/.codex/attachments/5c3f0cf8-0af6-4f6e-a12b-9178f33f7e6f/image-1.png`: home dashboard.
-- `/Users/niigatadaigakukenkyuuyou/.codex/attachments/5c3f0cf8-0af6-4f6e-a12b-9178f33f7e6f/image-2.png`: prefecture map/detail.
-- `/Users/niigatadaigakukenkyuuyou/.codex/attachments/5c3f0cf8-0af6-4f6e-a12b-9178f33f7e6f/image-3.png`: municipality search.
-- `/Users/niigatadaigakukenkyuuyou/.codex/attachments/5c3f0cf8-0af6-4f6e-a12b-9178f33f7e6f/image-4.png`: municipality detail.
-- `/Users/niigatadaigakukenkyuuyou/.codex/attachments/5c3f0cf8-0af6-4f6e-a12b-9178f33f7e6f/image-5.png`: revision schedule.
-- `/Users/niigatadaigakukenkyuuyou/.codex/attachments/5c3f0cf8-0af6-4f6e-a12b-9178f33f7e6f/image-6.png`: data-source explanation.
-- `/Users/niigatadaigakukenkyuuyou/.codex/attachments/5c3f0cf8-0af6-4f6e-a12b-9178f33f7e6f/image-7.png`: ranking/comparison.
+The updated reference set was supplied as seven local Codex attachments. Resolve the files from the active task's attachments when available, but never record their absolute local paths, local usernames, or attachment identifiers in Git.
+
+- Reference 1: home dashboard.
+- Reference 2: prefecture map/detail.
+- Reference 3: municipality search.
+- Reference 4: municipality detail.
+- Reference 5: revision schedule.
+- Reference 6: data-source explanation.
+- Reference 7: ranking/comparison.
 
 All seven references are 1491 x 1055 desktop frames. Capture implementation screenshots at the same viewport when possible.
 

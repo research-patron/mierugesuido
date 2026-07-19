@@ -1,0 +1,33 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "mierugesuido",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-07-19",
+  "compatibility_flags": [
+    "nodejs_compat",
+    "global_fetch_strictly_public"
+  ],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "mierugesuido"
+    }
+  ],
+  "images": {
+    "binding": "IMAGES"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "mierugesuido-production",
+      "database_id": "b192fc1f-1e09-47e6-ab17-974c967a44c8"
+    }
+  ],
+  "observability": {
+    "enabled": true
+  }
+}

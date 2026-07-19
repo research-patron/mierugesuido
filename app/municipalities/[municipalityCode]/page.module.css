@@ -778,8 +778,8 @@
 }
 
 .costBoundaryNote {
-  border-left: 4px solid #e7b835;
-  border-radius: 5px;
+  border: 1px solid color-mix(in srgb, #e7b835 38%, var(--ui-border));
+  border-radius: 6px;
   background: #fffaf1;
   padding: 10px 12px;
 }

@@ -1251,8 +1251,9 @@ body {
 .business-type-cell[open] > span {
   display: block;
   margin-top: 5px;
-  border-left: 2px solid var(--ui-teal);
-  padding: 3px 6px;
+  border-radius: 5px;
+  background: var(--ui-soft);
+  padding: 5px 7px;
   color: var(--ui-ink);
   font-size: 11px;
   line-height: 1.5;

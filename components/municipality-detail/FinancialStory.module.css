@@ -42,8 +42,7 @@
 
 .statusMessage {
   margin: -8px 0 0;
-  border-left: 3px solid var(--ui-teal);
-  padding: 2px 0 2px 10px;
+  padding: 2px 0;
   color: var(--ui-muted);
   font-size: 12px;
   font-weight: 600;
@@ -515,8 +514,8 @@
 
 .balanceNetAssets {
   border-radius: 0 0 4px 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.72);
   background: #287a5d;
-  box-shadow: inset 0 2px rgba(255, 255, 255, 0.78);
 }
 
 .balanceNetAssets .balanceBoxContent {
@@ -669,124 +668,50 @@
   font-weight: 700 !important;
 }
 
-.balanceStackPlus {
-  position: absolute;
-  z-index: 2;
-  top: clamp(16px, var(--balance-liability-share, 50%), calc(100% - 16px));
-  left: 50%;
+.balanceCompactInline {
   display: grid;
-  width: 28px;
-  height: 28px;
-  place-items: center;
-  transform: translate(-50%, -50%);
-  border: 2px solid var(--ui-surface);
-  border-radius: 50%;
-  background: var(--ui-ink-deep);
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  overflow: hidden;
+  padding: 0 14px;
   color: #fff;
-  font-size: 17px;
-  font-weight: 900;
-  line-height: 1;
+  white-space: nowrap;
 }
 
-.balanceCompactNotes {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.balanceCompactNotesMobileOnly,
-.balanceCompactMobileOnly {
-  display: none;
-}
-
-.balanceCompactNote {
-  display: grid;
+.balanceCompactInline strong,
+.balanceCompactInline span,
+.balanceCompactInline small {
   min-width: 0;
-  gap: 3px;
-  border: 1px solid var(--ui-border);
-  border-left-width: 4px;
-  border-radius: 6px;
-  background: var(--ui-soft);
-  padding: 9px 11px;
+  overflow: hidden;
+  color: currentColor;
+  text-overflow: ellipsis;
 }
 
-.balanceCompactLiability {
-  border-left-color: var(--ui-ink-deep);
-}
-
-.balanceCompactNetAssets {
-  border-left-color: #287a5d;
-}
-
-.balanceCompactTopline {
-  display: flex;
-  min-width: 0;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.balanceCompactTopline strong,
-.balanceCompactAmount {
-  color: var(--ui-ink-deep);
-  font-size: 12px;
+.balanceCompactInline strong {
+  font-size: 13px;
   font-weight: 900;
-  line-height: 1.4;
 }
 
-.balanceCompactTopline span {
-  color: var(--ui-muted);
+.balanceCompactInline span {
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.balanceCompactInline small {
   font-size: 10.5px;
   font-weight: 800;
-  line-height: 1.4;
-}
-
-.balanceCompactAmount {
-  font-size: 15px;
-}
-
-.balanceCompactNote p {
-  margin: 0;
-  color: var(--ui-muted);
-  font-size: 10.5px;
-  font-weight: 650;
-  line-height: 1.45;
-}
-
-.balanceCompactNote .balanceBoxDetails {
-  gap: 5px;
-  margin-top: 4px;
-  padding-top: 6px;
-  border-top-color: var(--ui-divider);
-}
-
-.balanceCompactNote .balanceBoxDetails li,
-.balanceCompactNote .balanceBoxDetailMeta strong,
-.balanceCompactNote .balanceBoxDetailMeta small,
-.balanceCompactNote .balanceBoxDetailLabel small {
-  color: var(--ui-ink-deep);
-}
-
-.balanceCompactNote .balanceBoxDetailLabel .balanceBoxDetailHint {
-  display: block;
-  color: var(--ui-muted);
-}
-
-.balanceCompactNote .balanceBoxDetailStatus {
-  color: var(--ui-muted) !important;
-}
-
-.balanceBoxDetailsCompact .balanceBoxDetailMeta small {
-  color: var(--ui-muted);
+  text-align: right;
 }
 
 .balanceReadingNote {
   margin: 8px 0 0;
-  border-left: 3px solid var(--ui-teal);
-  border-radius: 0 5px 5px 0;
+  border: 1px solid var(--ui-divider);
+  border-radius: 6px;
   background: var(--ui-soft);
-  padding: 7px 9px;
+  padding: 8px 10px;
   color: var(--ui-muted);
   font-size: 9.5px;
   font-weight: 650;
@@ -1063,19 +988,18 @@
   align-content: start;
   gap: 4px;
   border: 1px solid var(--ui-border);
-  border-top: 4px solid var(--ui-teal);
   border-radius: 7px;
   background: var(--ui-surface);
   padding: 13px;
 }
 
 .snapshotNegative {
-  border-top-color: #c4434a;
+  border-color: color-mix(in srgb, #c4434a 34%, var(--ui-border));
   background: color-mix(in srgb, #e5484d 3%, var(--ui-surface));
 }
 
 .snapshotPositive {
-  border-top-color: var(--ui-teal);
+  background: var(--ui-surface);
 }
 
 .netAssetsSnapshotItem > span {
@@ -1211,23 +1135,22 @@
   align-content: start;
   gap: 5px;
   border: 1px solid var(--ui-border);
-  border-left-width: 4px;
   border-radius: 7px;
   background: var(--ui-surface);
   padding: 11px;
 }
 
 .driverPositive {
-  border-left-color: var(--ui-teal);
+  background: var(--ui-surface);
 }
 
 .driverNegative {
-  border-left-color: #c4434a;
+  border-color: color-mix(in srgb, #c4434a 34%, var(--ui-border));
   background: color-mix(in srgb, #e5484d 3%, var(--ui-surface));
 }
 
 .driverFlat {
-  border-left-color: var(--ui-border-strong);
+  background: var(--ui-soft);
 }
 
 .driverCardTopline {
@@ -1603,27 +1526,46 @@
     padding-top: 3px;
   }
 
-  .balanceCompactNotes {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .balanceCompactNotesMobileOnly,
-  .balanceCompactMobileOnly {
-    display: grid;
-  }
-
   [data-balance-mobile-compact] .balanceBoxDetails {
     display: none;
   }
 
-  [data-balance-mobile-compact] .balanceBoxContentWithDetails {
-    justify-content: center;
+  [data-balance-mobile-compact] .balanceBoxContent {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 2px 10px;
+    align-content: center;
+    padding: 6px 10px;
   }
 
-  .balanceCompactNote .balanceBoxDetailMeta {
-    display: flex;
-    justify-items: initial;
-    gap: 8px;
+  [data-balance-mobile-compact] .balanceBoxTopline {
+    display: contents;
+  }
+
+  [data-balance-mobile-compact] .balanceBoxTopline strong {
+    justify-self: end;
+  }
+
+  [data-balance-mobile-compact] .balanceAmount {
+    grid-column: 1 / -1;
+    font-size: 18px;
+  }
+
+  .balanceCompactInline {
+    gap: 7px;
+    padding: 0 10px;
+  }
+
+  .balanceCompactInline strong {
+    font-size: 12px;
+  }
+
+  .balanceCompactInline span {
+    font-size: 14px;
+  }
+
+  .balanceCompactInline small {
+    font-size: 9.5px;
   }
 
   .balanceAmount {

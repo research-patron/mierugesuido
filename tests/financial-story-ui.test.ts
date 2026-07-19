@@ -49,7 +49,7 @@ describe("financial statement accounting-box UI", () => {
     expect(cssSource).toContain(".accountingTermNote");
   });
 
-  it("keeps the three major balance boxes while showing each box's selected source breakdown", () => {
+  it("keeps the three major balance boxes and never detaches a compact balance item", () => {
     const balanceSheetSource = componentSource.slice(
       componentSource.indexOf("function BalanceSheet("),
       componentSource.indexOf("function NetAssetsChange(")
@@ -77,22 +77,23 @@ describe("financial statement accounting-box UI", () => {
     expect(cssSource).toMatch(/@media \(max-width: 760px\)\s*\{[\s\S]*?\.balanceEquation,\s*\.balanceDeficitEquation\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/s);
     expect(componentSource).toContain('data-balance-frame="asset"');
     expect(componentSource).toContain('data-balance-frame="funding"');
-    expect(componentSource).toContain("styles.balanceStackPlus");
+    expect(componentSource).not.toContain("styles.balanceStackPlus");
     expect(cssSource).toMatch(/\.balanceBoxFrame\s*{[^}]*display:\s*flex[^}]*overflow:\s*hidden[^}]*border:/s);
     expect(cssSource).toMatch(/\.balanceFundingStack\s*{[^}]*flex-direction:\s*column/s);
     expect(cssSource).toMatch(/@media \(max-width: 760px\)\s*\{[\s\S]*?\.balanceEquation > \.balanceBoxFrame\s*\{[^}]*height:\s*540px/s);
     expect(cssSource).toMatch(/\.balanceBoxRegion\s*{[^}]*min-height:\s*0[^}]*color:\s*#fff/s);
-    expect(cssSource).toMatch(/\.balanceNetAssets\s*{[^}]*box-shadow:\s*inset 0 2px/s);
-    expect(componentSource).toContain("data-balance-callout");
+    expect(cssSource).toMatch(/\.balanceNetAssets\s*{[^}]*border-top:\s*1px/s);
+    expect(componentSource).toContain("data-balance-inline");
     expect(componentSource).toContain("data-balance-mobile-compact");
-    expect(componentSource).toContain('data-balance-callout-mode={mobileOnly ? "mobile" : "all"}');
+    expect(componentSource).not.toContain("data-balance-callout");
+    expect(componentSource).not.toContain("BalanceCompactNote");
     expect(componentSource).toContain("chooseBalanceBoxScale");
     expect(cssSource).toMatch(/\.balanceBoxDetails\s*{[^}]*border-top:/s);
     expect(cssSource).toMatch(/\.balanceBoxDetails li\s*{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) auto/s);
-    expect(cssSource).toMatch(/\.balanceCompactNote \.balanceBoxDetails\s*{[^}]*border-top-color:/s);
-    expect(cssSource).toMatch(/\.balanceCompactNotesMobileOnly,\s*\.balanceCompactMobileOnly\s*{[^}]*display:\s*none/s);
     expect(cssSource).toMatch(/@media \(max-width: 760px\)[\s\S]*\[data-balance-mobile-compact\] \.balanceBoxDetails\s*{[^}]*display:\s*none/s);
-    expect(cssSource).toMatch(/@media \(max-width: 760px\)[\s\S]*\.balanceCompactNotesMobileOnly,\s*\.balanceCompactMobileOnly\s*\{[^}]*display:\s*grid/s);
+    expect(cssSource).toMatch(/\.balanceCompactInline\s*{[^}]*grid-template-columns:\s*auto minmax\(0, 1fr\) auto/s);
+    expect(cssSource).not.toContain(".balanceCompactNote");
+    expect(cssSource).not.toContain(".balanceCompactNotes");
     expect(cssSource).toContain(".balanceReadingNote");
     expect(cssSource).toMatch(/\.balanceBoxTopline strong\s*{[^}]*color:\s*#fff/s);
     expect(cssSource).toMatch(/\.balanceBoxRegion p\s*{[^}]*color:\s*#fff/s);

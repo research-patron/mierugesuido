@@ -70,7 +70,7 @@ describe("FinancialStory rendered relationships", () => {
     expect(markup.match(/data-balance-breakdown="asset"/g)).toHaveLength(1);
     expect(markup.match(/data-balance-breakdown="liability"/g)).toHaveLength(1);
     expect(markup.match(/data-balance-breakdown="net-assets"/g)).toHaveLength(1);
-    expect(markup).not.toContain('data-balance-callout-mode="mobile"');
+    expect(markup).not.toContain("data-balance-callout");
     expect(markup.indexOf('data-balance-box="asset"')).toBeLessThan(markup.indexOf('data-balance-box="liability"'));
     expect(markup.indexOf('data-balance-box="liability"')).toBeLessThan(markup.indexOf('data-balance-box="net-assets"'));
     expect(markup).toContain("施設・設備などの帳簿価額");
@@ -175,7 +175,8 @@ describe("FinancialStory rendered relationships", () => {
     expect(markup).toContain('data-balance-relation="standard"');
     expect(markup).toContain('data-balance-box="net-assets"');
     expect(markup).toContain('data-balance-compact="net-assets"');
-    expect(markup).toContain('data-balance-callout="net-assets"');
+    expect(markup).toContain('data-balance-inline="net-assets"');
+    expect(markup).not.toContain("data-balance-callout");
     expect(markup).toContain("資産の 0.0%");
     expect(markup).not.toContain('data-balance-relation="deficit"');
   });
@@ -230,8 +231,9 @@ describe("FinancialStory rendered relationships", () => {
     expect(smallPositive).toContain("500千円");
     expect(smallPositive).toContain("0.5百万円");
     expect(smallPositive).toContain("0.1%未満");
-    expect(smallPositive).toContain('data-balance-breakdown="net-assets"');
-    expect(smallPositive).toContain("純資産内 100.0%");
+    expect(smallPositive).toContain('data-balance-inline="net-assets"');
+    expect(smallPositive).not.toContain('data-balance-breakdown="net-assets"');
+    expect(smallPositive).toContain("純資産内100.0%");
     expect(smallPositive).not.toContain("純資産0億円");
     expect(smallNegative).toContain("−0.1%未満");
     expect(smallNegative).not.toContain("-0.0%");
@@ -291,7 +293,7 @@ describe("FinancialStory rendered relationships", () => {
     expect(assetBreakdown).not.toContain("100.0%");
   });
 
-  it("moves a geometrically tiny liability label outside the exact-area stack", () => {
+  it("keeps a geometrically tiny liability label in the exact-area stack", () => {
     const markup = renderStory({
       fixedAssets: 1_000_000,
       currentAssets: 0,
@@ -306,12 +308,13 @@ describe("FinancialStory rendered relationships", () => {
     });
 
     expect(markup).toContain('data-balance-compact="liability"');
-    expect(markup).toContain('data-balance-callout="liability"');
+    expect(markup).toContain('data-balance-inline="liability"');
+    expect(markup).not.toContain("data-balance-callout");
     expect(markup).toContain("0.1百万円");
     expect(markup).toContain("0.1%未満");
   });
 
-  it("moves a mobile-only small box to its matching hidden-from-AT callout", () => {
+  it("keeps a mobile-only compact breakdown in its original funding region", () => {
     const markup = renderStory({
       fixedAssets: 8_000,
       currentAssets: 2_000,
@@ -325,20 +328,34 @@ describe("FinancialStory rendered relationships", () => {
       surplus: 700,
       totalNetAssets: 2_200
     });
-    const boxStart = markup.indexOf('data-balance-box="net-assets"');
-    const calloutStart = markup.indexOf('data-balance-callout="net-assets"');
-    const readingNoteStart = markup.indexOf("内訳の見方", calloutStart);
-    const boxMarkup = markup.slice(boxStart, calloutStart);
-    const calloutMarkup = markup.slice(calloutStart, readingNoteStart);
-
     expect(markup).toContain('data-balance-mobile-compact="net-assets"');
-    expect(markup).toContain('data-balance-callouts="true" aria-hidden="true"');
-    expect(calloutMarkup).toContain('data-balance-callout-mode="mobile"');
-    expect(calloutMarkup).toContain('data-balance-breakdown="net-assets"');
-    expect(calloutMarkup).toContain('data-balance-detail="capital"');
-    expect(boxMarkup.match(/data-balance-breakdown="net-assets"/g)).toHaveLength(1);
-    expect(calloutMarkup.match(/data-balance-breakdown="net-assets"/g)).toHaveLength(1);
-    expect(markup.match(/data-balance-breakdown="net-assets"/g)).toHaveLength(2);
+    expect(markup).not.toContain("data-balance-callout");
+    expect(markup).toContain('data-balance-breakdown="net-assets"');
+    expect(markup).toContain('data-balance-detail="capital"');
+    expect(markup.match(/data-balance-breakdown="net-assets"/g)).toHaveLength(1);
+  });
+
+  it("keeps an 8.1 percent net-assets total inside the funding frame without a detached box", () => {
+    const markup = renderStory({
+      fixedAssets: 527_050_000,
+      currentAssets: 4_817_724,
+      deferredAssets: 0,
+      totalAssets: 531_867_724,
+      fixedLiabilities: 251_040_000,
+      currentLiabilities: 24_381_217,
+      deferredRevenue: 213_460_000,
+      totalLiabilities: 488_881_217,
+      capital: 28_800_000,
+      surplus: 14_186_507,
+      totalNetAssets: 42_986_507
+    });
+
+    expect(markup).toContain('data-balance-compact="net-assets"');
+    expect(markup).toContain('data-balance-inline="net-assets"');
+    expect(markup).toContain("429.9億円");
+    expect(markup).toContain("資産の 8.1%");
+    expect(markup).not.toContain("data-balance-callout");
+    expect(markup).not.toContain('data-balance-breakdown="net-assets"');
   });
 
   it("keeps a 22.5 percent two-row net-assets breakdown inside its proportional box", () => {
@@ -358,7 +375,7 @@ describe("FinancialStory rendered relationships", () => {
     const netAssetsBreakdown = extractList(markup, 'data-balance-breakdown="net-assets"');
 
     expect(markup).not.toContain('data-balance-mobile-compact="net-assets"');
-    expect(markup).not.toContain('data-balance-callout-mode="mobile"');
+    expect(markup).not.toContain("data-balance-callout");
     expect(markup.match(/data-balance-breakdown="net-assets"/g)).toHaveLength(1);
     expect(netAssetsBreakdown).toContain('data-balance-detail="capital"');
     expect(netAssetsBreakdown).toContain('data-balance-detail="surplus"');

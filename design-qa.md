@@ -869,3 +869,38 @@ This gate supersedes the accepted R6 balance-box gate above where it said exact 
 - No route, data value, account, disclosure, navigation destination, or existing feature was removed.
 
 final result: passed
+
+## Superseding compact-net-assets and uniform-card-edge gate — 2026-07-19
+
+This gate supersedes the earlier `balance-sheet うち inner-breakdown` behavior for geometrically small funding regions. The source amounts and proportional areas remain unchanged, but a small liabilities or net-assets region is no longer duplicated into a detached callout box.
+
+### Balance-sheet structure
+
+- The accepted R6 Niigata City case is unchanged at assets `5,318.7億円`, liabilities `4,888.8億円`, and net assets `429.9億円`. The right funding frame preserves the source-derived 91.9% / 8.1% split.
+- The 8.1% net-assets region now contains `純資産`, `429.9億円`, and `資産の 8.1%` on one line inside the green region. It is not expanded, moved below the figure, or repeated as a separate card.
+- Source-account details remain available in the existing `勘定科目の内訳とデータ確認` disclosure and in the accessible summary. The disclosure was opened and closed successfully against the post-build static output.
+- The decorative circular plus at the liabilities/net-assets boundary was removed. The shared funding frame and its standard 1px separator communicate the additive stack without a floating badge.
+
+### Uniform edge treatment
+
+- Four-pixel top accents were removed from net-assets snapshot cards; four-pixel left accents were removed from change-driver cards and fee-boundary notes; three-pixel left accents were removed from financial notes/status text; and two-pixel left accents were removed from the map legend and expanded business-type helper.
+- Normal cards use a uniform 1px border. Negative or warning states retain meaning through full-border tint, background, icon, text, and numeric color rather than one thick edge.
+- `tests/design-edge-accents.test.ts` scans every CSS file under `app` and `components` and rejects directional borders of 2px or more.
+
+### Accepted rendered evidence
+
+- Final post-build desktop at 1491 x 1055: `artifacts/design-qa/balance-card-design-refinement-2026-07-19/09-postbuild-desktop-1491x1055.png`.
+- Final post-build mobile: `10-postbuild-mobile-top-390x844.png` and `11-postbuild-mobile-net-assets-390x844.png` in the same directory.
+- Final post-build uniform snapshot cards: `13-postbuild-summary-cards-1491x1055.png`.
+- Combined reference/final inspections: `12-reference1-final-comparison.png` and `14-reference2-final-cards-comparison.png`.
+- Desktop `scrollWidth` equaled `clientWidth` at 1480px; mobile equaled at 379px. Post-build browser warnings and errors were empty.
+
+### Regression and scope
+
+- `pnpm lint`: passed.
+- `pnpm test`: 25/25 files and 154/154 tests passed.
+- `pnpm build`: passed; 1,649 static pages generated with no compile, type, or export error.
+- No database, schema, migration, ETL, imported-data, source-value, route, navigation, business switcher, table, map, ranking, or search behavior changed.
+- Intentional subtraction: the detached compact-region callout, the circular funding-boundary plus, and decorative one-sided thick borders were removed. Exact account data and the disclosure were retained.
+
+final result: passed

@@ -1618,9 +1618,11 @@ section.search-results-section {
   top: 392px;
   z-index: 4;
   width: 238px;
-  border-left: 2px solid rgba(11, 154, 163, 0.35);
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.68));
+  border: 1px solid rgba(11, 154, 163, 0.18);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.88);
   padding: 10px 12px;
+  box-shadow: 0 6px 18px rgba(1, 33, 64, 0.08);
   pointer-events: none;
 }
 

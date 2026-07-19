@@ -547,8 +547,6 @@ function BalanceRelationship({ analysis }: { analysis: BalanceAnalysis }) {
   const netAssetsCompact = netAssetsRatio < (analysis.netAssets.items.length >= 3 ? 28 : 22);
   const liabilityMobileCompact = !liabilityCompact && liabilityRatio < balanceMobileCompactThreshold(analysis.liabilities.items.length);
   const netAssetsMobileCompact = !netAssetsCompact && netAssetsRatio < balanceMobileCompactThreshold(analysis.netAssets.items.length);
-  const hasDesktopCompact = liabilityCompact || netAssetsCompact;
-  const hasAnyCompact = hasDesktopCompact || liabilityMobileCompact || netAssetsMobileCompact;
   const diagramScale = chooseBalanceBoxScale(
     [assetAmount, liabilityAmount, netAssetsAmount],
     analysis.scale,
@@ -583,7 +581,6 @@ function BalanceRelationship({ analysis }: { analysis: BalanceAnalysis }) {
         <div
           className={classNames(styles.balanceBoxFrame, styles.balanceFundingStack)}
           data-balance-frame="funding"
-          style={{ "--balance-liability-share": `${liabilityRatio}%` } as CSSProperties}
         >
           <BalanceBoxRegion
             label="負債"
@@ -613,47 +610,8 @@ function BalanceRelationship({ analysis }: { analysis: BalanceAnalysis }) {
             breakdownState={analysis.netAssets.state}
             scale={diagramScale}
           />
-          <span className={styles.balanceStackPlus} aria-hidden="true">＋</span>
         </div>
       </div>
-      {hasAnyCompact ? (
-        <div
-          className={classNames(styles.balanceCompactNotes, !hasDesktopCompact ? styles.balanceCompactNotesMobileOnly : undefined)}
-          data-balance-callouts="true"
-          aria-hidden="true"
-        >
-          {liabilityCompact || liabilityMobileCompact ? (
-            <BalanceCompactNote
-              label="負債"
-              amountLabel={liabilityLabel}
-              shareLabel={`資産の ${formatBalancePercent(analysis.debtRatio)}`}
-              meaning="企業債などと繰延収益の合計"
-              tone="liability"
-              items={analysis.liabilities.items}
-              groupLabel="負債"
-              groupTotal={liabilityAmount}
-              breakdownState={analysis.liabilities.state}
-              scale={diagramScale}
-              mobileOnly={!liabilityCompact}
-            />
-          ) : null}
-          {netAssetsCompact || netAssetsMobileCompact ? (
-            <BalanceCompactNote
-              label="純資産"
-              amountLabel={netAssetsLabel}
-              shareLabel={`資産の ${formatBalancePercent(analysis.netAssetsRatio)}`}
-              meaning="資産から負債を差し引いた残り"
-              tone="net-assets"
-              items={analysis.netAssets.items}
-              groupLabel="純資産"
-              groupTotal={netAssetsAmount}
-              breakdownState={analysis.netAssets.state}
-              scale={diagramScale}
-              mobileOnly={!netAssetsCompact}
-            />
-          ) : null}
-        </div>
-      ) : null}
       <BalanceReadingNote hasDeferredRevenue={analysis.liabilities.items.some((item) => item.id === "deferred-revenue")} />
       <p className="sr-only">{accessibleSummary}</p>
     </figure>
@@ -768,61 +726,23 @@ function BalanceBoxRegion({
       data-balance-mobile-compact={mobileCompact ? tone : undefined}
       style={regionStyle}
     >
-      {!compact ? <div className={classNames(styles.balanceBoxContent, groupLabel ? styles.balanceBoxContentWithDetails : undefined)}>
-        <div className={styles.balanceBoxTopline}>
-          <span>{label}</span>
-          <strong>{shareLabel}</strong>
+      {compact ? (
+        <div className={styles.balanceCompactInline} data-balance-inline={tone}>
+          <strong>{label}</strong>
+          <span>{amountLabel}</span>
+          <small>{shareLabel}</small>
         </div>
-        <strong className={styles.balanceAmount}>{amountLabel}</strong>
-        {groupLabel && scale ? <BalanceBoxBreakdown items={items} total={Math.max(groupTotal ?? weight ?? 0, 0)} groupLabel={groupLabel} tone={tone} scale={scale} state={breakdownState} /> : null}
-        {meaning ? <p>{meaning}</p> : null}
-      </div> : null}
-    </div>
-  );
-}
-
-function BalanceCompactNote({
-  label,
-  amountLabel,
-  shareLabel,
-  meaning,
-  tone,
-  items = [],
-  groupLabel,
-  groupTotal,
-  breakdownState,
-  scale,
-  mobileOnly = false
-}: {
-  label: string;
-  amountLabel: string;
-  shareLabel: string;
-  meaning: string;
-  tone: "liability" | "net-assets";
-  items?: PreparedBreakdownItem[];
-  groupLabel: string;
-  groupTotal: number;
-  breakdownState: PreparedBreakdown["state"];
-  scale: MoneyScale;
-  mobileOnly?: boolean;
-}) {
-  return (
-    <div
-      className={classNames(
-        styles.balanceCompactNote,
-        tone === "liability" ? styles.balanceCompactLiability : styles.balanceCompactNetAssets,
-        mobileOnly ? styles.balanceCompactMobileOnly : undefined
+      ) : (
+        <div className={classNames(styles.balanceBoxContent, groupLabel ? styles.balanceBoxContentWithDetails : undefined)}>
+          <div className={styles.balanceBoxTopline}>
+            <span>{label}</span>
+            <strong>{shareLabel}</strong>
+          </div>
+          <strong className={styles.balanceAmount}>{amountLabel}</strong>
+          {groupLabel && scale ? <BalanceBoxBreakdown items={items} total={Math.max(groupTotal ?? weight ?? 0, 0)} groupLabel={groupLabel} tone={tone} scale={scale} state={breakdownState} /> : null}
+          {meaning ? <p>{meaning}</p> : null}
+        </div>
       )}
-      data-balance-callout={tone}
-      data-balance-callout-mode={mobileOnly ? "mobile" : "all"}
-    >
-      <div className={styles.balanceCompactTopline}>
-        <strong>{label}</strong>
-        <span>{shareLabel}</span>
-      </div>
-      <span className={styles.balanceCompactAmount}>{amountLabel}</span>
-      <BalanceBoxBreakdown items={items} total={groupTotal} groupLabel={groupLabel} tone={tone} scale={scale} state={breakdownState} compact />
-      <p>{meaning}</p>
     </div>
   );
 }
@@ -834,7 +754,6 @@ function BalanceBoxBreakdown({
   tone,
   scale,
   state,
-  compact = false
 }: {
   items: PreparedBreakdownItem[];
   total: number;
@@ -842,7 +761,6 @@ function BalanceBoxBreakdown({
   tone: "asset" | "liability" | "net-assets" | "deficit";
   scale: MoneyScale;
   state: PreparedBreakdown["state"];
-  compact?: boolean;
 }) {
   const proportionsUnavailable = state === "limited" || state === "invalid";
   const hasExplicitMissingRemainder = items.some((item) => item.label.includes("未取得"));
@@ -851,7 +769,7 @@ function BalanceBoxBreakdown({
 
   return (
     <ul
-      className={classNames(styles.balanceBoxDetails, compact ? styles.balanceBoxDetailsCompact : undefined)}
+      className={styles.balanceBoxDetails}
       data-balance-breakdown={tone}
       data-balance-breakdown-state={state}
     >
@@ -890,7 +808,7 @@ function BalanceReadingNote({ hasDeferredRevenue }: { hasDeferredRevenue: boolea
   return (
     <p className={styles.balanceReadingNote}>
       <strong>内訳の見方</strong>
-      「資産内・負債内・純資産内」は、それぞれの箱の合計に占める割合です。割合は原表の千円値から計算し、金額は読みやすい単位に丸めています。
+      各内訳の「〇〇内」は、その箱の合計に占める割合です。割合は原表の千円値から計算し、金額は読みやすい単位に丸めています。
       {hasDeferredRevenue ? " 繰延収益は主に施設整備の補助金等の未収益化残高で、返済予定額ではありません。" : ""}
     </p>
   );

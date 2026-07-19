@@ -1,4 +1,4 @@
-import type { RankingType } from "@/lib/data";
+import type { RankingType } from "@/lib/rankings";
 import { formatMoneyThousandYen, formatPercent, formatRevisionRate, formatYenPerM3 } from "@/lib/format";
 
 export const rankingMetricLabels: Record<RankingType, string> = {

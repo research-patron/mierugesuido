@@ -2,17 +2,11 @@ import Link from "next/link";
 import { Bell, CalendarDays, CircleHelp, PieChart, Users } from "lucide-react";
 import { JapanMapSelector } from "@/components/JapanMapSelector";
 import { StatCard } from "@/components/StatCard";
-import { getHomepageData, getMapMunicipalities, getPrefectureSummaries } from "@/lib/data";
 import { formatPercent, formatSettlementFiscalLabel } from "@/lib/format";
-
-export const dynamic = "force-dynamic";
+import { getStaticHomeData } from "@/lib/staticData";
 
 export default async function MapPage() {
-  const municipalities = await getMapMunicipalities();
-  const [overview, summaries] = await Promise.all([
-    getHomepageData(municipalities),
-    getPrefectureSummaries(municipalities)
-  ]);
+  const { overview, mapMunicipalities: municipalities, prefectureSummaries: summaries } = await getStaticHomeData();
   const latestFiscalLong = formatSettlementFiscalLabel({
     surveyYear: overview.latestYear,
     fiscalYearLabel: overview.latestFiscalYearLabel,

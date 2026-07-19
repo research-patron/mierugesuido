@@ -2,14 +2,12 @@ import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import { CircleHelp, Database, FileText, Info, Scale } from "lucide-react";
 import { formulaCopy } from "@/lib/copy";
-import { getDataSources } from "@/lib/data";
 import { fieldDefinitions } from "@/lib/fieldDefinitions";
 import { formatSettlementFiscalLabel } from "@/lib/format";
-
-export const dynamic = "force-dynamic";
+import { getStaticDataSources } from "@/lib/staticData";
 
 export default async function DataSourcesPage() {
-  const sources = await getDataSources();
+  const sources = await getStaticDataSources();
 
   return (
     <div>
@@ -156,7 +154,7 @@ export default async function DataSourcesPage() {
                       <td>{source.tableNo ?? "不明"}</td>
                       <td>{source.tableName ?? "不明"}</td>
                       <td>{source.sourceUrl?.startsWith("manual://") ? "手動配置" : "e-Stat"}</td>
-                      <td>{source.downloadedAt ? "取得済み" : source.localPath ? "配置済み" : "未取得"}</td>
+                      <td>{source.available ? "取得済み" : "未取得"}</td>
                     </tr>
                   ))}
                 </tbody>

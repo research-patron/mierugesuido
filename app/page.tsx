@@ -1,17 +1,11 @@
 import { Bell, CalendarDays, PieChart, Users } from "lucide-react";
 import { JapanMapSelector } from "@/components/JapanMapSelector";
 import { StatCard } from "@/components/StatCard";
-import { getHomepageData, getMapMunicipalities, getPrefectureSummaries } from "@/lib/data";
 import { formatPercent, formatSettlementFiscalLabel } from "@/lib/format";
-
-export const dynamic = "force-dynamic";
+import { getStaticHomeData } from "@/lib/staticData";
 
 export default async function HomePage() {
-  const mapMunicipalities = await getMapMunicipalities();
-  const [data, prefectureSummaries] = await Promise.all([
-    getHomepageData(mapMunicipalities),
-    getPrefectureSummaries(mapMunicipalities)
-  ]);
+  const { overview: data, mapMunicipalities, prefectureSummaries } = await getStaticHomeData();
   const latestFiscal = formatSettlementFiscalLabel({
     surveyYear: data.latestYear,
     fiscalYearLabel: data.latestFiscalYearLabel

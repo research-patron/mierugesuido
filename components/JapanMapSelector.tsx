@@ -1090,7 +1090,7 @@ export function PrefectureMapExplorer({
       <div className="panel overflow-hidden p-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-lg font-black text-ink">市区町村の詳細一覧（表示件数: 上位10件）</h2>
-          <Link href={`/api/municipalities?prefecture=${encodeURIComponent(prefectureName)}&limit=100&format=csv`} className="inline-flex items-center gap-2 text-sm font-black text-teal hover:underline">
+          <Link href={`/data/static/csv/prefectures/${getPrefectureCode(prefectureName)}.csv`} className="inline-flex items-center gap-2 text-sm font-black text-teal hover:underline">
             一覧をCSVでダウンロード
             <Download size={16} />
           </Link>

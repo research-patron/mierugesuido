@@ -81,7 +81,7 @@ describe("prefecture municipality map UI guardrails", () => {
     expect(componentSource).not.toContain("className={clsx(styles.resultRow");
     expect(componentSource).not.toContain("自治体を探す");
     expect(componentSource).not.toContain('className="data-table min-w-[500px]"');
-    expect(componentSource).toContain("const exportHref = useMemo(");
+    expect(componentSource).toContain("const exportHref = `/data/static/csv/prefectures/${prefectureCode}.csv`;");
     expect(componentSource).toContain("<Link href={exportHref}>");
     expect(componentSource).not.toContain("limit=100&format=csv");
     expect(cssSource).not.toContain(".resultList {");

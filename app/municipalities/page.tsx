@@ -1,4 +1,8 @@
+"use client";
+
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   Bell,
   ChevronDown,
@@ -16,37 +20,74 @@ import { Badge } from "@/components/Badge";
 import { MunicipalityTable } from "@/components/MunicipalityTable";
 import { MunicipalitySearchFilterPanel } from "@/components/MunicipalitySearchFilters";
 import { StatCard } from "@/components/StatCard";
-import { accountingTypeLabel, displayBusinessName } from "@/lib/businessDisplay";
-import { getHomepageData, getMunicipalityList, getPrefectures } from "@/lib/data";
+import { accountingTypeLabel, displayBusinessName, matchesBusinessCategory } from "@/lib/businessDisplay";
 import { formatPercent, formatRevisionRate, formatYenPerM3 } from "@/lib/format";
 import { municipalityDetailHref } from "@/lib/municipalityLinks";
 
-export const dynamic = "force-dynamic";
-
 type ViewMode = "table" | "card";
 
-export default async function MunicipalitiesPage({
-  searchParams
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
-  const params = await searchParams;
-  const q = getParam(params.q);
-  const prefecture = getParam(params.prefecture);
-  const label = getParam(params.label);
-  const sort = getParam(params.sort) || "latest";
-  const view: ViewMode = getParam(params.view) === "card" ? "card" : "table";
-  const accountingType = getParam(params.accountingType);
-  const businessType = getParam(params.businessType);
-  const hasRevisionEventParam = getParam(params.hasRevisionEvent);
-  const page = Number(getParam(params.page) || 1);
-  const limit = Number(getParam(params.limit) || 10);
+type StaticMunicipalityDataset = {
+  items: any[];
+  overview: any;
+  prefectures: string[];
+};
+
+const emptyOverview = {
+  averageExpenseRecoveryRate: null,
+  averageFeeUnitPriceYenPerM3: null,
+  revisionEventCount: 0
+};
+
+export default function MunicipalitiesPage() {
+  return <Suspense fallback={<div className="mx-auto max-w-[1491px] px-9 py-12 text-sm font-bold text-muted">検索データを読み込んでいます…</div>}><MunicipalitiesContent /></Suspense>;
+}
+
+function MunicipalitiesContent() {
+  const searchParams = useSearchParams();
+  const [dataset, setDataset] = useState<StaticMunicipalityDataset>({ items: [], overview: emptyOverview, prefectures: [] });
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/data/static/municipalities.json")
+      .then((response) => {
+        if (!response.ok) throw new Error("Municipality data unavailable");
+        return response.json();
+      })
+      .then((json) => { if (!cancelled) setDataset(json); })
+      .catch(() => undefined);
+    return () => { cancelled = true; };
+  }, []);
+
+  const q = searchParams.get("q") ?? "";
+  const prefecture = searchParams.get("prefecture") ?? "";
+  const label = searchParams.get("label") ?? "";
+  const sort = searchParams.get("sort") || "latest";
+  const view: ViewMode = searchParams.get("view") === "card" ? "card" : "table";
+  const accountingType = searchParams.get("accountingType") ?? "";
+  const businessType = searchParams.get("businessType") ?? "";
+  const hasRevisionEventParam = searchParams.get("hasRevisionEvent") ?? "";
+  const requestedPage = Number(searchParams.get("page") || 1);
+  const requestedLimit = Number(searchParams.get("limit") || 10);
   const hasRevisionEvent = parseBoolean(hasRevisionEventParam);
-  const [prefectures, data, overview] = await Promise.all([
-    getPrefectures(),
-    getMunicipalityList({ q, prefecture, label, sort, page, limit, accountingType, businessType, hasRevisionEvent }),
-    getHomepageData()
-  ]);
+  const limit = [10, 20, 50].includes(requestedLimit) ? requestedLimit : 10;
+  const filteredItems = useMemo(() => filterMunicipalities(dataset.items, {
+    q,
+    prefecture,
+    label,
+    sort,
+    accountingType,
+    businessType,
+    hasRevisionEvent
+  }), [accountingType, businessType, dataset.items, hasRevisionEvent, label, prefecture, q, sort]);
+  const totalPagesForRequest = Math.max(Math.ceil(filteredItems.length / limit), 1);
+  const page = Math.min(Math.max(Number.isFinite(requestedPage) ? requestedPage : 1, 1), totalPagesForRequest);
+  const data = {
+    items: filteredItems.slice((page - 1) * limit, page * limit),
+    total: filteredItems.length,
+    page,
+    limit
+  };
+  const prefectures = dataset.prefectures;
+  const overview = dataset.overview;
   const totalPages = Math.max(Math.ceil(data.total / data.limit), 1);
   const visibleFrom = data.total === 0 ? 0 : (data.page - 1) * data.limit + 1;
   const visibleTo = data.total === 0 ? 0 : (data.page - 1) * data.limit + data.items.length;
@@ -302,6 +343,48 @@ function parseBoolean(value: string) {
   return undefined;
 }
 
-function getParam(value: string | string[] | undefined) {
-  return Array.isArray(value) ? value[0] ?? "" : value ?? "";
+function filterMunicipalities(items: any[], filters: {
+  q: string;
+  prefecture: string;
+  label: string;
+  sort: string;
+  accountingType: string;
+  businessType: string;
+  hasRevisionEvent?: boolean;
+}) {
+  const needle = normalizeSearchText(filters.q);
+  return items
+    .filter((item) => !needle || [
+      item.municipalityName,
+      item.municipalityNameKana,
+      item.prefectureName,
+      item.municipalityCode
+    ].some((value) => normalizeSearchText(value ?? "").includes(needle)))
+    .filter((item) => !filters.prefecture || item.prefectureName === filters.prefecture)
+    .filter((item) => !filters.label || item.diagnosis?.feeAdequacyLabel === filters.label)
+    .filter((item) => !filters.accountingType || item.accountingType === filters.accountingType)
+    .filter((item) => matchesBusinessCategory(item, filters.businessType))
+    .filter((item) => filters.hasRevisionEvent == null || item.hasRevisionEvent === filters.hasRevisionEvent)
+    .sort((a, b) => sortMunicipalityRows(a, b, filters.sort));
+}
+
+function sortMunicipalityRows(a: any, b: any, sort: string) {
+  if (sort === "expense-recovery-high") return nullsLast(a.diagnosis?.expenseRecoveryRate, b.diagnosis?.expenseRecoveryRate, "desc");
+  if (sort === "expense-recovery-low") return nullsLast(a.diagnosis?.expenseRecoveryRate, b.diagnosis?.expenseRecoveryRate, "asc");
+  if (sort === "required-revision-high") return nullsLast(a.diagnosis?.requiredRevisionRateTo100, b.diagnosis?.requiredRevisionRateTo100, "desc");
+  if (sort === "fee-unit-low") return nullsLast(a.diagnosis?.feeUnitPriceYenPerM3, b.diagnosis?.feeUnitPriceYenPerM3, "asc");
+  if (sort === "municipality-code") return (a.municipalityCode ?? "").localeCompare(b.municipalityCode ?? "", "ja");
+  return (b.latestYear ?? 0) - (a.latestYear ?? 0)
+    || (a.municipalityCode ?? "").localeCompare(b.municipalityCode ?? "", "ja");
+}
+
+function nullsLast(a: number | null | undefined, b: number | null | undefined, direction: "asc" | "desc") {
+  if (a == null && b == null) return 0;
+  if (a == null) return 1;
+  if (b == null) return -1;
+  return direction === "asc" ? a - b : b - a;
+}
+
+function normalizeSearchText(value: string) {
+  return value.normalize("NFKC").replace(/\s+/g, "").toLocaleLowerCase("ja");
 }

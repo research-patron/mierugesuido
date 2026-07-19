@@ -3,7 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const detailSource = readFileSync(
-  path.join(process.cwd(), "app/municipalities/[municipalityCode]/page.tsx"),
+  path.join(process.cwd(), "components/MunicipalityDetailClient.tsx"),
   "utf8"
 );
 const etlSource = readFileSync(

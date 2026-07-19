@@ -10,7 +10,19 @@ type SearchItem = {
   municipalityCode: string | null;
   prefectureName: string;
   municipalityName: string;
+  municipalityNameKana?: string | null;
 };
+
+let searchIndexPromise: Promise<SearchItem[]> | null = null;
+
+function loadSearchIndex() {
+  searchIndexPromise ??= fetch("/data/static/search-index.json")
+    .then((response) => {
+      if (!response.ok) throw new Error("Search index unavailable");
+      return response.json();
+    });
+  return searchIndexPromise;
+}
 
 type SearchVariant = "default" | "hero" | "command";
 
@@ -42,21 +54,29 @@ export function MunicipalitySearch({
   }, [query, prefecture]);
 
   useEffect(() => {
-    const controller = new AbortController();
+    let cancelled = false;
     const q = query.trim();
     if (q.length < 1) {
       setItems([]);
       return;
     }
     const timer = setTimeout(() => {
-      fetch(`/api/search?q=${encodeURIComponent(q)}`, { signal: controller.signal })
-        .then((response) => response.json())
-        .then((json) => setItems(json.items ?? []))
+      const needle = normalizeSearchText(q);
+      loadSearchIndex()
+        .then((allItems) => {
+          if (cancelled) return;
+          setItems(allItems.filter((item) => [
+            item.municipalityName,
+            item.municipalityNameKana,
+            item.prefectureName,
+            item.municipalityCode
+          ].some((value) => normalizeSearchText(value ?? "").includes(needle))).slice(0, 10));
+        })
         .catch(() => undefined);
     }, 180);
 
     return () => {
-      controller.abort();
+      cancelled = true;
       clearTimeout(timer);
     };
   }, [query]);
@@ -179,4 +199,8 @@ export function MunicipalitySearch({
       ) : null}
     </div>
   );
+}
+
+function normalizeSearchText(value: string) {
+  return value.normalize("NFKC").replace(/\s+/g, "").toLocaleLowerCase("ja");
 }

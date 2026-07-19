@@ -95,7 +95,8 @@ describe("UI fidelity rebuild v2 guardrails", () => {
     expect(searchSource).toContain("const view: ViewMode");
     expect(searchSource).toContain("function MunicipalityCardGrid");
     expect(searchSource).toContain('view === "card" ? <MunicipalityCardGrid items={data.items} /> : <MunicipalityTable items={data.items} />');
-    expect(searchSource).toContain('const limit = Number(getParam(params.limit) || 10);');
+    expect(searchSource).toContain('const requestedLimit = Number(searchParams.get("limit") || 10);');
+    expect(searchSource).toContain('fetch("/data/static/municipalities.json")');
     expect(searchSource).toContain("page-size-menu");
     expect(cssSource).toContain("filter-advanced-grid");
     expect(cssBlock(".municipality-search-page .data-table td")).toContain("height: 40px");

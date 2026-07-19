@@ -2,9 +2,13 @@ import { notFound } from "next/navigation";
 import { RankingNav } from "@/components/RankingNav";
 import { RankingComparison } from "@/components/RankingComparison";
 import { RankingTable } from "@/components/RankingTable";
-import { getRankings, rankingLabels, type RankingType } from "@/lib/data";
+import { rankingLabels, type RankingType } from "@/lib/rankings";
+import { getStaticManifest, getStaticRankings } from "@/lib/staticData";
 
-export const dynamic = "force-dynamic";
+export async function generateStaticParams() {
+  const manifest = await getStaticManifest();
+  return manifest.rankingTypes.map((type) => ({ type }));
+}
 
 export default async function RankingTypePage({
   params
@@ -14,7 +18,7 @@ export default async function RankingTypePage({
   const { type } = await params;
   if (!(type in rankingLabels)) notFound();
   const rankingType = type as RankingType;
-  const items = await getRankings(rankingType, 50);
+  const items = await getStaticRankings(rankingType);
 
   return (
     <div>

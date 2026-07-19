@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { rankingLabels, type RankingType } from "@/lib/data";
+import { rankingLabels, type RankingType } from "@/lib/rankings";
 
 const rankingTypes = Object.keys(rankingLabels) as RankingType[];
 

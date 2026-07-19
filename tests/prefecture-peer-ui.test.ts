@@ -3,7 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
-const pageSource = readFileSync(path.join(root, "app/municipalities/[municipalityCode]/page.tsx"), "utf8");
+const pageSource = readFileSync(path.join(root, "components/MunicipalityDetailClient.tsx"), "utf8");
 const componentSource = readFileSync(
   path.join(root, "components/municipality-detail/PrefecturePeerComparison.tsx"),
   "utf8"
@@ -23,7 +23,8 @@ describe("prefecture peer comparison UI", () => {
     expect(pageSource).toContain('href={detailHref(municipalityCode, selectedGroup.key, "prefecture")}');
     expect(pageSource).toContain('if (prefectureName === "北海道") return "道内市町村"');
     expect(pageSource).toContain('if (prefectureName === "東京都") return "都内市区町村"');
-    expect(pageSource).toContain("getPrefecturePeerComparison({");
+    expect(pageSource).toContain("/data/static/peers/");
+    expect(pageSource).toContain("row.representedMunicipalityCodes.includes(municipality.municipalityCode)");
   });
 
   it("shows fee and operating coverage as two matching current-versus-median graphs", () => {

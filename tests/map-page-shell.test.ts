@@ -23,10 +23,10 @@ describe("map page shell guardrails", () => {
   it("derives prefecture KPIs only from the municipalities shown on the page", () => {
     expect(prefecturePageSource).toContain("const targetMunicipalities = data.municipalities;");
     expect(prefecturePageSource).toContain("const targetCount = targetMunicipalities.length;");
-    expect(prefecturePageSource).toContain(".map((item) => item.expenseRecoveryRate)");
-    expect(prefecturePageSource).toContain("recoveryRates.reduce((sum, value) => sum + value, 0) / recoveryRates.length");
-    expect(prefecturePageSource).toContain("recoveryRates.filter((value) => value < 100).length");
-    expect(prefecturePageSource).toContain("targetMunicipalities.filter((item) => item.hasRevisionEvent).length");
+    expect(prefecturePageSource).toMatch(/\.map\(\(item(?:: any)?\) => item\.expenseRecoveryRate\)/);
+    expect(prefecturePageSource).toMatch(/recoveryRates\.reduce\(\(sum(?:: number)?, value(?:: number)?\) => sum \+ value, 0\) \/ recoveryRates\.length/);
+    expect(prefecturePageSource).toMatch(/recoveryRates\.filter\(\(value(?:: number)?\) => value < 100\)\.length/);
+    expect(prefecturePageSource).toMatch(/targetMunicipalities\.filter\(\(item(?:: any)?\) => item\.hasRevisionEvent\)\.length/);
 
     for (const label of ["対象市区町村数", "平均経費回収率", "経費回収率100%未満の割合", "公式改定情報あり"]) {
       expect(prefecturePageSource).toContain(`label="${label}"`);

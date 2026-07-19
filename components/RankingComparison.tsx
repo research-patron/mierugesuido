@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { accountingTypeLabel } from "@/lib/businessDisplay";
-import type { RankingType } from "@/lib/data";
+import type { RankingType } from "@/lib/rankings";
 import { municipalityDetailHref } from "@/lib/municipalityLinks";
 import { formatRankingMetric, rankingMetricLabels, rankingMetricValue } from "@/lib/rankingDisplay";
 

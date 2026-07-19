@@ -1,28 +1,54 @@
+"use client";
+
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Bell, CalendarDays, Download, Info, ListFilter, Percent } from "lucide-react";
 import { Badge } from "@/components/Badge";
 import { StatCard } from "@/components/StatCard";
 import { displayBusinessName } from "@/lib/businessDisplay";
-import { getPrefectures, getRevisionEventsList, getRevisionEventSummary } from "@/lib/data";
 import { formatOfficialRevisionRate } from "@/lib/format";
 import { municipalityDetailHref } from "@/lib/municipalityLinks";
+import { revisionPeriodLabel } from "@/lib/revisionEvents";
 
-export const dynamic = "force-dynamic";
+type StaticRevisionDataset = {
+  summary: any;
+  items: any[];
+  prefectures: string[];
+};
 
-export default async function RevisionsPage({
-  searchParams
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
-  const params = await searchParams;
-  const prefecture = getParam(params.prefecture);
-  const status = getParam(params.status);
-  const period = getParam(params.period);
-  const [prefectures, summary, data] = await Promise.all([
-    getPrefectures(),
-    getRevisionEventSummary(),
-    getRevisionEventsList({ prefecture, status, period })
-  ]);
+const emptySummary = { total: 0, averageRevisionRate: null, byStatus: [], byPeriod: [] };
+
+export default function RevisionsPage() {
+  return <Suspense fallback={<div className="mx-auto max-w-[1500px] px-8 py-12 text-sm font-bold text-muted">改定情報を読み込んでいます…</div>}><RevisionsContent /></Suspense>;
+}
+
+function RevisionsContent() {
+  const searchParams = useSearchParams();
+  const [dataset, setDataset] = useState<StaticRevisionDataset>({ summary: emptySummary, items: [], prefectures: [] });
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/data/static/revisions.json")
+      .then((response) => {
+        if (!response.ok) throw new Error("Revision data unavailable");
+        return response.json();
+      })
+      .then((json) => { if (!cancelled) setDataset(json); })
+      .catch(() => undefined);
+    return () => { cancelled = true; };
+  }, []);
+
+  const prefecture = searchParams.get("prefecture") ?? "";
+  const status = searchParams.get("status") ?? "";
+  const period = searchParams.get("period") ?? "";
+  const matchingItems = useMemo(() => dataset.items
+    .filter((event) => !prefecture || event.municipality?.prefectureName === prefecture)
+    .filter((event) => !status || event.status === status)
+    .filter((event) => !period || revisionPeriodLabel(event.effectiveDate) === period),
+  [dataset.items, period, prefecture, status]);
+  const summary = dataset.summary;
+  const prefectures = dataset.prefectures;
+  const data = { items: matchingItems.slice(0, 50), total: matchingItems.length };
 
   return (
     <div>
@@ -63,8 +89,8 @@ export default async function RevisionsPage({
             <Link href="/revisions" className="text-xs font-black text-teal hover:underline">条件をクリア</Link>
           </div>
           <FilterSelect label="都道府県" name="prefecture" value={prefecture} options={prefectures} />
-          <FilterSelect label="ステータス" name="status" value={status} options={summary.byStatus.map((item) => item.label)} />
-          <FilterSelect label="施行時期" name="period" value={period} options={summary.byPeriod.map((item) => item.label)} />
+          <FilterSelect label="ステータス" name="status" value={status} options={summary.byStatus.map((item: any) => item.label)} />
+          <FilterSelect label="施行時期" name="period" value={period} options={summary.byPeriod.map((item: any) => item.label)} />
           <button type="submit" className="button-primary">この条件で絞り込む</button>
         </form>
 
@@ -148,8 +174,4 @@ function FilterSelect({ label, name, value, options }: { label: string; name: st
       </select>
     </label>
   );
-}
-
-function getParam(value: string | string[] | undefined) {
-  return Array.isArray(value) ? value[0] ?? "" : value ?? "";
 }

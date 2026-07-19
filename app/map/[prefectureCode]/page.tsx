@@ -3,10 +3,13 @@ import { notFound } from "next/navigation";
 import { Bell, Gauge, PieChart, Users } from "lucide-react";
 import { PrefectureMapExplorer } from "@/components/PrefectureMapExplorer";
 import { StatCard } from "@/components/StatCard";
-import { getPrefectureMapData } from "@/lib/data";
 import { formatPercent } from "@/lib/format";
+import { getStaticManifest, getStaticPrefectureMapData } from "@/lib/staticData";
 
-export const dynamic = "force-dynamic";
+export async function generateStaticParams() {
+  const manifest = await getStaticManifest();
+  return manifest.prefectureCodes.map((prefectureCode) => ({ prefectureCode }));
+}
 
 export default async function PrefectureMapPage({
   params
@@ -14,20 +17,20 @@ export default async function PrefectureMapPage({
   params: Promise<{ prefectureCode: string }>;
 }) {
   const { prefectureCode } = await params;
-  const data = await getPrefectureMapData(prefectureCode);
+  const data = await getStaticPrefectureMapData(prefectureCode);
   if (!data.prefecture) notFound();
 
   const targetMunicipalities = data.municipalities;
   const targetCount = targetMunicipalities.length;
   const recoveryRates = targetMunicipalities
-    .map((item) => item.expenseRecoveryRate)
-    .filter((value): value is number => value != null && Number.isFinite(value));
+    .map((item: any) => item.expenseRecoveryRate)
+    .filter((value: any): value is number => value != null && Number.isFinite(value));
   const averageExpenseRecoveryRate = recoveryRates.length > 0
-    ? recoveryRates.reduce((sum, value) => sum + value, 0) / recoveryRates.length
+    ? recoveryRates.reduce((sum: number, value: number) => sum + value, 0) / recoveryRates.length
     : null;
-  const below100Count = recoveryRates.filter((value) => value < 100).length;
+  const below100Count = recoveryRates.filter((value: number) => value < 100).length;
   const below100Rate = recoveryRates.length > 0 ? (below100Count / recoveryRates.length) * 100 : null;
-  const revisionCount = targetMunicipalities.filter((item) => item.hasRevisionEvent).length;
+  const revisionCount = targetMunicipalities.filter((item: any) => item.hasRevisionEvent).length;
 
   return (
     <div className="map-page">

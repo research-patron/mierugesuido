@@ -179,14 +179,7 @@ export function PrefectureMapExplorer({
     }),
     [baseViewBox, displayFeatureMap, features, labelsVisible, municipalityLookup, selectedFeatureCode, surfaceSize, visibleViewBox, zoom]
   );
-  const exportHref = useMemo(() => {
-    const params = new URLSearchParams({
-      prefecture: prefectureName,
-      format: "csv",
-      sort: "expense-recovery-high"
-    });
-    return `/api/municipalities?${params.toString()}`;
-  }, [prefectureName]);
+  const exportHref = `/data/static/csv/prefectures/${prefectureCode}.csv`;
 
   function openMunicipality(feature: GisFeature) {
     if (suppressClickRef.current) return;

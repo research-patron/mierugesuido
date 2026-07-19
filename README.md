@@ -134,27 +134,31 @@ data/manual/source_files.csv
 
 ## デプロイ
 
-SQLiteを永続化できる環境では `DATABASE_URL="file:./dev.db"` のまま動作します。Vercel等のサーバレス環境では、永続DBに移行し、Prisma datasource を変更してください。
+公開版は Next.js の static export で生成します。本番のリクエスト時に Node.js、Prisma、SQLite、Cloudflare D1、Pages Functions は使いません。
+
+公開用データを更新する場合だけ、開発用の `prisma/dev.db` から公開可能な表示データを生成します。`prisma/dev.db`、ダウンロー元のローカルパス、環境変数、認証情報は出力されません。
 
 ```bash
 pnpm install
-pnpm db:migrate
-pnpm etl:all
-pnpm build
+pnpm static:data  # 公開データを更新するときだけ
+pnpm test
+pnpm build:pages
 ```
 
-### Cloudflare で公開する場合
+`pnpm build:pages` の出力先は `out` です。
 
-このリポジトリの現行版は Node.js 上の Prisma Client とローカル SQLite ファイルを使用するため、GitHub リポジトリを Cloudflare に接続するだけでは本番データ付きで動作しません。公開時は次の対応が必要です。
+### Cloudflare Pages の設定
 
-1. Next.js の実行先を Cloudflare Workers + OpenNext にする。
-2. SQLite ファイルをリポジトリへ含めず、Cloudflare D1 などの永続データベースへ移行する。
-3. D1 を使う場合は `@prisma/adapter-d1` と Workers の D1 binding を使うよう Prisma Client の生成・初期化・マイグレーションを変更する。
-4. R2〜R6 の公式データと出典情報を移行後のデータベースへ投入し、全画面と API の回帰テストを実施してから本番公開する。
+- Production branch: `main`
+- Build command: `pnpm build:pages`
+- Build output directory: `out`
+- Root directory: リポジトリルート
+- Functions directory: 設定しない
+- Environment variables / D1 binding: 本番表示には不要
 
-参考:
+生成済みの公開データは `data/static` と `public/data/static` に含まれるため、Cloudflare のビルド環境にデータベースやシークレットを渡す必要はありません。
 
-- [Cloudflare Workers: Next.js](https://developers.cloudflare.com/workers/framework-guides/web-apps/nextjs/)
-- [Cloudflare D1: Prisma ORM](https://developers.cloudflare.com/d1/tutorials/d1-and-prisma-orm/)
+- [Cloudflare Pages: Next.js static export](https://developers.cloudflare.com/pages/framework-guides/nextjs/deploy-a-static-nextjs-site/)
+- [Next.js: Static Exports](https://nextjs.org/docs/app/guides/static-exports)
 
-独自ドメインはアプリ本体とデータ移行が完了した後に Workers 側で設定できます。
+独自ドメインは開発完了後に Pages プロジェクト側で設定できます。

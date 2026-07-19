@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
 const pageSource = readFileSync(
-  path.join(root, "app/municipalities/[municipalityCode]/page.tsx"),
+  path.join(root, "components/MunicipalityDetailClient.tsx"),
   "utf8"
 );
 const cssSource = readFileSync(

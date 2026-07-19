@@ -1,12 +1,10 @@
 import { RankingNav } from "@/components/RankingNav";
 import { RankingComparison } from "@/components/RankingComparison";
 import { RankingTable } from "@/components/RankingTable";
-import { getRankings } from "@/lib/data";
-
-export const dynamic = "force-dynamic";
+import { getStaticRankings } from "@/lib/staticData";
 
 export default async function RankingsPage() {
-  const items = await getRankings("expense-recovery-low", 30);
+  const items = (await getStaticRankings("expense-recovery-low")).slice(0, 30);
 
   return (
     <div>

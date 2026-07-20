@@ -24,8 +24,11 @@ describe("household 20m3 fee and recovery-story UI", () => {
     expect(detailSource).toContain("維持管理費分");
     expect(detailSource).toContain("資本費分");
     expect(detailSource).toContain("営業費用と、経費回収率の対象となる汚水処理費は同じ範囲ではありません");
-    expect(detailSource).toContain("経費回収率が100%以上のため、引下げ額は試算しません");
-    expect(detailSource).toContain("100%相当額との差");
+    expect(detailSource).toContain("差（100%相当額 − 現在額）");
+    expect(detailSource).toContain("formatSignedMonthlyDifference(difference)");
+    expect(detailSource).toContain("値下げ提案ではありません");
+    expect(detailSource).not.toContain("追加試算なし");
+    expect(detailSource).not.toContain("引下げ額は試算しません");
     expect(detailSource).not.toContain("改定リスクスコア");
   });
 

@@ -1,4 +1,7 @@
-import React, { type ReactNode } from "react";
+"use client";
+
+import React, { type ReactNode, useEffect, useId, useRef, useState } from "react";
+import { Maximize2, X } from "lucide-react";
 import { formatPercent, formatSettlementFiscalLabel, formatVolume, formatYenPerM3 } from "@/lib/format";
 
 export type TrendPoint = {
@@ -247,14 +250,96 @@ function BarChart({
 }
 
 function ChartFrame({ title, summary, legend, children }: { title: string; summary: string; legend?: ReactNode; children: ReactNode }) {
+  const [expanded, setExpanded] = useState(false);
+  const dialogTitleId = useId();
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const triggerButtonRef = useRef<HTMLButtonElement>(null);
+  const hasOpenedRef = useRef(false);
+
+  useEffect(() => {
+    if (!expanded) {
+      if (hasOpenedRef.current) {
+        triggerButtonRef.current?.focus();
+        hasOpenedRef.current = false;
+      }
+      return;
+    }
+    hasOpenedRef.current = true;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    closeButtonRef.current?.focus();
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setExpanded(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [expanded]);
+
   return (
-    <section className="panel p-4">
+    <section className="panel relative p-4" data-chart-card="true">
       <div className="mb-2 flex min-h-8 flex-wrap items-start justify-between gap-2">
         <h3 className="text-sm font-black leading-5 text-ink">{title}</h3>
-        {legend ? <span className="flex flex-wrap items-center gap-3 text-[10px] font-bold text-muted">{legend}</span> : null}
+        <span className="flex flex-wrap items-center justify-end gap-3 text-[10px] font-bold text-muted">
+          {legend}
+          <span className="inline-flex items-center gap-1" aria-hidden="true"><Maximize2 size={13} />拡大</span>
+        </span>
       </div>
       <p className="sr-only">{summary}</p>
-      {children}
+      <button
+        ref={triggerButtonRef}
+        type="button"
+        className="block w-full rounded-md border-0 bg-transparent p-0 text-left transition-shadow hover:shadow-[0_0_0_1px_rgba(0,127,143,0.28)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal"
+        onClick={() => setExpanded(true)}
+        aria-label={`${title}を拡大表示`}
+        aria-haspopup="dialog"
+        aria-hidden={expanded ? "true" : undefined}
+        tabIndex={expanded ? -1 : 0}
+        data-chart-trigger="true"
+      >
+        {children}
+      </button>
+      {expanded ? (
+        <div
+          className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-[2px]"
+          onMouseDown={(event) => {
+            if (event.currentTarget === event.target) setExpanded(false);
+          }}
+          data-chart-modal-backdrop="true"
+        >
+          <section
+            className="flex max-h-[92vh] w-[min(96vw,980px)] flex-col overflow-hidden rounded-xl border border-line bg-white shadow-2xl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={dialogTitleId}
+            data-chart-modal="true"
+          >
+            <header className="flex items-center justify-between gap-4 border-b border-line px-4 py-3 sm:px-6">
+              <div className="min-w-0">
+                <span className="text-[10px] font-black uppercase tracking-[0.08em] text-teal">R2—R6</span>
+                <h3 id={dialogTitleId} className="truncate text-base font-black text-ink sm:text-lg">{title}</h3>
+              </div>
+              <button
+                ref={closeButtonRef}
+                type="button"
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-line bg-white text-muted transition-colors hover:border-teal hover:bg-panel hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal"
+                onClick={() => setExpanded(false)}
+                aria-label="拡大表示を閉じる"
+              >
+                <X size={20} aria-hidden="true" />
+              </button>
+            </header>
+            <p className="sr-only">{summary}</p>
+            <div className="min-h-0 overflow-auto p-4 sm:p-6">
+              <div className="mx-auto w-full max-w-[920px] [&>svg]:max-h-[68vh] [&>svg]:w-full">
+                {children}
+              </div>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </section>
   );
 }

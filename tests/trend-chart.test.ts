@@ -37,5 +37,9 @@ describe("TrendChart", () => {
     expect(markup).not.toContain("-722.1%");
     expect(markup).not.toContain("-26.5円/m³");
     expect(markup).not.toMatch(/height="-/);
+    expect(markup.match(/data-chart-trigger="true"/g)).toHaveLength(4);
+    expect(markup.match(/aria-haspopup="dialog"/g)).toHaveLength(4);
+    expect(markup).toContain("経費回収率の推移（%）を拡大表示");
+    expect(markup).toContain("拡大");
   });
 });

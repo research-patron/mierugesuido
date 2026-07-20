@@ -17,8 +17,13 @@ describe("card edge accents", () => {
     const cssFiles = ["app", "components"].flatMap((directory) => collectCssFiles(join(projectRoot, directory)));
     const violations = cssFiles.flatMap((file) => {
       const source = readFileSync(file, "utf8");
-      const matches = source.match(/border-(?:top|right|bottom|left)(?:-width)?:\s*(?:[2-9]|\d{2,})px\b/g) ?? [];
-      return matches.map((match) => `${relative(projectRoot, file)}: ${match}`);
+      const directionalBorders = source.match(/border-(?:top|right|bottom|left)(?:-width)?:\s*(?:[2-9]|\d{2,})px\b/g) ?? [];
+      const narrowColorColumns = source.match(/grid-template-columns:\s*[2-6](?:\.\d+)?px\b/g) ?? [];
+      const directionalInsetShadows = [...source.matchAll(/inset\s+(-?\d+(?:\.\d+)?)px\s+(-?\d+(?:\.\d+)?)px\s+-?\d+(?:\.\d+)?px/g)]
+        .filter((match) => Math.abs(Number(match[1])) >= 2 || Math.abs(Number(match[2])) >= 2)
+        .map((match) => match[0]);
+      return [...directionalBorders, ...narrowColorColumns, ...directionalInsetShadows]
+        .map((match) => `${relative(projectRoot, file)}: ${match}`);
     });
 
     expect(violations).toEqual([]);

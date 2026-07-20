@@ -72,6 +72,7 @@ describe("calculation formulas", () => {
   it("converts the official household 20m3 tariff to a 100% recovery scenario", () => {
     expect(calculateRequiredHouseholdFee20m3(3000, 80)).toBe(3750);
     expect(calculateRequiredHouseholdFee20m3(3355, 100)).toBe(3355);
+    expect(calculateRequiredHouseholdFee20m3(3047, 103.9923)).toBe(2930);
     expect(calculateRequiredHouseholdFee20m3(null, 80)).toBeNull();
   });
 

@@ -8,7 +8,7 @@
 .container {
   display: grid;
   width: min(100%, 1491px);
-  gap: 14px;
+  gap: 12px;
   margin: 0 auto;
   padding: 14px 24px 24px;
 }
@@ -214,14 +214,14 @@
   display: grid;
   min-width: 0;
   min-height: 64px;
-  grid-template-columns: 5px minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 10px;
   align-items: center;
   overflow: hidden;
   border: 1px solid #cbd8df;
   border-radius: 7px;
   background: #fff;
-  padding: 9px 10px 9px 0;
+  padding: 10px 11px;
   color: var(--ui-ink);
   transition: border-color 140ms ease, background-color 140ms ease, box-shadow 140ms ease;
 }
@@ -239,13 +239,6 @@
 .businessOption[aria-current="page"] {
   border-color: var(--business-accent);
   background: var(--business-soft);
-  box-shadow: inset 0 0 0 1px var(--business-accent);
-}
-
-.businessOptionMark {
-  align-self: stretch;
-  border-radius: 0 4px 4px 0;
-  background: var(--business-accent);
 }
 
 .businessOptionCopy {
@@ -420,6 +413,7 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
+  margin-bottom: 14px;
 }
 
 .kpiCard {
@@ -505,17 +499,18 @@
 
 .viewTabs {
   display: grid;
-  width: min(100%, 760px);
+  width: 100%;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 8px;
   border: 1px solid var(--ui-border);
-  border-radius: 7px;
+  border-radius: 8px;
   background: #fff;
-  padding: 3px;
+  padding: 4px;
 }
 
 .viewTabs a {
   display: inline-flex;
-  min-height: 38px;
+  min-height: 42px;
   align-items: center;
   justify-content: center;
   gap: 7px;
@@ -543,12 +538,21 @@
 .contentSection,
 .financeSection {
   display: grid;
-  gap: 12px;
+  gap: 16px;
+}
+
+.feeDecision + .contentSection {
+  margin-top: 12px;
+}
+
+.contentSection + .supportGrid,
+.financeSection + .supportGrid {
+  margin-top: 16px;
 }
 
 .feeDecision {
   display: grid;
-  gap: 16px;
+  gap: 18px;
   border: 1px solid var(--ui-border);
   border-radius: 8px;
   background: #fff;
@@ -1133,7 +1137,7 @@
 
 @media (max-width: 760px) {
   .container {
-    gap: 11px;
+    gap: 10px;
     padding: 10px 14px 18px;
   }
 
@@ -1202,6 +1206,7 @@
   .kpiGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 7px;
+    margin-bottom: 12px;
   }
 
   .kpiCard {
@@ -1241,11 +1246,18 @@
 
   .viewTabs {
     width: 100%;
+    margin-bottom: 8px;
   }
 
   .viewTabs a {
     min-height: 44px;
-    font-size: 12px;
+    gap: 0;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  .viewTabs a svg {
+    display: none;
   }
 
   .sectionHeading {
@@ -1259,6 +1271,15 @@
 
   .feeDecision {
     padding: 14px;
+  }
+
+  .feeDecision + .contentSection {
+    margin-top: 12px;
+  }
+
+  .contentSection + .supportGrid,
+  .financeSection + .supportGrid {
+    margin-top: 14px;
   }
 
   .feeDecisionHeading,

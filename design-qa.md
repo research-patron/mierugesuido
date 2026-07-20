@@ -904,3 +904,46 @@ This gate supersedes the earlier `balance-sheet うち inner-breakdown` behavior
 - Intentional subtraction: the detached compact-region callout, the circular funding-boundary plus, and decorative one-sided thick borders were removed. Exact account data and the disclosure were retained.
 
 final result: passed
+
+## Superseding fee-tab calculation, chart expansion, and spacing gate — 2026-07-20
+
+This gate supersedes the earlier fee-tab treatment that hid the 100% equivalent behind `追加試算なし`, and extends the uniform-edge rule to the remaining business, comparison, and ranking states.
+
+### Calculation and wording
+
+- The Niigata City R6 public-sewer case displays the unmodified current monthly amount `3,047円`, the simple 100% expense-recovery equivalent `約2,930円`, and the signed difference `−117円／月`.
+- The reference amount is calculated as `current monthly amount × 100 ÷ expense-recovery percentage`; the difference is `100% equivalent − current amount`. Positive, negative, and zero results have explicit signed-format regression coverage.
+- A negative difference explains that the 100% equivalent is below the current amount and explicitly says it is not a price-reduction recommendation. `追加試算なし` and its former no-reduction wording are no longer rendered.
+
+### Interaction and accessibility
+
+- All four five-year indicator charts use the same labelled enlargement control. The production build was operated through all four `open → close` cycles successfully.
+- The enlarged view is a labelled modal dialog with a 44px-or-larger close target, Escape and backdrop closing, background-scroll locking, and focus restoration to the originating chart.
+- Desktop and mobile presentations use the same source SVG rather than a raster replacement. Browser warnings and errors were empty after the post-build interaction pass.
+
+### Layout and uniform-edge audit
+
+- The three detail tabs now span the content container with balanced left and right edges. Mobile labels remain on one line and no longer reserve icon width.
+- The KPI row has a deliberate bottom separation before the tab group. The tab group, fee decision block, five-year indicators, and support cards use an audited sequence of smaller within-group gaps and larger between-group gaps.
+- The five-pixel selected-business strip, the one-sided current-row inset, and the one-sided ranking focus inset were removed. Selection remains explicit through a full border, background, icon, and the text `表示中`.
+- The CSS regression scan rejects directional borders of 2px or more, narrow 2–6px accent columns, and visibly offset inset shadows. Remaining chart reference lines and scrollbars are not card-edge accents.
+
+### Accepted rendered evidence
+
+- Combined attachment/final comparison: `artifacts/design-qa/fee-tab-layout-refinement-2026-07-20/20-reference-final-comparison.png`.
+- Final post-build desktop at the reference viewport: `13-postbuild-desktop-1491x1055.png` in the same directory.
+- Final post-build desktop chart dialog: `14-postbuild-chart-modal-desktop-1491x1055.png`.
+- Mobile fee amount, full-width tabs, and signed difference: `10-after-mobile-tabs-390x844.png`.
+- Mobile lower hierarchy and chart treatment: `11-after-mobile-trends-390x844.png`.
+- Mobile chart dialog: `12-after-chart-modal-mobile-390x844.png`.
+
+### Regression and scope
+
+- `pnpm lint`: passed.
+- `pnpm test`: 26/26 files and 157/157 tests passed.
+- `pnpm build`: passed; 1,649 static pages generated with no compile, type, or export error.
+- Post-build browser smoke: all four chart dialogs opened and closed; rendered calculation was `3,047円 → 約2,930円 → −117円／月`; warnings and errors were empty.
+- No database, schema, migration, ETL, imported data, source value, route, navigation destination, business option, chart, table, map, ranking, or search behavior was removed.
+- Intentional subtraction: decorative one-sided edge accents and the incorrect `追加試算なし` branch were removed. The selected-state meaning and all four chart functions were retained and made more explicit.
+
+final result: passed

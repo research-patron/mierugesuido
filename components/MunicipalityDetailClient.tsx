@@ -197,7 +197,6 @@ export function MunicipalityDetailClient({ municipalityCode }: { municipalityCod
                     data-tone={businessTone(group.key)}
                     aria-current={selected ? "page" : undefined}
                   >
-                    <span className={styles.businessOptionMark} aria-hidden="true" />
                     <span className={styles.businessOptionCopy}>
                       <strong>{displayBusinessName(group.latestBusiness)}</strong>
                       <small>{accountingTypeLabel(group.latestBusiness.accountingType)}・{formatSettlementFiscalLabel({ surveyYear: group.latest.surveyYear, fiscalYearLabel: group.latest.fiscalYearLabel })}</small>
@@ -648,7 +647,6 @@ function FeeRecoveryStory({
   const referenceFee = calculateRequiredHouseholdFee20m3(currentFee, recoveryRate);
   const hasShortfall = recoveryRate != null && recoveryRate < 100;
   const canEstimateReference = currentFee != null && recoveryRate != null && recoveryRate > 0;
-  const needsIncrease = canEstimateReference && recoveryRate < 100;
   const difference = currentFee != null && referenceFee != null ? referenceFee - currentFee : null;
   const opex = finiteOrNull(annual.opexComponent);
   const capital = finiteOrNull(annual.capitalCostComponent);
@@ -683,26 +681,30 @@ function FeeRecoveryStory({
           title="経費回収率100%相当の月額"
           value={!canEstimateReference
             ? "算定不可"
-            : needsIncrease && referenceFee != null
+            : referenceFee != null
               ? `約${referenceFee.toLocaleString("ja-JP")}円`
-              : "追加試算なし"}
-          note={needsIncrease && difference != null
-            ? `現在より月額＋${Math.max(0, difference).toLocaleString("ja-JP")}円の単純試算`
-            : !canEstimateReference
-              ? "経費回収率が0%以下、または一般家庭用20m³月額が未取得"
-              : "経費回収率が100%以上のため、引下げ額は試算しません"}
+              : "算定不可"}
+          note={!canEstimateReference
+            ? "経費回収率が0%以下、または一般家庭用20m³月額が未取得"
+            : `現在額 × 100 ÷ ${recoveryRate?.toFixed(1)}% の単純逆算`}
           emphasized
         />
         <ArrowRight className={styles.feeEquationArrow} size={22} aria-hidden="true" />
         <FeeEquationCard
-          label="差"
-          title="100%相当額との差"
+          label="差（100%相当額 − 現在額）"
+          title="現在の月額との差"
           value={!canEstimateReference
             ? "算定不可"
-            : needsIncrease && difference != null
-              ? `＋${Math.max(0, difference).toLocaleString("ja-JP")}円／月`
-              : "追加試算なし"}
-          note="料金体系を同じ割合で変える単純試算"
+            : difference != null
+              ? formatSignedMonthlyDifference(difference)
+              : "算定不可"}
+          note={difference == null
+            ? "100%相当額を算定できないため差も表示できません"
+            : difference < 0
+              ? "マイナスは100%相当額が現在額を下回ることを示します。値下げ提案ではありません"
+              : difference > 0
+                ? "プラスは100%相当額が現在額を上回ることを示します"
+                : "100%相当額と現在額は同額です"}
           verdict
         />
       </div>
@@ -778,6 +780,13 @@ function finiteOrNull(value: number | null | undefined) {
 
 function positiveFiniteOrNull(value: number | null | undefined) {
   return value == null || !Number.isFinite(value) || value <= 0 ? null : value;
+}
+
+function formatSignedMonthlyDifference(value: number) {
+  const rounded = Math.round(value);
+  if (rounded === 0) return "±0円／月";
+  const sign = rounded > 0 ? "+" : "−";
+  return `${sign}${Math.abs(rounded).toLocaleString("ja-JP")}円／月`;
 }
 
 function EvidenceContent({ entries }: { entries: Array<[string, any]> }) {

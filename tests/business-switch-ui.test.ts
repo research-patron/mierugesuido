@@ -80,4 +80,11 @@ describe("municipality business switch UI", () => {
     );
     expect(businessTones.size).toBeGreaterThanOrEqual(4);
   });
+
+  it("uses a uniform card boundary instead of a decorative color strip", () => {
+    expect(pageSource).not.toContain("businessOptionMark");
+    expect(cssSource).not.toContain(".businessOptionMark");
+    expect(cssSource).not.toMatch(/grid-template-columns:\s*[2-6]px\s+minmax\(0, 1fr\)/);
+    expect(cssSource).not.toMatch(/\.businessOption\[aria-current="page"\][^{]*\{[^}]*box-shadow:\s*inset/s);
+  });
 });

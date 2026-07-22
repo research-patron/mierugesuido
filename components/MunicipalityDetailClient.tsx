@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { FinancialStory } from "@/components/municipality-detail/FinancialStory";
 import { PrefecturePeerComparison } from "@/components/municipality-detail/PrefecturePeerComparison";
+import { YearbookOriginalData } from "@/components/municipality-detail/YearbookOriginalData";
 import { TrendChart, type TrendPoint } from "@/components/TrendChart";
 import { accountingTypeLabel, businessCategoryCode, displayBusinessName } from "@/lib/businessDisplay";
 import { detailDisclaimer, formulaCopy } from "@/lib/copy";
@@ -37,6 +38,7 @@ import {
   formatSettlementFiscalLabel,
   formatYenPerM3
 } from "@/lib/format";
+import { transferBasisAmount, type TransferBasisBreakdown } from "@/lib/prefecturePeerComparison";
 import styles from "@/app/municipalities/[municipalityCode]/page.module.css";
 
 type DetailView = "fees" | "finance" | "prefecture";
@@ -51,10 +53,21 @@ type BusinessGroup = {
   latest: DetailAnnual;
 };
 
+type CurrentFundingContext = {
+  operatingRevenue: number | null;
+  operatingExpense: number | null;
+  operatingLoss: number | null;
+  rainwaterBurdenRevenue: number | null;
+  otherAccountSubsidyRevenue: number | null;
+  nonStandardTransfer: number | null;
+  transferBasisBreakdown: TransferBasisBreakdown;
+};
+
 export function MunicipalityDetailClient({ municipalityCode }: { municipalityCode: string }) {
   const searchParams = useSearchParams();
   const [municipality, setMunicipality] = useState<MunicipalityDetail | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
+  const [yearbookOpen, setYearbookOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -85,6 +98,7 @@ export function MunicipalityDetailClient({ municipalityCode }: { municipalityCod
       return;
     }
     setPrefecturePeerComparison(null);
+    const currentFundingContext = buildCurrentFundingContext(selectedGroup);
     fetch(`/data/static/peers/${municipality.prefectureCode}/${encodeURIComponent(selectedGroup.key)}.json`)
       .then((response) => {
         if (!response.ok) throw new Error("Peer comparison unavailable");
@@ -97,6 +111,10 @@ export function MunicipalityDetailClient({ municipalityCode }: { municipalityCod
           currentMunicipalityCode: municipality.municipalityCode,
           rows: model.rows.map((row: any) => ({
             ...row,
+            ...(row.detailMunicipalityCode === municipality.municipalityCode
+              && row.businessKey === selectedGroup.latestBusiness.businessKey
+              ? mergeFundingContext(row, currentFundingContext)
+              : {}),
             isCurrent: row.detailMunicipalityCode === municipality.municipalityCode
               || row.operatorMunicipalityCode === municipality.municipalityCode
               || row.representedMunicipalityCodes.includes(municipality.municipalityCode)
@@ -339,15 +357,6 @@ export function MunicipalityDetailClient({ municipalityCode }: { municipalityCod
 
           <details className={styles.disclosure}>
             <summary>
-              <span><Database size={18} aria-hidden="true" /></span>
-              <div><strong>データ根拠</strong><small>{evidenceEntries.length}項目の原表トレース</small></div>
-              <ChevronDown size={17} aria-hidden="true" />
-            </summary>
-            <EvidenceContent entries={evidenceEntries} />
-          </details>
-
-          <details className={styles.disclosure}>
-            <summary>
               <span><Calculator size={18} aria-hidden="true" /></span>
               <div><strong>指標の計算式</strong><small>使用料水準の算定方法</small></div>
               <ChevronDown size={17} aria-hidden="true" />
@@ -360,6 +369,30 @@ export function MunicipalityDetailClient({ municipalityCode }: { municipalityCod
                 </div>
               ))}
             </div>
+          </details>
+
+          <details
+            className={`${styles.disclosure} ${styles.yearbookDisclosure}`}
+            onToggle={(event) => setYearbookOpen(event.currentTarget.open)}
+          >
+            <summary>
+              <span><Database size={18} aria-hidden="true" /></span>
+              <div><strong>地方公営企業年鑑の元データ</strong><small>R6の原表を公式の列名・列順のまま表示</small></div>
+              <ChevronDown size={17} aria-hidden="true" />
+            </summary>
+            <YearbookOriginalData
+              enabled={yearbookOpen}
+              municipalityCode={municipality.municipalityCode}
+              businessKey={latestBusiness.businessKey}
+              accountingType={latestBusiness.accountingType}
+            />
+            <section className={styles.evidenceSection} aria-labelledby="indicator-evidence-title">
+              <div>
+                <strong id="indicator-evidence-title">本サイトで使用する主要項目</strong>
+                <small>{evidenceEntries.length}項目の原表トレース</small>
+              </div>
+              <EvidenceContent entries={evidenceEntries} />
+            </section>
           </details>
         </section>
 
@@ -498,8 +531,7 @@ function buildTrendPoints(group: BusinessGroup): TrendPoint[] {
       householdFee20m3Yen: positiveFiniteOrNull(annual?.householdFee20m3Yen),
       feeUnitPriceYenPerM3: diagnosis?.feeUnitPriceYenPerM3 ?? null,
       treatmentCostYenPerM3: diagnosis?.treatmentCostYenPerM3 ?? null,
-      annualBillableVolume: annual?.annualBillableVolume ?? null,
-      generalAccountTransfer: annual?.generalAccountTransfer ?? null
+      annualBillableVolume: annual?.annualBillableVolume ?? null
     };
   });
 }
@@ -691,7 +723,7 @@ function FeeRecoveryStory({
         />
         <ArrowRight className={styles.feeEquationArrow} size={22} aria-hidden="true" />
         <FeeEquationCard
-          label="差（100%相当額 − 現在額）"
+          label="差（100%相当額 − 現在額・参考）"
           title="現在の月額との差"
           value={!canEstimateReference
             ? "算定不可"
@@ -701,10 +733,10 @@ function FeeRecoveryStory({
           note={difference == null
             ? "100%相当額を算定できないため差も表示できません"
             : difference < 0
-              ? "マイナスは100%相当額が現在額を下回ることを示します。値下げ提案ではありません"
+              ? "この年度の費用回収では、使用料収入が対象費用を賄えており、使用料水準は不足していません。差額は値下げを示すものではありません"
               : difference > 0
-                ? "プラスは100%相当額が現在額を上回ることを示します"
-                : "100%相当額と現在額は同額です"}
+                ? "この年度は使用料収入だけでは対象費用を賄えていないため、100%相当額が現在額を上回ります"
+                : "この年度は使用料収入と対象費用が同水準です"}
           verdict
         />
       </div>
@@ -772,6 +804,62 @@ function FeeEquationCard({
 
 function CostTerm({ label, value, result = false }: { label: string; value: string; result?: boolean }) {
   return <div className={result ? styles.costTermResult : undefined}><span>{label}</span><strong>{value}</strong></div>;
+}
+
+function buildCurrentFundingContext(group: BusinessGroup): CurrentFundingContext {
+  const income = group.latestBusiness.financialStory?.income;
+  const operatingRevenue = finiteOrNull(income?.operatingRevenue);
+  const operatingExpense = finiteOrNull(income?.operatingExpense);
+  return {
+    operatingRevenue,
+    operatingExpense,
+    operatingLoss: operatingRevenue == null || operatingExpense == null
+      ? null
+      : Math.max(operatingExpense - operatingRevenue, 0),
+    rainwaterBurdenRevenue: revenueBreakdownValue(income, "rainwater-burden"),
+    otherAccountSubsidyRevenue: revenueBreakdownValue(income, "other-account-subsidy"),
+    nonStandardTransfer: finiteOrNull(group.latest.nonStandardTransfer),
+    transferBasisBreakdown: transferBasisBreakdownFromAnnual(group.latest)
+  };
+}
+
+function mergeFundingContext(row: any, context: CurrentFundingContext) {
+  return {
+    operatingRevenue: context.operatingRevenue ?? finiteOrNull(row.operatingRevenue),
+    operatingExpense: context.operatingExpense ?? finiteOrNull(row.operatingExpense),
+    operatingLoss: context.operatingLoss ?? finiteOrNull(row.operatingLoss),
+    rainwaterBurdenRevenue: context.rainwaterBurdenRevenue ?? finiteOrNull(row.rainwaterBurdenRevenue),
+    otherAccountSubsidyRevenue: context.otherAccountSubsidyRevenue ?? finiteOrNull(row.otherAccountSubsidyRevenue),
+    nonStandardTransfer: context.nonStandardTransfer ?? finiteOrNull(row.nonStandardTransfer),
+    transferBasisBreakdown: context.transferBasisBreakdown ?? row.transferBasisBreakdown
+  };
+}
+
+function transferBasisBreakdownFromAnnual(annual: DetailAnnual): TransferBasisBreakdown {
+  const capitalNonStandard = finiteOrNull(annual.table40CapitalOtherAccountSubsidyNonStandard);
+  return {
+    rainwaterBurden: transferBasisAmount(
+      annual.table40RainwaterBurden,
+      annual.table40RainwaterBurdenNonStandard
+    ),
+    otherAccountSubsidy: transferBasisAmount(
+      annual.table40OtherAccountSubsidy,
+      annual.table40OtherAccountSubsidyNonStandard
+    ),
+    capitalOtherAccountSubsidy: transferBasisAmount(
+      annual.table40CapitalOtherAccountSubsidy,
+      capitalNonStandard
+    ),
+    capitalOtherAccountSubsidyNonStandard: capitalNonStandard,
+    nonStandardTransferTotal: finiteOrNull(annual.nonStandardTransfer)
+  };
+}
+
+function revenueBreakdownValue(income: any, id: string) {
+  const item = Array.isArray(income?.revenueBreakdown)
+    ? income.revenueBreakdown.find((candidate: any) => candidate?.id === id)
+    : null;
+  return finiteOrNull(item?.value);
 }
 
 function finiteOrNull(value: number | null | undefined) {

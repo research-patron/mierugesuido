@@ -13,8 +13,8 @@ Date: 2026-07-11
 
 References, both 1491 × 1055:
 
-- Home: `/Users/niigatadaigakukenkyuuyou/.codex/attachments/5c3f0cf8-0af6-4f6e-a12b-9178f33f7e6f/image-1.png`
-- Search: `/Users/niigatadaigakukenkyuuyou/.codex/attachments/5c3f0cf8-0af6-4f6e-a12b-9178f33f7e6f/image-3.png`
+- Home: `[local reference supplied in prior task]`
+- Search: `[local reference supplied in prior task]`
 
 Final implementation captures:
 
@@ -107,7 +107,7 @@ Header navigation, search, filters, table/card views, sorting, pagination, munic
 
 ### Scope and evidence
 
-- New flat-map reference: `/Users/niigatadaigakukenkyuuyou/.codex/attachments/7e153e61-4400-4ff8-b993-99057d74439c/image-1.png`.
+- New flat-map reference: `[local reference supplied in prior task]`.
 - Final home: `artifacts/design-qa/maps-2026-07-11/04-home-final-1491x1055.jpg`.
 - Final national map: `artifacts/design-qa/maps-2026-07-11/06-national-map-final-fresh-1491x1055.jpg`.
 - Final dense-prefecture case: `artifacts/design-qa/maps-2026-07-11/02-prefecture-hokkaido-final-1491x1055.jpg`.
@@ -458,7 +458,7 @@ final result: passed
 
 ### Scope and comparison evidence
 
-- Detail reference: `/Users/niigatadaigakukenkyuuyou/.codex/attachments/5c3f0cf8-0af6-4f6e-a12b-9178f33f7e6f/image-4.png` (1491 × 1055).
+- Detail reference: `[local reference supplied in prior task]` (1491 × 1055).
 - Final fee view: `artifacts/design-qa/r2-r6-financial-story-2026-07-13/01-fees-1491x1055.png`.
 - Final R6 financial overview: `artifacts/design-qa/r2-r6-financial-story-2026-07-13/02-finance-1491x1055.png`.
 - Final R6 financial lower panels: `artifacts/design-qa/r2-r6-financial-story-2026-07-13/04-finance-lower-1491x1055.png`.
@@ -525,7 +525,7 @@ final result: passed
 
 ### Scope and accepted evidence
 
-- User references: `/Users/niigatadaigakukenkyuuyou/Library/Application Support/CleanShot/media/media_rOL86JEdEQ/CleanShot 2026-07-12 at 10.56.21.png` and `/Users/niigatadaigakukenkyuuyou/Library/Application Support/CleanShot/media/media_poyoLdoI6X/CleanShot 2026-07-12 at 10.58.18.png`.
+- User references: `[local reference supplied in prior task]` and `[local reference supplied in prior task]`.
 - Official boundary source: [国土交通省 国土数値情報 N03 行政区域 2023年版](https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N03-2023.html).
 - Accepted home default: `artifacts/design-qa/region-focus-labels-2026-07-12/40-home-default-final.png` (1491 × 1055).
 - Accepted Kanto focus: `artifacts/design-qa/region-focus-labels-2026-07-12/41-home-kanto-final-accepted.jpg` (1491 × 1055).
@@ -586,9 +586,9 @@ final result: passed
 
 ### Scope and accepted evidence
 
-- Source map reference: `/Users/niigatadaigakukenkyuuyou/.codex/attachments/4976a4fe-e3d1-46ab-ba82-3b06fa3ca6d8/image-1.png`.
-- Source broken-hover reference: `/Users/niigatadaigakukenkyuuyou/.codex/attachments/4976a4fe-e3d1-46ab-ba82-3b06fa3ca6d8/image-2.png`.
-- Source home-note reference: `/Users/niigatadaigakukenkyuuyou/.codex/attachments/4976a4fe-e3d1-46ab-ba82-3b06fa3ca6d8/image-3.png`.
+- Source map reference: `[local reference supplied in prior task]`.
+- Source broken-hover reference: `[local reference supplied in prior task]`.
+- Source home-note reference: `[local reference supplied in prior task]`.
 - Accepted desktop map: `artifacts/design-qa/municipality-map-refinement-2026-07-12/33-prefecture-final-1491x1055.png`.
 - Accepted desktop hover: `artifacts/design-qa/municipality-map-refinement-2026-07-12/34-prefecture-hover-final-inspection.png`; its source capture is the exact 1491 × 1055 frame `34-prefecture-hover-final-1491x1055.png`.
 - Accepted desktop home: `artifacts/design-qa/municipality-map-refinement-2026-07-12/20-home-final-1491x1055.png`.
@@ -648,8 +648,8 @@ final result: passed
 
 ### Scope and visual truth
 
-- User-reported balance-sheet misalignment: `/Users/niigatadaigakukenkyuuyou/.codex/attachments/f1d1ea32-8369-4f0a-8e1e-80103d49e685/image-1.png`.
-- User-reported profit-and-loss orientation/height issue: `/Users/niigatadaigakukenkyuuyou/.codex/attachments/f1d1ea32-8369-4f0a-8e1e-80103d49e685/image-2.png`.
+- User-reported balance-sheet misalignment: `[local reference supplied in prior task]`.
+- User-reported profit-and-loss orientation/height issue: `[local reference supplied in prior task]`.
 - Before capture: `artifacts/design-qa/accounting-box-refinement-2026-07-13/02-before-boxes-1491x1055.png`.
 - Final profit case: `artifacts/design-qa/accounting-box-refinement-2026-07-13/09-profit-final-1491x1055.png`.
 - Final loss case: `artifacts/design-qa/accounting-box-refinement-2026-07-13/10-loss-final-1491x1055.png`.
@@ -945,5 +945,152 @@ This gate supersedes the earlier fee-tab treatment that hid the 100% equivalent 
 - Post-build browser smoke: all four chart dialogs opened and closed; rendered calculation was `3,047円 → 約2,930円 → −117円／月`; warnings and errors were empty.
 - No database, schema, migration, ETL, imported data, source value, route, navigation destination, business option, chart, table, map, ranking, or search behavior was removed.
 - Intentional subtraction: decorative one-sided edge accents and the incorrect `追加試算なし` branch were removed. The selected-state meaning and all four chart functions were retained and made more explicit.
+
+final result: passed
+
+## Superseding accounting-copy and five-year chart-readability gate — 2026-07-20
+
+This gate supersedes the earlier fee-tab wording that described only the sign of the `100%相当額 − 現在額` difference, and the earlier prefecture-comparison wording that framed `営業収益÷営業費用` as a site-specific concept.
+
+### Official-source conclusions and corrected wording
+
+- The Ministry of Land, Infrastructure, Transport and Tourism and official municipal guidance define expense recovery as the extent to which sewer-fee revenue covers the wastewater-treatment expenses that should be recovered through fees. The screen now says that a 100% or higher result means the fee revenue covered those target expenses in that fiscal year. It does not turn a negative reference difference into a price-reduction recommendation or claim that future pricing is conclusively appropriate.
+- Article 24 of the Local Public Enterprises Act Enforcement Regulations defines operating profit or operating loss from operating revenue minus operating expense. Comparing the two is therefore presented as a general public-enterprise accounting analysis, not an idea unique to this site.
+- Official municipal analysis commonly calculates the operating ratio after excluding entrusted-construction revenue and expense. The imported source separately identifies entrusted-construction expense but not entrusted-construction revenue, so the site does not claim to reproduce that exact ratio. It labels `営業収益÷営業費用×100` as `営業収支比率（簡易）` and discloses the limitation.
+- The sufficiency boundary is 100%. The required visual grouping remains red below 50% and green at or above 50%, but every value below 100% is explicitly labelled `全額未達`; 50% is described only as a display-attention boundary.
+- The data-sources page links directly to the e-Gov rule, the Ministry of Land, Infrastructure, Transport and Tourism expense-recovery explanation, and an official municipal operating-ratio explanation. The same simplified-ratio caveat is repeated in the comparison card and disclaimer.
+
+### Five-year chart correction
+
+- The dual series no longer positions both numbers from bar heights, where similar values and neighbouring years collided. Each year now has two fixed, vertically separated value rows, colored to match the blue and purple series.
+- Household-fee and billable-volume charts separate the unit from plotted numbers. The fee chart shows `単位：円`; billable volume chooses `m³`, `千m³`, or `百万m³` from the data scale. This reduces label width without changing source values.
+- The same SVG remains interactive in the compact card and enlargement dialog. No chart, year, series, or accessible textual summary was removed.
+
+### Accepted rendered evidence
+
+- Attachment/final chart comparison: `artifacts/design-qa/accounting-copy-chart-readability-2026-07-20/comparison-chart-before-after.png`.
+- Attachment/final operating-analysis comparison: `comparison-operating-copy-before-after.png` in the same directory.
+- Final post-build desktop chart dialog at 1491 x 1055: `13-postbuild-dual-chart-1491x1055.png`.
+- Final desktop operating-analysis card: `07-after-operating-ratio-detail-1491x1055.png`.
+- Final desktop data-source explanation: `09-after-data-sources-detail-1491x1055.png`.
+- Final mobile chart dialog and operating-analysis card at 390 x 844: `10-after-dual-chart-390x844.png` and `12-after-operating-ratio-detail-390x844.png`.
+- Post-build DOM checks confirmed the corrected fee note, `営業収支比率（簡易）`, `50%以上・全額未達`, general-accounting explanation, and official source links. Browser warnings and errors were empty.
+
+### Regression and scope
+
+- `pnpm lint`: passed.
+- `pnpm test`: 27/27 files and 161/161 tests passed, including new official-link, accounting-copy, 100%/50% boundary, and chart-label regressions.
+- `pnpm build`: passed; 1,649 static pages generated with no compile, type, or export error.
+- No database, schema, migration, ETL, imported data, source value, route, navigation destination, business option, table, map, ranking, or search behavior changed.
+- Intentional subtraction: the awkward sign-only sentence and misleading `（サイト算定）` wording were removed. No existing feature or accounting field was removed.
+- Security cleanup: pre-existing local absolute paths and attachment identifiers in this QA log were replaced with a generic prior-task reference; no current attachment path or local username is recorded.
+
+final result: passed
+
+## Superseding recovery-first and financial-disclosure gate — 2026-07-20
+
+This gate supersedes the earlier prefecture-comparison hierarchy that showed the simplified operating ratio as a default peer-comparison card and table column.
+
+### Public-source conclusion and display policy
+
+- Local Public Enterprise Act Article 17-2 requires enterprise expenses to be covered by income accompanying the enterprise except for expenses that general or special accounts should bear. It does not say that every sewer expense must be covered by sewer fees alone.
+- The Ministry of Land, Infrastructure, Transport and Tourism explains the sewerage principle as `雨水公費・汚水私費`; legitimate public funding therefore exists. Rainwater-treatment burden revenue is already included in operating revenue.
+- A simplified operating ratio below 100% shows an accounting operating loss, but does not by itself prove inadequate fees or improper tax-funded support. Fee adequacy remains the role of the official expense-recovery rate.
+- Income-statement `他会計補助金` and Table 40 `基準外繰入金` are separate classifications. Neither is labelled as the direct amount used to fill the operating loss.
+- The new ratios are explicitly labelled `相当の規模`; they are not labelled as a coverage or compensation rate and do not assert allocation or causality.
+
+### Accepted interaction and visual evidence
+
+- Default desktop and mobile views place expense recovery beside the monthly household fee. For Niigata City, the default card shows expense recovery `104.0%` and the prefectural median `96.1%`.
+- Operating coverage is absent from the default comparison cards and the municipality table. A closed information disclosure labelled `営業収支と一般会計からの繰入` retains access to the analysis without competing with fee adequacy.
+- Opening the disclosure shows the simplified operating ratio and four distinct amounts: operating loss `47.1億円`, rainwater-treatment burden revenue `89.6億円`, other-account subsidy revenue `22.4億円`, and non-standard transfer `2.0億円`.
+- Desktop and mobile panels use uniform one-pixel borders, standard eight-pixel radii, and neutral section separation. No directional accent border, lifted edge, or decorative heavy side was added.
+- Before/after comparison: `artifacts/design-qa/recovery-first-financial-disclosure-2026-07-20/comparison-before-after.png`.
+- Final default and opened desktop captures: `02-after-closed-1491x1055.png` and `03-after-open-1491x1055.png` in the same directory.
+- Final mobile default and funding captures: `04-after-closed-390x844.png` and `05-after-open-funding-390x844.png`.
+- Final post-build captures: `06-production-closed-1491x1055.png` and `07-production-open-1491x1055.png`.
+- A fresh post-build browser tab confirmed the closed default state, the opened values, the non-causation note, and no browser warnings or errors.
+
+### Regression, scope, and intentional subtraction
+
+- `pnpm lint`: passed.
+- `pnpm test`: 27/27 files and 161/161 tests passed.
+- `pnpm build`: passed; 1,649 static pages generated.
+- No database, Prisma schema, migration, ETL, imported data, public static data, source value, route, navigation destination, business option, map, ranking, or search behavior changed.
+- Intentional subtraction: the simplified operating ratio was removed from the default peer card, summary count, desktop table, and mobile comparison cards. The underlying value and 50% display treatment remain available in the information disclosure; no accounting field or feature was deleted.
+
+final result: passed
+
+## Superseding R6 Table 40 transfer-basis gate — 2026-07-21
+
+This gate supersedes the earlier `recovery-first and financial-disclosure` treatment that compared transfer amounts with operating loss and described the ratios only as relative scale.
+
+### Accounting and data correction
+
+- `営業収益÷営業費用×100` remains an unmodified supplemental operating-profit/loss indicator. The sufficiency boundary remains 100%; the required red-below-50 and green-at-or-above-50 treatment remains only a display-attention classification.
+- The explanation now pairs the possibility of non-standard support with the required exceptions: rainwater treatment, separated sewerage, advanced treatment, and other public-benefit expenses can be funded within the standard; other-account subsidy is an account title that can contain both standard and non-standard portions.
+- R6 legal-applied Table 40 now supplies exact actual and non-standard amounts for rainwater-treatment burden, non-operating other-account subsidy, and capital-account other-account subsidy. Standard amounts are calculated only when both values are valid and `non-standard <= actual`.
+- The ambiguous legal-applied `generalAccountTransfer` field is no longer published. Non-standard transfer totals used by rankings remain unchanged.
+- Niigata City R6 is fixed by regression at operating coverage `81.386960...%`, expense recovery `103.9923%`, and non-standard transfer total `196,466千円`. Its Table 40 components are `0千円` rainwater, `36,466千円` non-operating subsidy, and `160,000千円` capital subsidy.
+
+### Display and interaction
+
+- The four mini-cards and operating-loss-relative percentages were removed. The disclosure now places the operating-coverage comparison next to one compact Table 40 table with `科目 / 会計上の区分 / 実額 / 基準内 / 基準外`, followed by the official total.
+- Table amounts use exact thousand-yen source values rather than rounded hundred-million-yen abbreviations. The required note explains why the three displayed non-standard components may not exhaust every category included in the total.
+- Desktop uses uniform one-pixel panel borders and neutral row separators. Mobile retains page-width integrity and places horizontal scrolling only inside the five-column table.
+- At the requested browser override, desktop `1491 × 1055` produced a `1480 × 1047` content capture after browser chrome/scrollbar reservation. Mobile `390 × 844` produced a `379 × 820` content capture; `document.scrollWidth === document.clientWidth === 379`.
+
+### Accepted rendered evidence
+
+- Open desktop indicator and Table 40 table: `artifacts/design-qa/table40-transfer-breakdown-2026-07-21/01-final-desktop-open-1491x1055.png`.
+- Mobile expense-recovery and operating-coverage sequence: `02-final-mobile-indicators-390x844.png` in the same directory.
+- Mobile Table 40 panel and exact `196,466千円` total: `03-final-mobile-table-390x844.png` in the same directory.
+- Browser DOM verification confirmed `81.4%`, `104.0%`, the exact three Table 40 rows, the official total, the exception wording, and the absence of page-level horizontal overflow.
+
+### Regression and scope
+
+- `pnpm lint`: passed.
+- `pnpm test`: 28/28 files and 168/168 tests passed.
+- `pnpm build`: passed; 1,649 static pages generated.
+- No operating-coverage value, 50% color boundary, expense-recovery value, comparison order, non-standard-transfer ranking value, route, navigation destination, business option, map, ranking, or search behavior was removed.
+- Intentional subtraction: operating-loss-relative scale percentages and their four boxed amount cards were removed because they could be read as a compensation rate. Exact account amounts and the official total replaced them.
+
+final result: passed
+
+## Superseding recovery-only national-map and R6 yearbook-original gate — 2026-07-22
+
+This gate supersedes the nationwide map treatment that divided municipalities below 80% by the fee-unit-price threshold of 150 yen per cubic metre. Fee unit price remains available where it is useful, but it no longer affects the nationwide map color.
+
+### Nationwide map correction
+
+- The home and nationwide map heading is now `経費回収率`. Its legend has four recovery-only bands: `100%以上`, `90%以上100%未満`, `80%以上90%未満`, and `80%未満`, plus the unavailable state.
+- Every result below 80% uses the same red treatment. The national fill function accepts only the expense-recovery rate; the fee-unit-price argument is absent and a regression test fixes that contract.
+- The map explanation continues to disclose that prefectural color is a simple average of one displayed business per municipality, not a municipal consolidated value or an official national average.
+- The separate fee-unit-price value remains in municipality analysis, rankings, and prefecture-level comparison where regional context can be understood. It is not presented as a nationwide map evaluation axis.
+
+### R6 original yearbook data
+
+- Every generated municipality detail has a lazily loaded R6 original-data payload. The generator reads 23 official Ministry of Internal Affairs and Communications / e-Stat Excel workbooks, selects the exact municipality, business key, and accounting type, and emitted 185,848 matching source rows across 1,586 municipality files.
+- The viewer preserves the official horizontal format: `決算年度`, `業務コード`, `業種コード`, `事業コード`, `団体コード`, `団体名`, `施設コード`, `施設名`, `表番号`, `行番号`, `条件1` through `条件8`, and `列001` through `列099`, in that order. Empty cells remain empty and source text such as leading-zero codes is not converted.
+- Users can switch among the available official tables and open the corresponding e-Stat Excel. The raw table is kept inside its own horizontal scroller; the page itself does not gain horizontal overflow.
+- The existing concise indicator trace remains below the original table, so the official raw row and the site's mapped indicator can be checked in one disclosure without adding a competing dashboard card.
+- Niigata City public sewerage displayed 13 official source parts, including Tables 20 and 40, at 117 columns. Switching to special-environment public sewerage changed the original row's business code from `1` to `4` while retaining municipality code `151009` and municipality name `新潟市`.
+- Generated JSON contains official source URLs but no local workbook path, operating-system username, attachment identifier, or database file.
+
+### Accepted rendered evidence
+
+- The supplied before image and fresh desktop home capture were reviewed at the 1491 x 1055 reference viewport. The former two below-80 bands and combined heading are gone; the final legend is recovery-only.
+- A fresh desktop Niigata City capture shows the expanded R6 original-data disclosure with Table 40 selected, the official Excel link, 117 columns / 2 rows, and the first original columns in order.
+- A fresh 390 x 844 mobile capture shows the same disclosure and Table 40 selector. Browser measurements were `document.scrollWidth === document.clientWidth === 379`; only the raw table scrolls horizontally (`323px` client width / `9,126px` scroll width).
+- Runtime captures were kept outside the publication diff as local QA artifacts. Browser warnings and errors were empty after the home, table-switch, mobile, and business-switch checks.
+
+### Regression, scope, and intentional subtraction
+
+- `pnpm static:data`: passed; 1,586 municipality yearbook payloads regenerated.
+- `pnpm lint`: passed.
+- `pnpm test`: 29/29 files and 172/172 tests passed.
+- `pnpm build`: passed; 1,649 static pages generated.
+- Existing expense-recovery values, fee-unit-price values, ranking formulas, prefecture comparison, business switching, accounting values, Table 40 values, routes, and navigation destinations remain unchanged.
+- Intentional subtraction: the national map's `80%未満・単価150円/m³以上等` and `80%未満・単価150円/m³未満` color split, and the heading `経費回収率と使用料単価`, were removed because fee-unit price is not a defensible nationwide evaluation axis. No underlying fee-unit-price data or comparison feature was deleted.
 
 final result: passed

@@ -136,7 +136,15 @@ const ESTAT_HORIZONTAL_FIELD_MAP: Record<string, Record<number, EstatFieldMappin
       { field: "wastewaterTreatmentCost", label: "汚水処理費（合計）", rowNo: "02", colNo: 16, unit: "thousand_yen" }
     ],
     40: [
-      { field: "generalAccountTransfer", label: "他会計繰入金", rowNo: "01", colNo: 13, unit: "thousand_yen" },
+      // R6 table 40 publishes the actual and non-standard portions separately.
+      // Keep the account titles distinct instead of collapsing them into the
+      // ambiguous legacy generalAccountTransfer field.
+      { field: "table40RainwaterBurden", label: "雨水処理負担金（実繰入額）", rowNo: "01", colNo: 2, fromSurveyYear: 2024, toSurveyYear: 2024, unit: "thousand_yen" },
+      { field: "table40OtherAccountSubsidy", label: "他会計補助金（実繰入額）", rowNo: "01", colNo: 13, fromSurveyYear: 2024, toSurveyYear: 2024, unit: "thousand_yen" },
+      { field: "table40CapitalOtherAccountSubsidy", label: "資本勘定の他会計補助金（実繰入額）", rowNo: "02", colNo: 8, fromSurveyYear: 2024, toSurveyYear: 2024, unit: "thousand_yen" },
+      { field: "table40RainwaterBurdenNonStandard", label: "雨水処理負担金（基準外）", rowNo: "02", colNo: 44, fromSurveyYear: 2024, toSurveyYear: 2024, unit: "thousand_yen" },
+      { field: "table40OtherAccountSubsidyNonStandard", label: "他会計補助金（基準外）", rowNo: "02", colNo: 46, fromSurveyYear: 2024, toSurveyYear: 2024, unit: "thousand_yen" },
+      { field: "table40CapitalOtherAccountSubsidyNonStandard", label: "資本勘定の他会計補助金（基準外）", rowNo: "02", colNo: 51, fromSurveyYear: 2024, toSurveyYear: 2024, unit: "thousand_yen" },
       // The legal-applied table 40 layout widened in R5. The total stays on row
       // 02, but moves from column 37 (R2-R4) to column 57 (R5-R6).
       { field: "nonStandardTransfer", label: "基準外繰入合計", rowNo: "02", colNo: 37, toSurveyYear: 2022, unit: "thousand_yen" },
@@ -978,6 +986,19 @@ async function upsertAnnualFromEstatRow(
   const updateData = {
     fiscalYearLabel: japaneseFiscalYearLabel(surveyYear),
     accountingType,
+    ...(accountingType === "legal_applied" && tableNo === 40
+      ? {
+          generalAccountTransfer: null,
+          ...(surveyYear === 2024 ? {} : {
+            table40RainwaterBurden: null,
+            table40OtherAccountSubsidy: null,
+            table40CapitalOtherAccountSubsidy: null,
+            table40RainwaterBurdenNonStandard: null,
+            table40OtherAccountSubsidyNonStandard: null,
+            table40CapitalOtherAccountSubsidyNonStandard: null
+          })
+        }
+      : {}),
     ...data,
     sourceTraceJson: JSON.stringify(mergedTrace, null, 2)
   };
@@ -1114,9 +1135,15 @@ async function importStandardRows(source: Awaited<ReturnType<typeof prisma.sourc
         totalExpenseNonLegal: standard.totalExpenseNonLegal,
         realBalance: standard.realBalance,
         revenueExpenditureRatio: standard.revenueExpenditureRatio,
-        generalAccountTransfer: standard.generalAccountTransfer,
+        generalAccountTransfer: standard.accountingType === "legal_applied" ? null : standard.generalAccountTransfer,
         standardTransfer: standard.standardTransfer,
         nonStandardTransfer: standard.nonStandardTransfer,
+        table40RainwaterBurden: standard.table40RainwaterBurden,
+        table40OtherAccountSubsidy: standard.table40OtherAccountSubsidy,
+        table40CapitalOtherAccountSubsidy: standard.table40CapitalOtherAccountSubsidy,
+        table40RainwaterBurdenNonStandard: standard.table40RainwaterBurdenNonStandard,
+        table40OtherAccountSubsidyNonStandard: standard.table40OtherAccountSubsidyNonStandard,
+        table40CapitalOtherAccountSubsidyNonStandard: standard.table40CapitalOtherAccountSubsidyNonStandard,
         bondBalance: standard.bondBalance,
         bondIssued: standard.bondIssued,
         bondRedemption: standard.bondRedemption,
@@ -1146,9 +1173,15 @@ async function importStandardRows(source: Awaited<ReturnType<typeof prisma.sourc
         totalExpenseNonLegal: standard.totalExpenseNonLegal,
         realBalance: standard.realBalance,
         revenueExpenditureRatio: standard.revenueExpenditureRatio,
-        generalAccountTransfer: standard.generalAccountTransfer,
+        generalAccountTransfer: standard.accountingType === "legal_applied" ? null : standard.generalAccountTransfer,
         standardTransfer: standard.standardTransfer,
         nonStandardTransfer: standard.nonStandardTransfer,
+        table40RainwaterBurden: standard.table40RainwaterBurden,
+        table40OtherAccountSubsidy: standard.table40OtherAccountSubsidy,
+        table40CapitalOtherAccountSubsidy: standard.table40CapitalOtherAccountSubsidy,
+        table40RainwaterBurdenNonStandard: standard.table40RainwaterBurdenNonStandard,
+        table40OtherAccountSubsidyNonStandard: standard.table40OtherAccountSubsidyNonStandard,
+        table40CapitalOtherAccountSubsidyNonStandard: standard.table40CapitalOtherAccountSubsidyNonStandard,
         bondBalance: standard.bondBalance,
         bondIssued: standard.bondIssued,
         bondRedemption: standard.bondRedemption,

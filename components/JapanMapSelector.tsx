@@ -135,6 +135,16 @@ const statusLegend = [
 ];
 
 const statusColors: Record<string, string> = Object.fromEntries(statusLegend.map((item) => [item.key, item.color]));
+const nationalRecoveryLegend = [
+  { key: "100%以上", label: "100%以上", color: "#3db5a4" },
+  { key: "90%以上100%未満", label: "90%以上100%未満", color: "#a9d66f" },
+  { key: "80%以上90%未満", label: "80%以上90%未満", color: "#f5c65e" },
+  { key: "80%未満", label: "80%未満", color: "#e95b5d" },
+  { key: "データなし・対象外", label: "データなし・対象外", color: "#d1d4d8" }
+] as const;
+const nationalRecoveryColors: Record<string, string> = Object.fromEntries(
+  nationalRecoveryLegend.map((item) => [item.key, item.color])
+);
 
 const NATIONAL_HOVER_DELAY_MS = 280;
 type NationalHoverEvent = MouseEvent<SVGGElement | HTMLAnchorElement> | PointerEvent<SVGGElement | HTMLAnchorElement>;
@@ -291,7 +301,7 @@ export function NationalMapExplorer({
         <div className="panel national-map-panel overflow-hidden p-4">
           <div className="home-panel-title-row">
             <div>
-              <MapHeading>経費回収率と使用料単価</MapHeading>
+              <MapHeading>経費回収率</MapHeading>
             </div>
             <InfoDisclosure label="全国マップの使い方">
               {variant === "home"
@@ -544,9 +554,8 @@ function HomeInsetMap({
   const featureMunicipalities = byPrefecture.get(displayName);
   const recoveryRate = summary?.averageExpenseRecoveryRate
     ?? averageMetric(featureMunicipalities, (item) => item.expenseRecoveryRate);
-  const feeUnitPrice = averageMetric(featureMunicipalities, (item) => item.feeUnitPriceYenPerM3);
-  const diagnosisLabel = displayFeeRecoveryBandLabel(labelFromMetrics(recoveryRate, feeUnitPrice));
-  const fillColor = atlasStatusColor(recoveryRate, feeUnitPrice);
+  const diagnosisLabel = nationalRecoveryBandLabel(recoveryRate);
+  const fillColor = atlasStatusColor(recoveryRate);
   const active = activePrefectureCode === feature.code;
   const displayPath = atlasDisplayPath(feature);
   const viewBox = screenViewBox([{ ...feature, path: displayPath }], 8);
@@ -673,9 +682,8 @@ function AtlasRegionLayer({
         const active = activePrefectureCode === feature.code;
         const recoveryRate = summary?.averageExpenseRecoveryRate
           ?? averageMetric(featureMunicipalities, (item) => item.expenseRecoveryRate);
-        const feeUnitPrice = averageMetric(featureMunicipalities, (item) => item.feeUnitPriceYenPerM3);
-        const diagnosisLabel = displayFeeRecoveryBandLabel(labelFromMetrics(recoveryRate, feeUnitPrice));
-        const fillColor = atlasStatusColor(recoveryRate, feeUnitPrice);
+        const diagnosisLabel = nationalRecoveryBandLabel(recoveryRate);
+        const fillColor = atlasStatusColor(recoveryRate);
         const displayPath = displayPathMap.get(feature.code) ?? feature.path;
 
         return (
@@ -1177,10 +1185,10 @@ function MapLegend({ compact = false }: { compact?: boolean }) {
         <Info size={15} className="text-teal" />
       </div>
       <div className={compact ? "grid gap-1.5" : "grid gap-2"}>
-        {statusLegend.map((item) => (
+        {nationalRecoveryLegend.map((item) => (
           <div key={item.key} className="flex items-center gap-2 text-xs font-bold text-slate-700">
             <span className="status-swatch" style={{ backgroundColor: item.color }} />
-            <span>{item.note ? `${item.label}（${item.note}）` : item.label}</span>
+            <span>{item.label}</span>
           </div>
         ))}
       </div>
@@ -1528,10 +1536,7 @@ function hoverStateFromEvent(
     : summary?.averageExpenseRecoveryRate ?? averageMetric(municipalities, (item) => item.expenseRecoveryRate);
   const averageFee = averageMetric(municipalities, (item) => item.feeUnitPriceYenPerM3);
   const feeUnit = averageFee ?? first?.feeUnitPriceYenPerM3 ?? null;
-  const storedLabel = isMunicipalityFeature
-    ? first?.feeAdequacyLabel ?? labelFromMetrics(recovery, feeUnit)
-    : labelFromMetrics(recovery, feeUnit);
-  const label = displayFeeRecoveryBandLabel(storedLabel);
+  const label = nationalRecoveryBandLabel(recovery);
   const revisionCount = summary?.revisionEventCount ?? municipalities?.filter((item) => item.hasRevisionEvent).length ?? 0;
   const href = mapFeatureHref(feature, municipalities);
   return {
@@ -1692,10 +1697,23 @@ function labelOverlapArea(a: Bounds, b: Bounds, gap: number) {
 }
 
 function atlasStatusColor(
-  recoveryRate: number | null | undefined,
-  feeUnitPrice: number | null | undefined
+  recoveryRate: number | null | undefined
 ) {
-  return statusColors[labelFromMetrics(recoveryRate, feeUnitPrice)] ?? statusColors["データなし・対象外"];
+  return nationalRecoveryColors[nationalRecoveryBand(recoveryRate)]
+    ?? nationalRecoveryColors["データなし・対象外"];
+}
+
+function nationalRecoveryBand(recoveryRate: number | null | undefined) {
+  if (recoveryRate == null || !Number.isFinite(recoveryRate)) return "データなし・対象外";
+  if (recoveryRate >= 100) return "100%以上";
+  if (recoveryRate >= 90) return "90%以上100%未満";
+  if (recoveryRate >= 80) return "80%以上90%未満";
+  return "80%未満";
+}
+
+function nationalRecoveryBandLabel(recoveryRate: number | null | undefined) {
+  const band = nationalRecoveryBand(recoveryRate);
+  return band === "データなし・対象外" ? band : `経費回収率${band}`;
 }
 
 function groupMunicipalitiesByPrefecture(items: MapMunicipality[]) {

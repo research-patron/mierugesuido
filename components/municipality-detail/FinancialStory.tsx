@@ -135,6 +135,9 @@ function IncomeStatement({
 }) {
   const titleId = useId();
   const result = incomeResultCopy(analysis);
+  const operatingProfitLoss = analysis.operatingRevenue != null && analysis.operatingExpense != null
+    ? analysis.operatingRevenue - analysis.operatingExpense
+    : null;
   const equationTotal = analysis.equation.total ?? 0;
   const leftItems = incomeVisualItems(
     analysis.equation.left,
@@ -158,7 +161,7 @@ function IncomeStatement({
         icon={<Banknote size={21} aria-hidden="true" />}
         titleId={titleId}
         title="損益｜1年間の収益と費用"
-        description="1年間の収益と費用を比べ、最終的な利益または損失を示します。"
+        description="営業収益−営業費用が営業損益です。営業外損益・特別損益まで含めた総収益と総費用の差が、最終的な純損益になります。"
       />
 
       {!analysis.available || !analysis.visualizable ? (
@@ -194,6 +197,7 @@ function IncomeStatement({
           <MetricPair label="営業収益" value={formatFinancialAmount(analysis.operatingRevenue, analysis.scale)} />
           <MetricPair label="営業外収益" value={formatFinancialAmount(analysis.nonOperatingRevenue, analysis.scale)} />
           <MetricPair label="営業費用" value={formatFinancialAmount(analysis.operatingExpense, analysis.scale)} />
+          <MetricPair label="営業損益（営業収益−営業費用）" value={formatAdaptiveAmount(operatingProfitLoss)} />
           <MetricPair label="営業外費用" value={formatFinancialAmount(analysis.nonOperatingExpense, analysis.scale)} />
           <MetricPair label="当年度純損益" value={formatAdaptiveAmount(analysis.netIncome)} />
           <MetricPair label="総収益で総費用を賄えている割合" value={analysis.revenueCoverageRate == null ? "判定できません" : `${analysis.revenueCoverageRate.toFixed(1)}%`} />

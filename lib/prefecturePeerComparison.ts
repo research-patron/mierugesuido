@@ -33,12 +33,32 @@ export type PrefecturePeerAnnualInput = {
   accountingType: string;
   householdFee20m3Yen?: number | null;
   nonStandardTransfer?: number | null;
+  table40RainwaterBurden?: number | null;
+  table40OtherAccountSubsidy?: number | null;
+  table40CapitalOtherAccountSubsidy?: number | null;
+  table40RainwaterBurdenNonStandard?: number | null;
+  table40OtherAccountSubsidyNonStandard?: number | null;
+  table40CapitalOtherAccountSubsidyNonStandard?: number | null;
   servicePopulation?: number | null;
   connectedPopulation?: number | null;
   diagnosisResult?: {
     expenseRecoveryRate?: number | null;
   } | null;
   financialStatementItems: PrefecturePeerFinancialStatementItemInput[];
+};
+
+export type TransferBasisAmount = {
+  total: number | null;
+  standard: number | null;
+  nonStandard: number | null;
+};
+
+export type TransferBasisBreakdown = {
+  rainwaterBurden: TransferBasisAmount;
+  otherAccountSubsidy: TransferBasisAmount;
+  capitalOtherAccountSubsidy: TransferBasisAmount;
+  capitalOtherAccountSubsidyNonStandard: number | null;
+  nonStandardTransferTotal: number | null;
 };
 
 export type PrefecturePeerBusinessInput = {
@@ -95,8 +115,12 @@ export type PrefecturePeerComparisonRow = {
   expenseRecoveryRate: number | null;
   operatingRevenue: number | null;
   operatingExpense: number | null;
+  operatingLoss: number | null;
   operatingCoverageRatio: number | null;
+  rainwaterBurdenRevenue: number | null;
+  otherAccountSubsidyRevenue: number | null;
   nonStandardTransfer: number | null;
+  transferBasisBreakdown: TransferBasisBreakdown;
   servicePopulation: number | null;
   connectedPopulation: number | null;
 };
@@ -171,7 +195,9 @@ const PUBLIC_SEWER_FAMILY_EXCLUSION_LABELS: Partial<Record<PrefecturePeerExclusi
 
 const INCOME_ITEM_CODES = {
   operatingRevenue: "operating_revenue",
-  operatingExpense: "operating_expense"
+  operatingExpense: "operating_expense",
+  rainwaterBurdenRevenue: "rainwater_burden_revenue",
+  otherAccountSubsidyRevenue: "other_account_subsidy_revenue"
 } as const;
 
 export const PREFECTURE_PEER_INCOME_ITEM_CODES = Object.freeze(Object.values(INCOME_ITEM_CODES));
@@ -368,9 +394,31 @@ function buildRow({
   const expenseRecoveryRate = finiteOrNull(annual.diagnosisResult?.expenseRecoveryRate);
   const operatingRevenue = itemAmount(items, INCOME_ITEM_CODES.operatingRevenue);
   const operatingExpense = itemAmount(items, INCOME_ITEM_CODES.operatingExpense);
+  const operatingLoss = operatingRevenue == null || operatingExpense == null
+    ? null
+    : Math.max(operatingExpense - operatingRevenue, 0);
   const operatingCoverageRatio = operatingRevenue == null || operatingExpense == null || operatingExpense <= 0
     ? null
     : (operatingRevenue / operatingExpense) * 100;
+  const capitalOtherAccountSubsidyNonStandard = finiteOrNull(
+    annual.table40CapitalOtherAccountSubsidyNonStandard
+  );
+  const transferBasisBreakdown: TransferBasisBreakdown = {
+    rainwaterBurden: transferBasisAmount(
+      annual.table40RainwaterBurden,
+      annual.table40RainwaterBurdenNonStandard
+    ),
+    otherAccountSubsidy: transferBasisAmount(
+      annual.table40OtherAccountSubsidy,
+      annual.table40OtherAccountSubsidyNonStandard
+    ),
+    capitalOtherAccountSubsidy: transferBasisAmount(
+      annual.table40CapitalOtherAccountSubsidy,
+      capitalOtherAccountSubsidyNonStandard
+    ),
+    capitalOtherAccountSubsidyNonStandard,
+    nonStandardTransferTotal: finiteOrNull(annual.nonStandardTransfer)
+  };
 
   return {
     ...legalBase,
@@ -380,8 +428,12 @@ function buildRow({
     expenseRecoveryRate,
     operatingRevenue,
     operatingExpense,
+    operatingLoss,
     operatingCoverageRatio,
+    rainwaterBurdenRevenue: itemAmount(items, INCOME_ITEM_CODES.rainwaterBurdenRevenue),
+    otherAccountSubsidyRevenue: itemAmount(items, INCOME_ITEM_CODES.otherAccountSubsidyRevenue),
     nonStandardTransfer: finiteOrNull(annual.nonStandardTransfer),
+    transferBasisBreakdown,
     servicePopulation: finiteOrNull(annual.servicePopulation),
     connectedPopulation: finiteOrNull(annual.connectedPopulation)
   };
@@ -423,8 +475,12 @@ function excludedRow(
     expenseRecoveryRate: null,
     operatingRevenue: null,
     operatingExpense: null,
+    operatingLoss: null,
     operatingCoverageRatio: null,
+    rainwaterBurdenRevenue: null,
+    otherAccountSubsidyRevenue: null,
     nonStandardTransfer: null,
+    transferBasisBreakdown: emptyTransferBasisBreakdown(),
     servicePopulation: null,
     connectedPopulation: null
   };
@@ -497,6 +553,32 @@ function finiteOrNull(value: number | null | undefined) {
 
 function positiveFiniteOrNull(value: number | null | undefined) {
   return value == null || !Number.isFinite(value) || value <= 0 ? null : value;
+}
+
+export function transferBasisAmount(
+  totalValue: number | null | undefined,
+  nonStandardValue: number | null | undefined
+): TransferBasisAmount {
+  const total = nonNegativeFiniteOrNull(totalValue);
+  const nonStandard = nonNegativeFiniteOrNull(nonStandardValue);
+  const standard = total != null && nonStandard != null && nonStandard <= total
+    ? total - nonStandard
+    : null;
+  return { total, standard, nonStandard };
+}
+
+function emptyTransferBasisBreakdown(): TransferBasisBreakdown {
+  return {
+    rainwaterBurden: transferBasisAmount(null, null),
+    otherAccountSubsidy: transferBasisAmount(null, null),
+    capitalOtherAccountSubsidy: transferBasisAmount(null, null),
+    capitalOtherAccountSubsidyNonStandard: null,
+    nonStandardTransferTotal: null
+  };
+}
+
+function nonNegativeFiniteOrNull(value: number | null | undefined) {
+  return value == null || !Number.isFinite(value) || value < 0 ? null : value;
 }
 
 function isMunicipalityName(name: string) {

@@ -119,6 +119,53 @@
   gap: 9px;
 }
 
+.financialDetails {
+  overflow: hidden;
+  border: 1px solid var(--ui-border);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.financialDetails > summary {
+  display: grid;
+  min-height: 64px;
+  grid-template-columns: 38px minmax(0, 1fr) 20px;
+  gap: 11px;
+  align-items: center;
+  padding: 12px 14px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.financialDetails > summary::-webkit-details-marker { display: none; }
+.financialDetails > summary:hover { background: #f8fbfb; }
+.financialDetails > summary:focus-visible { outline: 2px solid color-mix(in srgb, var(--ui-teal) 30%, transparent); outline-offset: -2px; }
+.financialDetails[open] > summary { border-bottom: 1px solid var(--ui-border); }
+.financialDetails > summary strong,
+.financialDetails > summary small { display: block; }
+.financialDetails > summary strong { color: var(--ui-ink-deep); font-size: 13px; font-weight: 850; line-height: 1.45; }
+.financialDetails > summary small { margin-top: 3px; color: var(--ui-muted); font-size: 10px; font-weight: 650; line-height: 1.5; }
+
+.detailsIcon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--ui-aqua);
+  color: var(--ui-teal-hover);
+}
+
+.detailsChevron { color: var(--ui-muted); transition: transform 160ms ease; }
+.financialDetails[open] .detailsChevron { transform: rotate(180deg); }
+.financialDetailsBody {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  padding: 14px;
+  background: #f7fafb;
+}
+
 .chartCard {
   display: grid;
   align-content: start;
@@ -206,6 +253,44 @@
 .axisReference { position: absolute; transform: translateX(-50%); color: #526670; white-space: nowrap; }
 .formulaNote { margin: 10px 0 0; border-top: 1px solid #e2ecee; padding-top: 8px; color: var(--ui-muted); font-size: 9px; font-weight: 700; line-height: 1.55; }
 
+.fundingCard {
+  display: grid;
+  align-content: start;
+  gap: 13px;
+  border: 1px solid var(--ui-border);
+  border-radius: 8px;
+  background: #fff;
+  padding: 15px;
+}
+
+.fundingHeading {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  gap: 11px;
+  align-items: start;
+}
+
+.fundingHeading h3 { margin: 0; color: var(--ui-ink-deep); font-size: 17px; font-weight: 850; line-height: 1.35; }
+.fundingHeading > div > p:last-child { margin: 5px 0 0; color: var(--ui-muted); font-size: 11.5px; font-weight: 650; line-height: 1.65; }
+.transferTableScroll { overflow-x: auto; }
+.transferTable { width: 100%; min-width: 560px; border-collapse: collapse; background: #fff; }
+.transferTable caption { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
+.transferTable th,
+.transferTable td { border-bottom: 1px solid #e2eaec; padding: 8px 7px; text-align: right; vertical-align: middle; }
+.transferTable thead th { background: #f5f8f9; color: var(--ui-muted); font-size: 8.5px; font-weight: 850; white-space: nowrap; }
+.transferTable thead th:first-child,
+.transferTable tbody th { text-align: left; }
+.transferTable tbody th { color: var(--ui-ink-deep); font-size: 9.5px; font-weight: 850; line-height: 1.4; }
+.transferTable tbody td { color: var(--ui-ink); font-size: 9.5px; font-weight: 750; white-space: nowrap; }
+.transferTable tbody td:nth-child(2) { color: var(--ui-muted); font-size: 8.5px; }
+.transferTotal { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; border-top: 1px solid #ccdadd; border-bottom: 1px solid #ccdadd; padding: 10px 7px; }
+.transferTotal span { color: var(--ui-muted); font-size: 9.5px; font-weight: 800; }
+.transferTotal strong { color: var(--ui-ink-deep); font-size: 15px; font-weight: 900; white-space: nowrap; }
+.fundingNotes { display: grid; gap: 5px; border-top: 1px solid #e2ecee; padding-top: 9px; color: var(--ui-muted); font-size: 9.5px; font-weight: 650; line-height: 1.6; }
+.fundingNotes p { margin: 0; }
+.fundingNotes strong { color: var(--ui-ink-deep); }
+.fundingNotes a { color: var(--ui-teal-hover); font-weight: 800; text-underline-offset: 2px; }
+
 .tableSection { display: grid; gap: 10px; }
 .tableHeading { display: block; }
 .tableScroll { overflow-x: auto; border: 1px solid var(--ui-border); border-radius: 8px; }
@@ -257,21 +342,6 @@
 .table tr:last-child td { border-bottom: 0; }
 .currentRow th,
 .currentRow td { background: #ecfbfa; }
-.coverageValue { display: inline-flex; flex-direction: column; align-items: flex-end; gap: 3px; }
-.coverageValue > strong { color: #15765d; font-size: 11px; font-weight: 900; }
-.coverageValue[data-status="critical"] > strong { color: #b52f36; }
-.coverageStatusBadge {
-  display: inline-flex !important;
-  border-radius: 999px;
-  padding: 3px 6px;
-  font-size: 8px !important;
-  font-weight: 850 !important;
-  line-height: 1.25;
-  white-space: nowrap;
-}
-.coverageStatusBadge[data-tone="context"] { border: 1px solid #d5e5e5; background: #f4f8f8; color: #526b70 !important; }
-.coverageStatusBadge[data-tone="critical"] { background: #fff0f0; color: #b52f36 !important; }
-.unavailable { color: var(--ui-muted); font-size: 9px; }
 .excludedCell { text-align: left !important; color: var(--ui-muted) !important; white-space: normal !important; }
 .excludedCell span,
 .mobileExcluded span { display: inline-flex; margin-right: 7px; border-radius: 999px; background: #edf1f2; padding: 3px 7px; color: #52626a; font-size: 8.5px; font-weight: 850; }
@@ -318,6 +388,14 @@
   .metricContext { display: grid; gap: 6px; }
   .metricContext span { justify-self: start; }
   .comparisonGrid { grid-template-columns: 1fr; }
+  .financialDetails > summary { min-height: 68px; grid-template-columns: 34px minmax(0, 1fr) 18px; gap: 9px; padding: 11px 12px; }
+  .detailsIcon { width: 34px; height: 34px; }
+  .financialDetailsBody { grid-template-columns: 1fr; padding: 10px; }
+  .fundingCard { padding: 12px; }
+  .fundingHeading { grid-template-columns: 34px minmax(0, 1fr); gap: 9px; }
+  .fundingHeading h3 { font-size: 15px; }
+  .transferTable { min-width: 520px; }
+  .transferTotal { align-items: flex-start; }
   .axis[data-reference] > span:last-child { display: none; }
   .metricBar[data-emphasized] div > span { font-size: 16px; }
   .tableScroll { display: none; }
@@ -345,8 +423,6 @@
   .mobileCurrent dt { color: var(--ui-muted); font-size: 8.5px; font-weight: 750; }
   .mobileCard dd,
   .mobileCurrent dd { margin: 3px 0 0; color: var(--ui-ink-deep); font-size: 11px; font-weight: 850; }
-  .mobileCard .coverageValue,
-  .mobileCurrent .coverageValue { align-items: flex-start; }
   .mobileCard dd small,
   .mobileCurrent dd small { display: block; margin-top: 2px; color: var(--ui-muted); font-size: 8.5px; }
   .mobileWide { grid-column: 1 / -1; }

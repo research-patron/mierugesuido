@@ -241,13 +241,16 @@ describe("national map UI guardrails", () => {
   it("uses diagnosis category fills instead of reference-image regional colors", () => {
     const statusColorBlock = componentFunctionBlock("atlasStatusColor");
 
-    expect(componentSource).toContain('const statusColors: Record<string, string>');
-    expect(componentSource).toContain('key: "適正水準", label: "100%以上"');
-    expect(componentSource).toContain('key: "重点監視", label: "80%未満"');
+    expect(componentSource).toContain('const nationalRecoveryColors: Record<string, string>');
+    expect(componentSource).toContain('key: "100%以上", label: "100%以上"');
+    expect(componentSource).toContain('key: "80%未満", label: "80%未満", color: "#e95b5d"');
     expect(componentSource).toContain("summary?.averageExpenseRecoveryRate");
     expect(componentSource).toContain("averageMetric(featureMunicipalities, (item) => item.expenseRecoveryRate)");
-    expect(statusColorBlock).toContain("labelFromMetrics(recoveryRate, feeUnitPrice)");
-    expect(statusColorBlock).toContain('statusColors["データなし・対象外"]');
+    expect(statusColorBlock).toContain("nationalRecoveryBand(recoveryRate)");
+    expect(statusColorBlock).not.toContain("feeUnitPrice");
+    expect(statusColorBlock).toContain('nationalRecoveryColors["データなし・対象外"]');
+    expect(componentSource).toContain("<MapHeading>経費回収率</MapHeading>");
+    expect(componentSource).not.toContain("<MapHeading>経費回収率と使用料単価</MapHeading>");
     expect(componentSource).not.toContain("ATLAS_REGION_COLORS");
     expect(componentSource).not.toContain("atlasRegionColor");
     expect(componentSource).not.toContain("hokkaidoTohoku");

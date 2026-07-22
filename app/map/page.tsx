@@ -24,7 +24,7 @@ export default async function MapPage() {
               <div className="text-xs font-black text-teal">ホーム ＞ 全国マップ</div>
               <h1 className="mt-1 text-2xl font-black leading-tight text-ink sm:text-3xl">全国下水道経費回収率マップ</h1>
               <p className="mt-1 max-w-3xl text-sm font-medium leading-6 text-slate-700">
-                都道府県ごとの経費回収率と使用料単価を比較し、県内市区町村の詳細へ進めます。
+                都道府県ごとの経費回収率を比較し、県内市区町村の詳細へ進めます。使用料単価は地域性があるため、全国地図の色分けには使用しません。
               </p>
             </div>
             <Link href="/data-sources" className="button-secondary">

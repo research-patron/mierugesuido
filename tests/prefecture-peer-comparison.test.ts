@@ -50,6 +50,7 @@ describe("buildPrefecturePeerComparison", () => {
           operatingRevenue: 600,
           nonOperatingRevenue: 400,
           operatingExpense: 1_000,
+          rainwaterBurdenRevenue: 150,
           otherAccountSubsidy: 200,
           nonStandardTransfer: 10
         })] })]),
@@ -88,7 +89,10 @@ describe("buildPrefecturePeerComparison", () => {
       expenseRecoveryRate: 105,
       operatingRevenue: 600,
       operatingExpense: 1_000,
+      operatingLoss: 400,
       operatingCoverageRatio: 60,
+      rainwaterBurdenRevenue: 150,
+      otherAccountSubsidyRevenue: 200,
       nonStandardTransfer: 10
     });
     expect(result.rows[0].operatingCoverageRatio).toBeCloseTo(110);
@@ -132,11 +136,73 @@ describe("buildPrefecturePeerComparison", () => {
     expect(result.rows[0]).toMatchObject({
       householdFee20m3Yen: null,
       expenseRecoveryRate: null,
+      operatingLoss: 0,
       operatingCoverageRatio: null
     });
     expect(result.summary.missingCounts).toEqual({
       expenseRecoveryRate: 1,
       operatingCoverageRatio: 1
+    });
+  });
+
+  it("keeps Niigata R6 operating coverage, expense recovery, and table 40 transfers distinct", () => {
+    const result = buildPrefecturePeerComparison({
+      prefectureCode: "15",
+      prefectureName: "新潟県",
+      businessKey: "17-1-000",
+      currentMunicipalityCode: "151009",
+      municipalities: [municipality("151009", "新潟市", [business({ annuals: [annual({
+        recovery: 103.9923,
+        operatingRevenue: 20_603_730,
+        operatingExpense: 25_315_763,
+        rainwaterBurdenRevenue: 8_961_461,
+        otherAccountSubsidy: 2_235_741,
+        nonStandardTransfer: 196_466,
+        table40RainwaterBurden: 8_961_461,
+        table40OtherAccountSubsidy: 2_235_741,
+        table40CapitalOtherAccountSubsidy: 2_879_067,
+        table40RainwaterBurdenNonStandard: 0,
+        table40OtherAccountSubsidyNonStandard: 36_466,
+        table40CapitalOtherAccountSubsidyNonStandard: 160_000
+      })] })])]
+    });
+
+    const row = result.rows[0];
+    expect(row.operatingCoverageRatio).toBeCloseTo(81.38696, 5);
+    expect(row.expenseRecoveryRate).toBeCloseTo(103.9923, 4);
+    expect(row.operatingLoss).toBe(4_712_033);
+    expect(row.transferBasisBreakdown).toEqual({
+      rainwaterBurden: { total: 8_961_461, standard: 8_961_461, nonStandard: 0 },
+      otherAccountSubsidy: { total: 2_235_741, standard: 2_199_275, nonStandard: 36_466 },
+      capitalOtherAccountSubsidy: { total: 2_879_067, standard: 2_719_067, nonStandard: 160_000 },
+      capitalOtherAccountSubsidyNonStandard: 160_000,
+      nonStandardTransferTotal: 196_466
+    });
+    expect(row.expenseRecoveryRate).toBeGreaterThanOrEqual(100);
+    expect(row.operatingCoverageRatio).toBeLessThan(100);
+  });
+
+  it("calculates standard amounts only from valid actual and non-standard pairs", () => {
+    const result = buildPrefecturePeerComparison({
+      prefectureName: "テスト県",
+      businessKey: "17-1-000",
+      municipalities: [municipality("012025", "不整合市", [business({ annuals: [annual({
+        table40RainwaterBurden: 100,
+        table40RainwaterBurdenNonStandard: 120,
+        table40OtherAccountSubsidy: 200,
+        table40OtherAccountSubsidyNonStandard: 20
+      })] })])]
+    });
+
+    expect(result.rows[0].transferBasisBreakdown.rainwaterBurden).toEqual({
+      total: 100,
+      standard: null,
+      nonStandard: 120
+    });
+    expect(result.rows[0].transferBasisBreakdown.otherAccountSubsidy).toEqual({
+      total: 200,
+      standard: 180,
+      nonStandard: 20
     });
   });
 
@@ -459,7 +525,12 @@ describe("getPrefecturePeerComparison", () => {
       fiscalLabel: "R6",
       summary: { totalMunicipalities: 1, eligibleMunicipalities: 1 }
     });
-    expect(PREFECTURE_PEER_INCOME_ITEM_CODES).toEqual(["operating_revenue", "operating_expense"]);
+    expect(PREFECTURE_PEER_INCOME_ITEM_CODES).toEqual([
+      "operating_revenue",
+      "operating_expense",
+      "rainwater_burden_revenue",
+      "other_account_subsidy_revenue"
+    ]);
     expect(result.rows[0]).toMatchObject({ municipalityCode: "012025", isCurrent: true, operatingCoverageRatio: 80 });
   });
 
@@ -583,8 +654,15 @@ function annual({
   operatingRevenue = 800,
   nonOperatingRevenue = 200,
   operatingExpense = 1_000,
+  rainwaterBurdenRevenue = 120,
   otherAccountSubsidy = 100,
-  nonStandardTransfer = 25
+  nonStandardTransfer = 25,
+  table40RainwaterBurden = rainwaterBurdenRevenue,
+  table40OtherAccountSubsidy = otherAccountSubsidy,
+  table40CapitalOtherAccountSubsidy = 0,
+  table40RainwaterBurdenNonStandard = 0,
+  table40OtherAccountSubsidyNonStandard = 0,
+  table40CapitalOtherAccountSubsidyNonStandard = 0
 }: {
   year?: number;
   accountingType?: string;
@@ -593,8 +671,15 @@ function annual({
   operatingRevenue?: number;
   nonOperatingRevenue?: number;
   operatingExpense?: number;
+  rainwaterBurdenRevenue?: number;
   otherAccountSubsidy?: number;
   nonStandardTransfer?: number;
+  table40RainwaterBurden?: number | null;
+  table40OtherAccountSubsidy?: number | null;
+  table40CapitalOtherAccountSubsidy?: number | null;
+  table40RainwaterBurdenNonStandard?: number | null;
+  table40OtherAccountSubsidyNonStandard?: number | null;
+  table40CapitalOtherAccountSubsidyNonStandard?: number | null;
 } = {}): PrefecturePeerAnnualInput {
   return {
     surveyYear: year,
@@ -602,6 +687,12 @@ function annual({
     accountingType,
     householdFee20m3Yen,
     nonStandardTransfer,
+    table40RainwaterBurden,
+    table40OtherAccountSubsidy,
+    table40CapitalOtherAccountSubsidy,
+    table40RainwaterBurdenNonStandard,
+    table40OtherAccountSubsidyNonStandard,
+    table40CapitalOtherAccountSubsidyNonStandard,
     servicePopulation: 10_000,
     connectedPopulation: 9_000,
     diagnosisResult: { expenseRecoveryRate: recovery },
@@ -609,6 +700,7 @@ function annual({
       { itemCode: "operating_revenue", amount: operatingRevenue },
       { itemCode: "non_operating_revenue", amount: nonOperatingRevenue },
       { itemCode: "operating_expense", amount: operatingExpense },
+      { itemCode: "rainwater_burden_revenue", amount: rainwaterBurdenRevenue },
       { itemCode: "other_account_subsidy_revenue", amount: otherAccountSubsidy }
     ]
   };

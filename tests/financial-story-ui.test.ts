@@ -49,6 +49,13 @@ describe("financial statement accounting-box UI", () => {
     expect(cssSource).toContain(".accountingTermNote");
   });
 
+  it("explains the statutory operating result before the final net result", () => {
+    expect(componentSource).toContain("営業収益−営業費用が営業損益です");
+    expect(componentSource).toContain("営業外損益・特別損益まで含めた総収益と総費用の差");
+    expect(componentSource).toContain("analysis.operatingRevenue - analysis.operatingExpense");
+    expect(componentSource).toContain('label="営業損益（営業収益−営業費用）"');
+  });
+
   it("keeps the three major balance boxes and never detaches a compact balance item", () => {
     const balanceSheetSource = componentSource.slice(
       componentSource.indexOf("function BalanceSheet("),

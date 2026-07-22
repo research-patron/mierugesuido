@@ -1,5 +1,5 @@
 import { DisclaimerBox } from "@/components/DisclaimerBox";
-import { accountingExplanation, detailDisclaimer, footerDisclaimer } from "@/lib/copy";
+import { accountingExplanation, detailDisclaimer, footerDisclaimer, operatingRatioExplanation } from "@/lib/copy";
 
 export default function DisclaimerPage() {
   return (
@@ -13,6 +13,10 @@ export default function DisclaimerPage() {
       <section className="rounded-md border border-line bg-white p-5">
         <h2 className="text-xl font-bold text-ink">会計収支と使用料水準</h2>
         <p className="mt-3 text-sm leading-7 text-slate-600">{accountingExplanation}</p>
+      </section>
+      <section className="rounded-md border border-line bg-white p-5">
+        <h2 className="text-xl font-bold text-ink">営業収支比率（簡易）の位置づけ</h2>
+        <p className="mt-3 text-sm leading-7 text-slate-600">{operatingRatioExplanation}</p>
       </section>
     </div>
   );

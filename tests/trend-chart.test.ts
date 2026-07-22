@@ -41,5 +41,13 @@ describe("TrendChart", () => {
     expect(markup.match(/aria-haspopup="dialog"/g)).toHaveLength(4);
     expect(markup).toContain("経費回収率の推移（%）を拡大表示");
     expect(markup).toContain("拡大");
+    expect(markup).toContain('class="chart-value-label"');
+    expect(markup).toContain('class="chart-year-label"');
+    expect(markup).toContain('y="13" text-anchor="middle" class="chart-value-label chart-value-primary"');
+    expect(markup).toContain('y="26" text-anchor="middle" class="chart-value-label chart-value-secondary"');
+    expect(markup).toContain("単位：円");
+    expect(markup).toContain("単位：千m³");
+    expect(markup).toContain('class="chart-value-label">3,300</text>');
+    expect(markup).not.toContain('class="chart-value-label">3,300円</text>');
   });
 });

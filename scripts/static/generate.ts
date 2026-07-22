@@ -18,10 +18,16 @@ import { municipalitiesToCsv } from "@/lib/municipalityCsv";
 import { getPrefectureCode, prefectures } from "@/lib/prefectures";
 import { prisma } from "@/lib/prisma";
 import { rankingLabels, type RankingType } from "@/lib/rankings";
+import {
+  buildYearbookOriginalDataIndex,
+  compactYearbookOriginalData,
+  emptyYearbookOriginalData
+} from "@/scripts/static/yearbookOriginalData";
 
 const sourceRoot = path.join(process.cwd(), "data", "static");
 const publicRoot = path.join(process.cwd(), "public", "data", "static");
 const rankingTypes = Object.keys(rankingLabels) as RankingType[];
+const latestFiscalYear = 2024;
 
 async function main() {
   await Promise.all([
@@ -98,6 +104,38 @@ async function main() {
     available: Boolean(source.downloadedAt || source.localPath)
   })));
 
+  const yearbookSources = await prisma.sourceFile.findMany({
+    where: {
+      surveyYear: latestFiscalYear + 1,
+      localPath: { not: null },
+      tableNo: { not: null }
+    },
+    orderBy: [{ accountingType: "asc" }, { tableNo: "asc" }, { id: "asc" }]
+  });
+  const yearbookBusinesses = await prisma.sewerBusiness.findMany({
+    where: { annualFinancials: { some: { surveyYear: latestFiscalYear } } },
+    select: {
+      businessKey: true,
+      accountingType: true,
+      municipality: { select: { municipalityCode: true } }
+    }
+  });
+  const yearbookTargetKeys = new Set(yearbookBusinesses.flatMap((business) => {
+    const municipalityCode = business.municipality.municipalityCode;
+    return municipalityCode
+      ? [`${municipalityCode}|${business.businessKey}|${business.accountingType}`]
+      : [];
+  }));
+  const yearbookIndex = buildYearbookOriginalDataIndex(
+    yearbookSources,
+    latestFiscalYear,
+    yearbookTargetKeys
+  );
+  process.stdout.write(
+    `yearbook originals: ${yearbookIndex.originalRows} rows from ${yearbookIndex.sourceFilesRead} workbooks`
+      + `${yearbookIndex.warnings.length ? ` (${yearbookIndex.warnings.length} warnings)` : ""}\n`
+  );
+
   const peerPairs = new Set<string>();
   await mapConcurrent(mapMunicipalities, 10, async (item, index) => {
     if (!item.municipalityCode) return;
@@ -110,6 +148,13 @@ async function main() {
     await writeJson(
       path.join(publicRoot, "municipalities", `${item.municipalityCode}.json`),
       compactMunicipalityDetail(detail)
+    );
+    await writeJson(
+      path.join(publicRoot, "yearbook", `${item.municipalityCode}.json`),
+      compactYearbookOriginalData(
+        yearbookIndex.byMunicipality.get(item.municipalityCode)
+          ?? emptyYearbookOriginalData(latestFiscalYear)
+      )
     );
     if ((index + 1) % 100 === 0 || index + 1 === mapMunicipalities.length) {
       process.stdout.write(`static details: ${index + 1}/${mapMunicipalities.length}\n`);
@@ -192,10 +237,30 @@ function compactAnnual(annual: any) {
     updatedAt: _updatedAt,
     sourceTraceJson: _sourceTraceJson,
     financialStatementItems: _financialStatementItems,
+    generalAccountTransfer,
+    table40RainwaterBurden,
+    table40OtherAccountSubsidy,
+    table40CapitalOtherAccountSubsidy,
+    table40RainwaterBurdenNonStandard,
+    table40OtherAccountSubsidyNonStandard,
+    table40CapitalOtherAccountSubsidyNonStandard,
     diagnosisResult,
     ...values
   } = annual;
-  return { ...values, diagnosisResult: compactDiagnosis(diagnosisResult) };
+  const table40BreakdownValues = Object.fromEntries(Object.entries({
+    table40RainwaterBurden,
+    table40OtherAccountSubsidy,
+    table40CapitalOtherAccountSubsidy,
+    table40RainwaterBurdenNonStandard,
+    table40OtherAccountSubsidyNonStandard,
+    table40CapitalOtherAccountSubsidyNonStandard
+  }).filter(([, value]) => value != null));
+  return {
+    ...values,
+    ...(annual.accountingType === "legal_applied" ? {} : { generalAccountTransfer }),
+    ...table40BreakdownValues,
+    diagnosisResult: compactDiagnosis(diagnosisResult)
+  };
 }
 
 function compactDiagnosis(diagnosis: any) {
@@ -290,6 +355,8 @@ function evidenceOrder(field: string) {
     "householdFee20m3Yen", "sewerFeeRevenue", "annualBillableVolume", "wastewaterTreatmentCost", "opexComponent", "capitalCostComponent",
     "ordinaryRevenue", "ordinaryExpense", "ordinaryProfitLoss", "netIncome", "totalRevenueNonLegal",
     "totalExpenseNonLegal", "realBalance", "generalAccountTransfer", "standardTransfer", "nonStandardTransfer",
+    "table40RainwaterBurden", "table40OtherAccountSubsidy", "table40CapitalOtherAccountSubsidy",
+    "table40RainwaterBurdenNonStandard", "table40OtherAccountSubsidyNonStandard", "table40CapitalOtherAccountSubsidyNonStandard",
     "bondBalance", "servicePopulation", "connectedPopulation", "treatedVolume"
   ];
   const index = order.indexOf(field);

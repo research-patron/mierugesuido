@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import { CircleHelp, Database, FileText, Info, Scale } from "lucide-react";
-import { formulaCopy } from "@/lib/copy";
+import { formulaCopy, operatingRatioExplanation } from "@/lib/copy";
 import { fieldDefinitions } from "@/lib/fieldDefinitions";
 import { formatSettlementFiscalLabel } from "@/lib/format";
 import { getStaticDataSources } from "@/lib/staticData";
@@ -59,13 +59,13 @@ export default async function DataSourcesPage() {
                 <p className="rounded-md border border-line bg-panel px-3 py-2 text-xs font-bold leading-6 text-ink">
                   色分けは、公式指標を読みやすくするための本サイト独自の参考区分です。
                 </p>
+                <p><strong className="text-ink">全国地図は経費回収率だけで色分け</strong></p>
                 <p><strong className="text-ink">経費回収率100%以上</strong></p>
                 <p><strong className="text-ink">経費回収率90%以上100%未満</strong></p>
                 <p><strong className="text-ink">経費回収率80%以上90%未満</strong></p>
-                <p><strong className="text-ink">経費回収率80%未満・使用料単価150円/m³以上（または単価不明）</strong></p>
-                <p><strong className="text-ink">経費回収率80%未満・使用料単価150円/m³未満</strong></p>
+                <p><strong className="text-ink">経費回収率80%未満</strong></p>
                 <p className="rounded-md bg-panel px-3 py-2 text-xs leading-6 text-slate-600">
-                  まず経費回収率で100%・90%・80%の段階を見ます。80%未満だけは使用料単価150円/m³も併用します。この単価は「一般家庭20m³／月の使用料」とは別の指標です。
+                  使用料単価は地域性があるため、全国地図の評価には使いません。同一都道府県内の市町村マップでは、80%未満に限り使用料単価150円/m³以上等と150円/m³未満を分けて参考表示します。この単価は「一般家庭20m³／月の使用料」とは別の指標です。
                 </p>
               </div>
             </InfoCard>
@@ -75,7 +75,49 @@ export default async function DataSourcesPage() {
         <section className="panel p-4">
           <div className="flex items-center gap-2">
             <Scale size={21} className="text-teal" aria-hidden="true" />
-            <h2 className="text-xl font-black text-ink">2. 法適用・法非適用の比較範囲</h2>
+            <h2 className="text-xl font-black text-ink">2. 損益計算書と営業収支の読み方</h2>
+          </div>
+          <p className="mt-3 max-w-6xl text-sm font-medium leading-7 text-slate-700">
+            {operatingRatioExplanation}
+          </p>
+          <div className="mt-4 grid gap-3 lg:grid-cols-3">
+            <div className="rounded-md border border-line bg-panel p-4">
+              <h3 className="font-black text-ink">原則は経営に伴う収入で賄う</h3>
+              <p className="mt-2 text-sm font-medium leading-7 text-slate-700">地方公営企業法第17条の2は、一般会計等が負担すべき経費を除き、企業の経営に伴う収入で経費を賄うことを原則としています。すべての経費を使用料だけで賄う、という規定ではありません。</p>
+            </div>
+            <div className="rounded-md border border-line bg-panel p-4">
+              <h3 className="font-black text-ink">下水道には正当な公費負担がある</h3>
+              <p className="mt-2 text-sm font-medium leading-7 text-slate-700">「雨水公費・汚水私費」が基本です。雨水処理負担金は公費負担ですが、損益計算書では営業収益に含まれるため、営業収益は使用料収入だけを表しません。</p>
+            </div>
+            <div className="rounded-md border border-line bg-panel p-4">
+              <h3 className="font-black text-ink">営業損失と繰入金は同額ではない</h3>
+              <p className="mt-2 text-sm font-medium leading-7 text-slate-700">100%未満は会計上の営業損失を示します。一方、他会計補助金は営業外収益、基準外繰入金は「繰入金に関する調」の別項目です。金額を比較しても、営業損失への直接の補填割合とは断定できません。</p>
+            </div>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm font-black">
+            <a href="https://laws.e-gov.go.jp/law/327AC0000000292" className="inline-flex items-center gap-2 text-teal hover:underline">
+              <FileText size={16} aria-hidden="true" />
+              e-Gov 地方公営企業法（第17条の2）
+            </a>
+            <a href="https://laws.e-gov.go.jp/law/327M50000002073/" className="inline-flex items-center gap-2 text-teal hover:underline">
+              <FileText size={16} aria-hidden="true" />
+              e-Gov 地方公営企業法施行規則（第24条）
+            </a>
+            <a href="https://www.city.suita.osaka.jp/kurashi/1018513/1018531/1018533/1037597.html" className="inline-flex items-center gap-2 text-teal hover:underline">
+              <FileText size={16} aria-hidden="true" />
+              吹田市 公営企業の営業収支比率の解説
+            </a>
+            <a href="https://www.mlit.go.jp/mizukokudo/sewerage/crd_sewerage_tk_000140.html" className="inline-flex items-center gap-2 text-teal hover:underline">
+              <FileText size={16} aria-hidden="true" />
+              国土交通省 下水道経営の基本原則
+            </a>
+          </div>
+        </section>
+
+        <section className="panel p-4">
+          <div className="flex items-center gap-2">
+            <Scale size={21} className="text-teal" aria-hidden="true" />
+            <h2 className="text-xl font-black text-ink">3. 法適用・法非適用の比較範囲</h2>
           </div>
           <p className="mt-3 max-w-5xl text-sm font-medium leading-7 text-slate-700">
             両方とも地方公営企業であり、地方公営企業決算状況調査の対象です。法非適用には、同調査上、法適用と同じ企業会計方式の損益計算書・貸借対照表様式がありません。一方、汚水処理費と下水道使用料による経費回収率は両区分で共通の公式指標です。そのため料金指標は会計方式を明示して参考比較し、企業会計方式の財務図は法適用事業に限ります。
@@ -120,7 +162,7 @@ export default async function DataSourcesPage() {
 
         <section className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_420px]">
           <div className="panel overflow-hidden p-4">
-            <h2 className="text-xl font-black text-ink">3. データの出典</h2>
+            <h2 className="text-xl font-black text-ink">4. データの出典</h2>
             <div className="mt-4 rounded-md border border-teal/25 bg-teal/5 p-4">
               <h3 className="font-black text-ink">公的統計（e-Stat / 総務省）</h3>
               <p className="mt-2 text-sm font-medium leading-7 text-slate-700">
@@ -164,13 +206,15 @@ export default async function DataSourcesPage() {
           </div>
 
           <section className="panel p-4">
-            <h2 className="text-xl font-black text-ink">4. よくあるご質問</h2>
+            <h2 className="text-xl font-black text-ink">5. よくあるご質問</h2>
             <div className="mt-4 grid gap-3">
               {[
                 ["法非適用事業も使用料を比較できますか？", "汚水処理費と下水道使用料は総務省の統一定義で整理されるため、経費回収率等は参考比較できます。一方、損益計算書・貸借対照表の同列比較は行いません。"],
                 ["流域下水道が対象外なのはなぜですか？", "使用料の決め方や費用負担の構造が市区町村の公共下水道と異なるため、同列比較から外しています。"],
                 ["データなしと表示されるのはなぜですか？", "必要な分母・分子のどちらかが未取得、または該当事業の決算データが未登録の場合に表示します。"],
                 ["一般家庭用20m³／月使用料と使用料単価は同じですか？", "一般家庭用20m³／月使用料は料金表上の税込額です。使用料単価は年間使用料収入÷年間有収水量、経費回収率は使用料収入÷汚水処理費で算定するため、料金表の税込・税抜を示す項目ではありません。"],
+                ["営業費用は営業収益で賄うべきですか？", "一般会計等が負担すべき経費を除き、企業の経営に伴う収入で経費を賄うのが地方公営企業法上の原則です。ただし、下水道の営業収益には雨水処理負担金等の正当な公費負担も含まれます。営業収益÷営業費用は営業損益を見る補足指標で、使用料の十分性は経費回収率で確認します。"],
+                ["営業損失は基準外繰入金で補填された額ですか？", "同額とは限りません。他会計補助金は損益計算書の営業外収益で、基準内・基準外の双方を含み得ます。基準外繰入金の有無と金額は営業損失から推測せず、総務省「繰入金に関する調」第40表の項目別実額・基準外額・合計で確認します。"],
                 ["ランキングの並び順はどう決まりますか？", "算定不可を除外し、選択した指標の昇順または降順で並べます。"],
               ].map(([question, answer]) => (
                 <details key={question} className="rounded-md border border-line bg-white p-3">

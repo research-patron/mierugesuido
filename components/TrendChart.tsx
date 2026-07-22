@@ -13,13 +13,13 @@ export type TrendPoint = {
   feeUnitPriceYenPerM3: number | null;
   treatmentCostYenPerM3: number | null;
   annualBillableVolume?: number | null;
-  generalAccountTransfer?: number | null;
 };
 
 export function TrendChart({ points }: { points: TrendPoint[] }) {
   const chartPoints = points.map(sanitizeTrendPoint);
   const hasNonLegalYears = chartPoints.some((point) => point.accountingType === "non_legal_applied");
   const hasLegalYears = chartPoints.some((point) => point.accountingType === "legal_applied");
+  const volumeScale = chooseVolumeChartScale(chartPoints.map((point) => point.annualBillableVolume));
 
   return (
     <div className="grid gap-3">
@@ -45,6 +45,8 @@ export function TrendChart({ points }: { points: TrendPoint[] }) {
           ariaLabel="一般家庭用20立方メートル月額使用料の推移"
           points={chartPoints.map((point) => ({ ...point, value: point.householdFee20m3Yen }))}
           formatter={formatHouseholdMonthlyFee}
+          plotFormatter={formatHouseholdMonthlyFeeValue}
+          unitLabel="円"
           color="#3f9bd6"
         />
         <DualBarChart
@@ -57,6 +59,8 @@ export function TrendChart({ points }: { points: TrendPoint[] }) {
           ariaLabel="有収水量推移"
           points={chartPoints.map((point) => ({ ...point, value: point.annualBillableVolume }))}
           formatter={formatVolume}
+          plotFormatter={(value) => formatScaledChartValue(value, volumeScale)}
+          unitLabel={volumeScale.unit}
           color="#70d1ca"
         />
       </div>
@@ -82,6 +86,29 @@ function chartableValue(value: number | null | undefined) {
 function formatHouseholdMonthlyFee(value: number | null | undefined) {
   if (value == null || !Number.isFinite(value)) return "未取得";
   return `${Math.round(value).toLocaleString("ja-JP")}円`;
+}
+
+function formatHouseholdMonthlyFeeValue(value: number | null | undefined) {
+  if (value == null || !Number.isFinite(value)) return "—";
+  return Math.round(value).toLocaleString("ja-JP");
+}
+
+type ChartValueScale = {
+  divisor: 1 | 1_000 | 1_000_000;
+  unit: "m³" | "千m³" | "百万m³";
+};
+
+function chooseVolumeChartScale(values: Array<number | null | undefined>): ChartValueScale {
+  const maximum = Math.max(0, ...values.filter((value): value is number => value != null && Number.isFinite(value)));
+  if (maximum >= 1_000_000) return { divisor: 1_000_000, unit: "百万m³" };
+  if (maximum >= 1_000) return { divisor: 1_000, unit: "千m³" };
+  return { divisor: 1, unit: "m³" };
+}
+
+function formatScaledChartValue(value: number | null | undefined, scale: ChartValueScale) {
+  if (value == null || !Number.isFinite(value)) return "—";
+  const scaled = value / scale.divisor;
+  return scale.divisor === 1 ? Math.round(scaled).toLocaleString("ja-JP") : scaled.toFixed(1);
 }
 
 type ChartPoint = {
@@ -143,7 +170,7 @@ function LineChart({
                 stroke="#fff"
                 strokeWidth="1.5"
               />
-              <text x={x(point.year, minYear, maxYear, width, padding)} y={y(point.value ?? 0, max, height, padding) - 8} textAnchor="middle" className="chart-label">
+              <text x={x(point.year, minYear, maxYear, width, padding)} y={y(point.value ?? 0, max, height, padding) - 8} textAnchor="middle" className="chart-value-label">
                 {formatter(point.value)}
               </text>
             </g>
@@ -186,13 +213,15 @@ function DualBarChart({
             const baseX = padding + slot * index + slot * 0.25;
             const barWidth = Math.min(18, slot * 0.22);
             const opacity = point.accountingType === "non_legal_applied" ? 0.55 : 1;
+            const firstCenter = baseX + barWidth / 2;
+            const secondCenter = baseX + barWidth * 1.5 + 4;
             return (
               <g key={point.year}>
                 {point.first != null ? <rect x={baseX} y={y(point.first, max, height, padding)} width={barWidth} height={height - padding - y(point.first, max, height, padding)} fill="#3f9bd6" rx="2" opacity={opacity} {...basisBarOutline(point.accountingType)} /> : null}
                 {point.second != null ? <rect x={baseX + barWidth + 4} y={y(point.second, max, height, padding)} width={barWidth} height={height - padding - y(point.second, max, height, padding)} fill="#8d7bd0" rx="2" opacity={opacity} {...basisBarOutline(point.accountingType)} /> : null}
-                {point.first != null ? <text x={baseX + barWidth / 2} y={Math.max(y(point.first, max, height, padding) - 6, 14)} textAnchor="middle" className="chart-label">{point.first.toFixed(1)}</text> : null}
-                {point.second != null ? <text x={baseX + barWidth * 1.5 + 4} y={Math.max(y(point.second, max, height, padding) - 6, 14)} textAnchor="middle" className="chart-label">{point.second.toFixed(1)}</text> : null}
-                <text x={baseX + barWidth} y={height - 10} textAnchor="middle" className="chart-label">{basisYearLabel(point)}</text>
+                {point.first != null ? <text x={firstCenter} y="13" textAnchor="middle" className="chart-value-label chart-value-primary">{point.first.toFixed(1)}</text> : null}
+                {point.second != null ? <text x={secondCenter} y="26" textAnchor="middle" className="chart-value-label chart-value-secondary">{point.second.toFixed(1)}</text> : null}
+                <text x={baseX + barWidth} y={height - 10} textAnchor="middle" className="chart-year-label">{basisYearLabel(point)}</text>
               </g>
             );
           })}
@@ -209,12 +238,16 @@ function BarChart({
   ariaLabel,
   points,
   formatter,
+  plotFormatter = formatter,
+  unitLabel,
   color
 }: {
   title: string;
   ariaLabel: string;
   points: Array<ChartPoint & { value: number | null | undefined }>;
   formatter: (value: number | null | undefined) => string;
+  plotFormatter?: (value: number | null | undefined) => string;
+  unitLabel?: string;
   color: string;
 }) {
   const width = 360;
@@ -224,7 +257,7 @@ function BarChart({
   const summary = points.map((point) => `${yearLabel(point)} ${formatter(point.value)} ${basisLabel(point.accountingType)}`).join("、");
 
   return (
-    <ChartFrame title={title} summary={`${ariaLabel}。${summary}`}>
+    <ChartFrame title={title} summary={`${ariaLabel}。${summary}`} legend={unitLabel ? <span>単位：{unitLabel}</span> : undefined}>
       {points.some((point) => point.value != null) ? (
         <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={ariaLabel} className="h-auto w-full">
           <Axes width={width} height={height} padding={padding} />
@@ -236,8 +269,8 @@ function BarChart({
             return (
               <g key={point.year}>
                 {point.value != null ? <rect x={barX} y={barY} width={barWidth} height={height - padding - barY} fill={color} rx="2" opacity={point.accountingType === "non_legal_applied" ? 0.55 : 1} {...basisBarOutline(point.accountingType)} /> : null}
-                {point.value != null ? <text x={barX + barWidth / 2} y={Math.max(barY - 8, 16)} textAnchor="middle" className="chart-label">{formatter(point.value)}</text> : null}
-                <text x={barX + barWidth / 2} y={height - 10} textAnchor="middle" className="chart-label">{basisYearLabel(point)}</text>
+                {point.value != null ? <text x={barX + barWidth / 2} y={Math.max(barY - 8, 15)} textAnchor="middle" className="chart-value-label">{plotFormatter(point.value)}</text> : null}
+                <text x={barX + barWidth / 2} y={height - 10} textAnchor="middle" className="chart-year-label">{basisYearLabel(point)}</text>
               </g>
             );
           })}
@@ -369,7 +402,7 @@ function YearLabels({ points, width, height, padding }: { points: ChartPoint[]; 
   return (
     <>
       {points.map((point) => (
-        <text key={point.year} x={x(point.year, minYear, maxYear, width, padding)} y={height - 10} textAnchor="middle" className="chart-label">
+        <text key={point.year} x={x(point.year, minYear, maxYear, width, padding)} y={height - 10} textAnchor="middle" className="chart-year-label">
           {basisYearLabel(point)}
         </text>
       ))}

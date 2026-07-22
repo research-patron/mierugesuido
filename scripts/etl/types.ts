@@ -56,6 +56,12 @@ export type StandardFinancialRow = {
   generalAccountTransfer?: number | null;
   standardTransfer?: number | null;
   nonStandardTransfer?: number | null;
+  table40RainwaterBurden?: number | null;
+  table40OtherAccountSubsidy?: number | null;
+  table40CapitalOtherAccountSubsidy?: number | null;
+  table40RainwaterBurdenNonStandard?: number | null;
+  table40OtherAccountSubsidyNonStandard?: number | null;
+  table40CapitalOtherAccountSubsidyNonStandard?: number | null;
   bondBalance?: number | null;
   bondIssued?: number | null;
   bondRedemption?: number | null;

@@ -51,6 +51,36 @@ ensureAdditiveColumns(dbPath, [
     table: "annual_financials",
     column: "household_fee_20m3_yen",
     sql: "ALTER TABLE annual_financials ADD COLUMN household_fee_20m3_yen REAL"
+  },
+  {
+    table: "annual_financials",
+    column: "table40_rainwater_burden",
+    sql: "ALTER TABLE annual_financials ADD COLUMN table40_rainwater_burden REAL"
+  },
+  {
+    table: "annual_financials",
+    column: "table40_other_account_subsidy",
+    sql: "ALTER TABLE annual_financials ADD COLUMN table40_other_account_subsidy REAL"
+  },
+  {
+    table: "annual_financials",
+    column: "table40_capital_other_account_subsidy",
+    sql: "ALTER TABLE annual_financials ADD COLUMN table40_capital_other_account_subsidy REAL"
+  },
+  {
+    table: "annual_financials",
+    column: "table40_rainwater_burden_non_standard",
+    sql: "ALTER TABLE annual_financials ADD COLUMN table40_rainwater_burden_non_standard REAL"
+  },
+  {
+    table: "annual_financials",
+    column: "table40_other_account_subsidy_non_standard",
+    sql: "ALTER TABLE annual_financials ADD COLUMN table40_other_account_subsidy_non_standard REAL"
+  },
+  {
+    table: "annual_financials",
+    column: "table40_capital_other_account_subsidy_non_standard",
+    sql: "ALTER TABLE annual_financials ADD COLUMN table40_capital_other_account_subsidy_non_standard REAL"
   }
 ]);
 

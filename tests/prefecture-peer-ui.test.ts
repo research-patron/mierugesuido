@@ -18,9 +18,10 @@ const detailCssSource = readFileSync(
 );
 
 describe("prefecture peer comparison UI", () => {
-  it("adds a third URL-backed tab with prefecture-specific wording", () => {
-    expect(pageSource).toContain('type DetailView = "fees" | "finance" | "prefecture"');
+  it("keeps prefecture comparison as the third URL-backed tab with prefecture-specific wording", () => {
+    expect(pageSource).toContain('type DetailView = "fees" | "finance" | "prefecture" | "yearbook"');
     expect(pageSource).toContain('href={detailHref(municipalityCode, selectedGroup.key, "prefecture")}');
+    expect(pageSource).toContain('href={detailHref(municipalityCode, selectedGroup.key, "yearbook")}');
     expect(pageSource).toContain('if (prefectureName === "北海道") return "道内市町村"');
     expect(pageSource).toContain('if (prefectureName === "東京都") return "都内市区町村"');
     expect(pageSource).toContain("/data/static/peers/");

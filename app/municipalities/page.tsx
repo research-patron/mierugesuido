@@ -195,7 +195,7 @@ function MunicipalityCardGrid({ items }: { items: any[] }) {
             <CardMetric label="経費回収率" value={formatPercent(item.diagnosis?.expenseRecoveryRate)} />
             <CardMetric label="使用料単価" value={formatYenPerM3(item.diagnosis?.feeUnitPriceYenPerM3)} />
             <CardMetric label="汚水処理原価" value={formatYenPerM3(item.diagnosis?.treatmentCostYenPerM3)} />
-            <CardMetric label="100%相当の増収率" value={formatRevisionRate(item.diagnosis?.requiredRevisionRateTo100)} />
+            <CardMetric label="使用料収入の必要増加率" value={formatRevisionRate(item.diagnosis?.requiredRevisionRateTo100)} />
           </div>
           <div className="municipality-result-badges">
             <span><span className="sr-only">診断: </span><Badge>{item.diagnosis?.feeAdequacyLabel ?? "判定不可"}</Badge></span>

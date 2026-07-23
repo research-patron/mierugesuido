@@ -60,7 +60,7 @@ describe("prefecture municipality map UI guardrails", () => {
     expect(componentSource).toContain("区分 ${displayFeeRecoveryBandLabel(status)}");
     expect(componentSource).toContain("getFeeAdequacyLabel(recovery, feeUnit)");
     expect(componentSource).not.toContain("function labelFromRate");
-    expect(componentSource).toContain("100%相当の増収率");
+    expect(componentSource).toContain("使用料収入の必要増加率");
   });
 
   it("uses the former side-panel space for a full-width adaptive-label map", () => {

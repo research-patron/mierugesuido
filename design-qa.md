@@ -1094,3 +1094,72 @@ This gate supersedes the nationwide map treatment that divided municipalities be
 - Intentional subtraction: the national map's `80%未満・単価150円/m³以上等` and `80%未満・単価150円/m³未満` color split, and the heading `経費回収率と使用料単価`, were removed because fee-unit price is not a defensible nationwide evaluation axis. No underlying fee-unit-price data or comparison feature was deleted.
 
 final result: passed
+
+## Superseding fee-recovery and official individual-table gate — 2026-07-23
+
+This gate supersedes the earlier e-Stat internal-column viewer and the fee story that converted one household's 20m³ tariff into a supposed recovery-rate-100% monthly amount.
+
+### Accounting and data correction
+
+- `一般家庭用20m³／月` is now a tax-inclusive household tariff-table amount. Expense recovery remains an annual, business-wide comparison of sewer-fee revenue with public-burden-adjusted wastewater-treatment cost.
+- The false `経費回収率100%相当の月額`, monthly difference, arrows, and `calculateRequiredHouseholdFee20m3` were removed. `使用料収入の必要増加率（単純計算）` is used in detail, search, map, ranking, disclaimer, and CSV surfaces; 100% or higher displays `不足なし` and never suggests a price reduction.
+- Mogami Town public sewerage R6 is fixed at `2,910円／月`, `32,688千円` revenue, `70,477千円` cost, `37,789千円` shortfall, `46.4%` recovery, and `115.6%` necessary business-wide revenue increase under unchanged costs.
+- Missing values, non-positive denominators, official `-`, and non-reconciling maintenance/capital components are not estimated.
+- Static generation discovers R6 official `12．個表` groups (1)–(8), uses 86 Ministry workbooks, and preserves official row order, hierarchy labels, row numbers, display text, dashes, blanks, notes, workbook URL, and sheet name.
+- Prefecture/operator/category/accounting matching is exact. Designated-city sheets with blank prefecture cells use an exact operator fallback and ambiguous matches fail generation.
+- Tariff and recovery display values are checked during generation. Recovery is compared from the unrounded annual numerator and denominator to avoid double-rounding errors.
+- The official legal-applied `18/0` workbook has no exact column for 57 e-Stat records. These are not guessed; the viewer reports the unavailable extraction and retains the Ministry source-page link.
+
+### Display and rendered QA
+
+- The fee section is ordered vertically as `家庭の料金表` then `事業全体の費用回収`, with exact annual revenue, cost, shortfall/surplus, and the business-wide increase note. Cost components use a compact two-column disclosure.
+- The 14 mapped source items are one vertical list. `公式個表の全項目を見る` then reveals one item/value table and group selector. Desktop scroll is vertical inside the list; mobile stacks each item above its value.
+- The screen states that it is an official-order municipality/operator extraction, not a reproduction of the Excel screen. Ministry-page and selected-workbook links remain visible.
+- Screenshot iteration corrected an inherited outer-accordion style that squeezed the nested disclosure heading. Native `details/summary` semantics and visible focus treatment remain.
+- Runtime QA artifacts kept outside the publication diff: `fee-before-after.png`, `yearbook-before-after.png`, three 1491 × 1055 desktop captures, and four 390 × 844 mobile captures.
+- Browser checks found no page-level horizontal overflow at either viewport, confirmed block-stacked mobile rows and visible official links, and reported no warnings or errors.
+
+### Regression, scope, and intentional subtraction
+
+- `pnpm static:data`: passed; 1,317,957 official rows and 1,586 municipality payloads.
+- `pnpm lint`: passed.
+- `pnpm test`: 30/30 files and 178/178 tests passed.
+- `pnpm build`: passed; 1,649 static pages generated.
+- No database, Prisma schema, migration, ETL mapping, imported e-Stat value, route, navigation destination, business switch, map, ranking source value, or official source value changed.
+- Intentional subtraction: two false monthly amounts, arrows, monthly difference, the e-Stat internal-column viewer, horizontal raw table, and four-column evidence layout were removed. The real tariff, annual values, mapped e-Stat provenance, and every available official individual-table row remain.
+
+final result: passed
+
+## Superseding yearbook-tab placement gate — 2026-07-23
+
+### Information architecture and interaction
+
+- The former bottom-of-page yearbook disclosure was removed from the shared support area.
+- `年鑑・根拠データ` is now the fourth URL-backed detail tab, immediately after the prefecture comparison tab.
+- The tab keeps the selected business and remains selected when the user switches among the municipality's available sewer-business records.
+- The dedicated view preserves the intended progressive order: short page explanation, 14 calculation-source items, then the official individual-table extraction and its all-items disclosure.
+- The fee view retains its compact source wording; the large evidence and official-row interfaces are no longer repeated below the fee trend charts.
+
+### Responsive and accessibility checks
+
+- At 1491 × 1055, four equal-width tabs read as `料金と経費回収率`, `R6 財務を読む`, `県内市町村`, and `年鑑・根拠データ`.
+- At 390 × 844, the visible labels shorten to `料金・回収`, `R6財務`, `県内比較`, and `年鑑データ`; each target is 85.25px wide and 44px high.
+- The full tab names remain available through explicit accessible labels, and the current tab retains `aria-current="page"`.
+- The 390px viewport reported `window.innerWidth = 390` and `document.documentElement.scrollWidth = 379`, with no page-level horizontal overflow.
+- The yearbook source list and official extraction retain vertical mobile reflow, visible source links, native details/summary controls, and no clipped values.
+- Runtime logs reported no warnings or errors.
+
+### Captured evidence and regression
+
+- Runtime QA artifacts kept outside the publication diff:
+  - `yearbook-tab-desktop-1491x1055.png`
+  - `yearbook-tab-desktop-official-1491x1055.png`
+  - `yearbook-tab-mobile-390x844.png`
+  - `yearbook-tab-mobile-official-390x844.png`
+- `pnpm lint`: passed.
+- `pnpm test`: 30/30 files and 178/178 tests passed.
+- `pnpm build`: passed; 1,649 static pages generated.
+- `git diff --check`: passed.
+- No database, Prisma schema, migration, official workbook, generated static data, or accounting calculation changed in this placement pass.
+
+final result: passed

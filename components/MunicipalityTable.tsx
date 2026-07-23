@@ -26,7 +26,7 @@ export function MunicipalityTable({ items }: { items: any[] }) {
             </div>
             <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
               <MobileMetric label="経費回収率" value={formatPercent(item.diagnosis?.expenseRecoveryRate)} strong />
-              <MobileMetric label="100%相当の増収率" value={formatRevisionRate(item.diagnosis?.requiredRevisionRateTo100)} strong />
+              <MobileMetric label="使用料収入の必要増加率" value={formatRevisionRate(item.diagnosis?.requiredRevisionRateTo100)} strong />
               <MobileMetric label="使用料単価" value={formatYenPerM3(item.diagnosis?.feeUnitPriceYenPerM3)} />
               <MobileMetric label="汚水処理原価" value={formatYenPerM3(item.diagnosis?.treatmentCostYenPerM3)} />
             </div>
@@ -58,9 +58,9 @@ export function MunicipalityTable({ items }: { items: any[] }) {
                 help="有収水量1m³あたりの汚水処理費です"
               />
               <MetricHeader
-                label="100%相当の増収率"
+                label="使用料収入の必要増加率"
                 unit="（%）"
-                help="費用や有収水量が変わらない仮定で、経費回収率100%相当となる下水道使用料収入の増加率を単純試算した値です"
+                help="費用や有収水量が変わらない仮定で、事業全体の使用料収入の不足を解消するために必要な増加率です。家庭の20m³月額への換算ではありません"
               />
               <th scope="col">診断</th>
               <th scope="col">公式改定情報</th>

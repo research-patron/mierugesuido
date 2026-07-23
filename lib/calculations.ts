@@ -79,28 +79,7 @@ export function calculateExpenseRecoveryRate(sewerFeeRevenueThousandYen: number 
 
 export function calculateRequiredRevisionRateTo100(expenseRecoveryRate: number | null) {
   if (!isPositiveFinite(expenseRecoveryRate)) return null;
-  return round(100 / expenseRecoveryRate - 1, 6);
-}
-
-/**
- * Applies the same proportional change implied by the expense-recovery rate
- * to the official household 20m³/month tariff. This is a scenario, not an
- * official tariff decision; callers should avoid presenting a value below the
- * current tariff as a price-cut recommendation when recovery is already 100%.
- */
-export function calculateRequiredHouseholdFee20m3(
-  householdFee20m3Yen: number | null | undefined,
-  expenseRecoveryRate: number | null | undefined
-) {
-  if (
-    householdFee20m3Yen == null
-    || expenseRecoveryRate == null
-    || !Number.isFinite(householdFee20m3Yen)
-    || !Number.isFinite(expenseRecoveryRate)
-    || householdFee20m3Yen < 0
-    || expenseRecoveryRate <= 0
-  ) return null;
-  return Math.round(householdFee20m3Yen * 100 / expenseRecoveryRate);
+  return round(Math.max(100 / expenseRecoveryRate - 1, 0), 6);
 }
 
 export function calculateRequiredRevisionRateTo80(expenseRecoveryRate: number | null) {
@@ -302,12 +281,12 @@ function buildDiagnosisComment(label: string, rate: number | null, required100: 
     return `最新決算の経費回収率は${rateText}であり、汚水処理費に対する下水道使用料収入が概ね100%の水準です。ただし、将来の更新投資や有収水量の減少により、今後も同水準を維持できるとは限りません。`;
   }
   if (label === "やや不足" || label === "要注意") {
-    return `最新決算の経費回収率は${rateText}であり、下水道使用料収入が汚水処理費を下回っています。費用や有収水量が変わらない仮定では、経費回収率100%相当の使用料収入は約${revisionText}の増加となる単純試算です。`;
+    return `最新決算の経費回収率は${rateText}であり、下水道使用料収入が汚水処理費を下回っています。費用や有収水量が変わらない仮定では、事業全体の使用料収入の不足解消には約${revisionText}の増加が必要となる単純計算です。家庭の月額への換算ではありません。`;
   }
   if (label === "判定不可") {
     return "最新決算の主要値に欠損があるため、使用料水準の判定はできません。データ根拠と原資料を確認してください。";
   }
-  return `最新決算の経費回収率は${rateText}であり、汚水処理費に対する使用料収入の不足割合が大きい状態です。費用や有収水量が変わらない仮定では、経費回収率100%相当の使用料収入は約${revisionText}の増加となる単純試算です。実際の使用料改定は、審議会、条例改正、一般会計繰入、投資計画等を踏まえて決まります。`;
+  return `最新決算の経費回収率は${rateText}であり、汚水処理費に対する使用料収入の不足割合が大きい状態です。費用や有収水量が変わらない仮定では、事業全体の使用料収入の不足解消には約${revisionText}の増加が必要となる単純計算です。家庭の月額への換算ではありません。実際の使用料改定は、審議会、条例改正、一般会計繰入、投資計画等を踏まえて決まります。`;
 }
 
 export function round(value: number | null, digits = 2) {

@@ -467,7 +467,7 @@ export function PrefectureMapExplorer({
                 <th scope="col">経費回収率</th>
                 <th scope="col">使用料単価</th>
                 <th scope="col">汚水処理原価</th>
-                <th scope="col">100%相当の増収率</th>
+                <th scope="col">使用料収入の必要増加率</th>
                 <th scope="col">公式改定情報</th>
               </tr>
             </thead>

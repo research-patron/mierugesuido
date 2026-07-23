@@ -1033,7 +1033,7 @@ export function PrefectureMapExplorer({
           <select value={sort} onChange={(event) => setSort(event.target.value)} className="input-control">
             <option value="recovery-desc">経費回収率（高い順）</option>
             <option value="recovery-asc">経費回収率（低い順）</option>
-            <option value="revision-desc">100%相当の増収率（高い順）</option>
+            <option value="revision-desc">使用料収入の必要増加率（高い順）</option>
             <option value="name">自治体コード順</option>
           </select>
           <div className="grid grid-cols-4 gap-2">
@@ -1112,7 +1112,7 @@ export function PrefectureMapExplorer({
                 <th>経費回収率</th>
                 <th>使用料単価</th>
                 <th>汚水処理原価</th>
-                <th>100%相当の増収率</th>
+                <th>使用料収入の必要増加率</th>
                 <th>公式改定情報</th>
               </tr>
             </thead>

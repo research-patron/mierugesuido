@@ -17,7 +17,22 @@ describe("static municipality CSV", () => {
     const csv = municipalitiesToCsv(items);
 
     expect(csv.trim().split("\n")).toHaveLength(174);
-    expect(csv).toContain("100%相当の増収率（%・単純試算）");
+    expect(csv).toContain("使用料収入の必要増加率（%・単純計算）");
+  });
+
+  it("exports no required increase when recovery is already sufficient", () => {
+    const csv = municipalitiesToCsv([{
+      prefectureName: "新潟県",
+      municipalityName: "余剰市",
+      municipalityCode: "150002",
+      businessKey: "17-1-000",
+      accountingType: "legal_applied",
+      diagnosis: { requiredRevisionRateTo100: -0.04 },
+      hasRevisionEvent: false
+    }]);
+
+    expect(csv).toContain('"0.0"');
+    expect(csv).not.toContain('"-4.0"');
   });
 
   it("exports an internal 0.25 revision fraction as 25.0 percent", () => {

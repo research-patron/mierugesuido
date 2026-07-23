@@ -500,7 +500,7 @@
 .viewTabs {
   display: grid;
   width: 100%;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   margin-bottom: 8px;
   border: 1px solid var(--ui-border);
   border-radius: 8px;
@@ -535,8 +535,13 @@
   color: #fff;
 }
 
+.tabLabelMobile {
+  display: none;
+}
+
 .contentSection,
-.financeSection {
+.financeSection,
+.yearbookView {
   display: grid;
   gap: 16px;
 }
@@ -546,7 +551,8 @@
 }
 
 .contentSection + .supportGrid,
-.financeSection + .supportGrid {
+.financeSection + .supportGrid,
+.yearbookView + .supportGrid {
   margin-top: 16px;
 }
 
@@ -568,8 +574,7 @@
   gap: 20px;
 }
 
-.feeDecisionHeading > div > span,
-.costBoundaryHeading > div > span {
+.feeDecisionHeading > div > span {
   display: block;
   margin-bottom: 3px;
   color: var(--ui-teal-hover);
@@ -617,33 +622,39 @@
   color: #a55c0d;
 }
 
-.feeEquation {
+.feeDecisionFlow {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 28px minmax(0, 1fr) 28px minmax(0, 0.86fr);
-  gap: 8px;
-  align-items: stretch;
+  gap: 10px;
 }
 
-.feeEquationCard {
+.feeTariffPanel,
+.feeRecoveryPanel {
   display: grid;
-  min-width: 0;
-  min-height: 144px;
-  align-content: start;
-  gap: 4px;
+  gap: 10px;
   border: 1px solid var(--ui-border);
   border-radius: 8px;
-  background: var(--ui-soft);
-  padding: 15px;
+  background: #fff;
+  padding: 16px;
 }
 
-.feeEquationCard > span {
-  color: var(--ui-muted);
-  font-size: 11px;
-  font-weight: 750;
+.feeTariffPanel {
+  grid-template-columns: minmax(210px, 0.7fr) minmax(190px, auto) minmax(260px, 1fr);
+  align-items: center;
+  background: var(--ui-soft);
+}
+
+.feeTariffPanel > div > span,
+.feeRecoveryPanelHeading span {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--ui-teal-hover);
+  font-size: 10px;
+  font-weight: 850;
   line-height: 1.35;
 }
 
-.feeEquationCard h3 {
+.feeTariffPanel h3,
+.feeRecoveryPanelHeading h3 {
   margin: 0;
   color: var(--ui-ink-deep);
   font-size: 14px;
@@ -651,123 +662,145 @@
   line-height: 1.4;
 }
 
-.feeEquationCard > strong {
-  margin-top: 4px;
+.feeTariffPanel > strong {
   color: var(--ui-ink-deep);
-  font-size: clamp(25px, 2.3vw, 34px);
+  font-size: clamp(24px, 2.3vw, 32px);
   font-weight: 900;
-  line-height: 1.08;
-  overflow-wrap: anywhere;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
-.feeEquationCard p {
-  align-self: end;
-  margin: 5px 0 0;
+.feeTariffPanel > p {
+  margin: 0;
   color: var(--ui-muted);
   font-size: 11px;
   font-weight: 650;
-  line-height: 1.55;
+  line-height: 1.65;
 }
 
-.feeEquationCardEmphasis {
-  border-color: color-mix(in srgb, var(--ui-teal) 46%, var(--ui-border));
-  background: linear-gradient(145deg, var(--ui-aqua), #f7fdfc);
+.feeRecoveryPanel {
+  background: #f8fcfc;
 }
 
-.feeEquationCardEmphasis > strong {
-  color: var(--ui-teal-hover);
-}
-
-.feeEquationCardVerdict {
-  background: #f7fafc;
-}
-
-.feeEquationCardVerdict > strong {
-  color: #285e82;
-  font-size: clamp(22px, 2vw, 30px);
-}
-
-.feeEquationArrow {
-  align-self: center;
-  justify-self: center;
-  color: var(--ui-border-strong);
-}
-
-.costBoundary {
-  display: grid;
-  gap: 12px;
-  border: 1px solid #b9d9df;
-  border-radius: 8px;
-  background: #f4fbfc;
-  padding: 15px;
-}
-
-.costBoundaryHeading {
+.feeRecoveryPanelHeading {
   display: flex;
-  align-items: end;
+  align-items: center;
   justify-content: space-between;
   gap: 18px;
 }
 
-.costBoundaryHeading h3 {
-  margin: 0;
-  color: var(--ui-ink-deep);
-  font-size: 16px;
-  font-weight: 850;
-  line-height: 1.4;
-}
-
-.costBoundaryHeading > strong {
-  color: var(--ui-ink-deep);
-  font-size: 20px;
+.feeRecoveryPanelHeading > strong {
+  color: var(--ui-teal-hover);
+  font-size: clamp(27px, 2.5vw, 36px);
   font-weight: 900;
-  line-height: 1.3;
+  line-height: 1.1;
   white-space: nowrap;
 }
 
-.costFormula {
+.feeRecoveryLedger {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr) 24px minmax(0, 1.05fr);
-  gap: 7px;
-  align-items: stretch;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  border-top: 1px solid var(--ui-divider);
+  border-bottom: 1px solid var(--ui-divider);
 }
 
-.costFormula > div {
+.feeRecoveryLedger > div {
   display: grid;
-  min-height: 78px;
-  align-content: center;
-  gap: 3px;
-  border: 1px solid var(--ui-border);
-  border-radius: 7px;
-  background: #fff;
-  padding: 11px 13px;
+  gap: 4px;
+  padding: 12px 14px;
 }
 
-.costFormula > span {
-  align-self: center;
-  justify-self: center;
-  color: var(--ui-ink-deep);
-  font-size: 22px;
-  font-weight: 900;
+.feeRecoveryLedger > div + div {
+  border-left: 1px solid var(--ui-divider);
 }
 
-.costFormula div > span {
+.feeRecoveryLedger dt,
+.costBreakdownRows dt {
   color: var(--ui-muted);
   font-size: 11px;
   font-weight: 750;
-  line-height: 1.35;
+  line-height: 1.45;
 }
 
-.costFormula div > strong {
+.feeRecoveryLedger dd,
+.costBreakdownRows dd {
+  margin: 0;
   color: var(--ui-ink-deep);
   font-size: 18px;
   font-weight: 900;
   line-height: 1.35;
+  text-align: right;
 }
 
-.costFormula .costTermResult {
-  border-color: color-mix(in srgb, var(--ui-teal) 42%, var(--ui-border));
+.feeRecoveryLedger .feeRecoveryShortfall dd {
+  color: #a55c0d;
+}
+
+.feeRecoveryLedger .feeRecoveryBalance dd {
+  color: var(--ui-teal-hover);
+}
+
+.feeRecoveryInterpretation {
+  margin: 0;
+  border-radius: 6px;
   background: var(--ui-aqua);
+  padding: 10px 12px;
+  color: var(--ui-ink);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.65;
+}
+
+.costBreakdown {
+  border-top: 1px solid var(--ui-divider);
+  padding-top: 2px;
+}
+
+.costBreakdown summary {
+  display: flex;
+  min-height: 42px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--ui-teal-hover);
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.costBreakdown summary svg {
+  transition: transform 140ms ease;
+}
+
+.costBreakdown[open] summary svg {
+  transform: rotate(180deg);
+}
+
+.costBreakdownRows {
+  margin: 0;
+  border: 1px solid var(--ui-divider);
+  border-radius: 6px;
+  background: #fff;
+}
+
+.costBreakdownRows > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 9px 11px;
+}
+
+.costBreakdownRows > div + div {
+  border-top: 1px solid var(--ui-divider);
+}
+
+.costBreakdownRows > div:last-child {
+  background: var(--ui-soft);
+}
+
+.costBreakdownRows dd {
+  font-size: 14px;
 }
 
 .costUnavailable {
@@ -801,49 +834,6 @@
   font-size: 11px;
   font-weight: 650;
   line-height: 1.65;
-}
-
-.feeAssumptions {
-  border-top: 1px solid var(--ui-divider);
-  padding-top: 4px;
-}
-
-.feeAssumptions summary {
-  display: inline-flex;
-  min-height: 40px;
-  cursor: pointer;
-  align-items: center;
-  color: var(--ui-teal-hover);
-  font-size: 11px;
-  font-weight: 850;
-  line-height: 1.4;
-}
-
-.feeAssumptions summary:focus-visible {
-  border-radius: 4px;
-  outline: 2px solid var(--ui-teal);
-  outline-offset: 2px;
-}
-
-.feeAssumptions > div {
-  display: grid;
-  gap: 5px;
-  border-radius: 6px;
-  background: var(--ui-soft);
-  padding: 11px 12px;
-}
-
-.feeAssumptions p {
-  margin: 0;
-  color: var(--ui-muted);
-  font-size: 11px;
-  font-weight: 650;
-  line-height: 1.7;
-}
-
-.feeAssumptions strong {
-  color: var(--ui-ink-deep);
-  font-weight: 850;
 }
 
 .financeSection {
@@ -904,7 +894,7 @@
 }
 
 .supportHeading,
-.disclosure summary {
+.disclosure > summary {
   display: grid;
   grid-template-columns: 34px minmax(0, 1fr);
   gap: 9px;
@@ -912,7 +902,7 @@
 }
 
 .supportHeading > span,
-.disclosure summary > span {
+.disclosure > summary > span {
   display: grid;
   width: 34px;
   height: 34px;
@@ -985,7 +975,7 @@
   overflow: hidden;
 }
 
-.disclosure summary {
+.disclosure > summary {
   min-height: 62px;
   grid-template-columns: 34px minmax(0, 1fr) auto;
   cursor: pointer;
@@ -993,37 +983,82 @@
   list-style: none;
 }
 
-.disclosure summary::-webkit-details-marker {
+.disclosure > summary::-webkit-details-marker {
   display: none;
 }
 
-.disclosure summary strong {
+.disclosure > summary strong {
   color: var(--ui-ink-deep);
   font-size: 11px;
   font-weight: 800;
 }
 
-.disclosure summary > svg {
+.disclosure > summary > svg {
   color: var(--ui-muted);
   transition: transform 140ms ease;
 }
 
-.disclosure[open] summary > svg {
+.disclosure[open] > summary > svg {
   transform: rotate(180deg);
 }
 
-.yearbookDisclosure {
-  grid-column: 1 / -1;
+.yearbookViewHeading,
+.yearbookEvidenceSection,
+.yearbookView > .yearbookOriginal {
+  min-width: 0;
+  border: 1px solid var(--ui-border);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: var(--ui-shadow);
+}
+
+.yearbookViewHeading {
+  padding: 16px;
+}
+
+.yearbookViewHeading > span {
+  display: block;
+  color: var(--ui-teal-hover);
+  font-size: 9.5px;
+  font-weight: 850;
+  letter-spacing: 0.03em;
+}
+
+.yearbookViewHeading h2 {
+  margin: 2px 0 0;
+  color: var(--ui-ink-deep);
+  font-size: 20px;
+  font-weight: 850;
+  line-height: 1.35;
+}
+
+.yearbookViewHeading p {
+  margin: 4px 0 0;
+  color: var(--ui-muted);
+  font-size: 10.5px;
+  font-weight: 650;
+  line-height: 1.65;
+}
+
+.yearbookEvidenceSection {
+  overflow: hidden;
+  border-top: 1px solid var(--ui-border);
+  padding-top: 12px;
+}
+
+.yearbookView > .yearbookOriginal {
+  border-top: 1px solid var(--ui-border);
+  padding: 16px;
 }
 
 .yearbookOriginal {
   border-top: 1px solid var(--ui-divider);
-  padding: 12px;
+  padding: 14px 12px 12px;
 }
 
 .yearbookToolbar {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: 18px;
 }
@@ -1055,29 +1090,19 @@
   line-height: 1.6;
 }
 
-.yearbookToolbar label {
-  display: grid;
-  flex: 0 0 min(360px, 42%);
-  gap: 4px;
-}
-
-.yearbookToolbar label > span {
-  color: var(--ui-muted);
-  font-size: 9px;
-  font-weight: 800;
-}
-
-.yearbookToolbar select {
-  width: 100%;
-  min-height: 38px;
+.yearbookSourcePageLink {
+  display: inline-flex;
+  min-height: 36px;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 5px;
   border: 1px solid var(--ui-border);
   border-radius: 6px;
   background: #fff;
-  padding: 0 34px 0 10px;
-  color: var(--ui-ink-deep);
-  font: inherit;
-  font-size: 10.5px;
-  font-weight: 750;
+  padding: 7px 10px;
+  color: var(--ui-teal-hover);
+  font-size: 9.5px;
+  font-weight: 800;
 }
 
 .yearbookMeta {
@@ -1105,29 +1130,128 @@
   font-weight: 800;
 }
 
-.yearbookTableScroll {
-  max-height: 430px;
-  margin-top: 8px;
-  overflow: auto;
+.yearbookAllDetails {
+  margin-top: 10px;
   border: 1px solid var(--ui-border);
   border-radius: 6px;
   background: #fff;
 }
 
-.yearbookTableScroll:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--ui-teal) 52%, transparent);
-  outline-offset: 2px;
+.yearbookAllDetails > summary {
+  display: flex;
+  min-height: 46px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 9px 11px;
+  list-style: none;
 }
 
-.yearbookTable {
-  min-width: max-content;
-  border-collapse: separate;
-  border-spacing: 0;
-  font-size: 9px;
+.yearbookAllDetails > summary::-webkit-details-marker {
+  display: none;
+}
+
+.yearbookAllDetails > summary span,
+.yearbookAllDetails > summary strong,
+.yearbookAllDetails > summary small {
+  display: block;
+}
+
+.yearbookAllDetails > summary strong {
+  color: var(--ui-ink-deep);
+  font-size: 10.5px;
+  font-weight: 850;
+}
+
+.yearbookAllDetails > summary small {
+  margin-top: 2px;
+  color: var(--ui-muted);
+  font-size: 8.5px;
+  font-weight: 650;
+}
+
+.yearbookAllDetails > summary svg {
+  color: var(--ui-muted);
+  transition: transform 140ms ease;
+}
+
+.yearbookAllDetails[open] > summary svg {
+  transform: rotate(180deg);
+}
+
+.yearbookGroupToolbar {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.8fr) minmax(0, 1.2fr);
+  gap: 14px;
+  border-top: 1px solid var(--ui-divider);
+  background: var(--ui-soft);
+  padding: 10px 11px;
+}
+
+.yearbookGroupToolbar label {
+  display: grid;
+  gap: 4px;
+}
+
+.yearbookGroupToolbar label > span,
+.yearbookGroupToolbar > div small {
+  color: var(--ui-muted);
+  font-size: 8.5px;
+  font-weight: 750;
+}
+
+.yearbookGroupToolbar select {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid var(--ui-border);
+  border-radius: 6px;
+  background: #fff;
+  padding: 0 34px 0 10px;
+  color: var(--ui-ink-deep);
+  font: inherit;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.yearbookGroupToolbar > div {
+  align-self: end;
+  min-width: 0;
+  padding-bottom: 4px;
+}
+
+.yearbookGroupToolbar > div strong,
+.yearbookGroupToolbar > div small {
+  display: block;
+}
+
+.yearbookGroupToolbar > div strong {
+  color: var(--ui-ink-deep);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.yearbookRowsViewport {
+  max-height: 460px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.yearbookRowsViewport:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--ui-teal) 52%, transparent);
+  outline-offset: -2px;
+}
+
+.yearbookRowsTable {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 9.5px;
   font-variant-numeric: tabular-nums;
 }
 
-.yearbookTable caption {
+.yearbookRowsTable caption {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -1136,40 +1260,71 @@
   white-space: nowrap;
 }
 
-.yearbookTable th,
-.yearbookTable td {
-  min-width: 78px;
-  border-right: 1px solid var(--ui-divider);
-  border-bottom: 1px solid var(--ui-divider);
-  padding: 7px 8px;
-  text-align: right;
-  white-space: nowrap;
-}
-
-.yearbookTable th {
+.yearbookRowsTable thead th {
   position: sticky;
   z-index: 1;
   top: 0;
-  background: var(--ui-soft);
-  color: var(--ui-ink-deep);
+  border-top: 1px solid var(--ui-divider);
+  border-bottom: 1px solid var(--ui-divider);
+  background: #fff;
+  color: var(--ui-muted);
   font-weight: 800;
 }
 
-.yearbookTable td {
+.yearbookRowsTable th,
+.yearbookRowsTable td {
+  border-bottom: 1px solid var(--ui-divider);
+  padding: 8px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.yearbookRowsTable th:first-child {
+  width: 72%;
+}
+
+.yearbookRowsTable tbody th {
   color: var(--ui-ink);
+  font-weight: 700;
+}
+
+.yearbookRowsTable tbody th span,
+.yearbookRowsTable tbody th small {
+  display: block;
+}
+
+.yearbookRowsTable tbody th small,
+.yearbookHeadingRow small,
+.yearbookNoteRow small {
+  margin-top: 2px;
+  color: var(--ui-muted);
+  font-size: 8px;
   font-weight: 600;
 }
 
-.yearbookTable th:nth-child(-n + 18),
-.yearbookTable td:nth-child(-n + 18) {
-  text-align: left;
+.yearbookRowsTable td {
+  color: var(--ui-ink-deep);
+  font-weight: 800;
+  text-align: right;
+  overflow-wrap: anywhere;
 }
 
-.yearbookScrollHint {
-  margin: 6px 0 0;
+.yearbookHeadingRow th {
+  background: var(--ui-soft);
+  color: var(--ui-ink-deep);
+  font-weight: 850;
+}
+
+.yearbookNoteRow th {
+  background: #fffaf1;
   color: var(--ui-muted);
-  font-size: 8.5px;
   font-weight: 650;
+  line-height: 1.55;
+}
+
+.yearbookBlank {
+  color: var(--ui-muted);
+  font-weight: 600;
 }
 
 .yearbookStatus {
@@ -1204,6 +1359,16 @@
   font-size: 9.5px;
 }
 
+.yearbookEmpty a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 7px;
+  color: var(--ui-teal-hover);
+  font-size: 9.5px;
+  font-weight: 800;
+}
+
 .evidenceSection {
   border-top: 1px solid var(--ui-divider);
   padding-top: 10px;
@@ -1235,44 +1400,43 @@
   to { transform: rotate(360deg); }
 }
 
-.evidenceScroll {
-  overflow-x: auto;
+.evidenceList {
+  display: grid;
+  grid-template-columns: 1fr;
   border-top: 1px solid var(--ui-divider);
   padding: 0 12px 12px;
 }
 
-.evidenceScroll table {
-  width: 100%;
-  min-width: 700px;
-  border-collapse: collapse;
-  font-size: 9.5px;
-}
-
-.evidenceScroll th,
-.evidenceScroll td {
+.evidenceList article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(150px, auto);
+  gap: 16px;
   border-bottom: 1px solid var(--ui-divider);
-  padding: 8px 7px;
-  text-align: left;
-  vertical-align: top;
+  padding: 9px 6px;
 }
 
-.evidenceScroll th {
-  color: var(--ui-muted);
-  font-weight: 800;
+.evidenceList article > div:last-child {
+  text-align: right;
 }
 
-.evidenceScroll td {
-  color: var(--ui-ink);
-  font-weight: 650;
-}
-
-.evidenceScroll td strong,
-.evidenceScroll td small {
+.evidenceList strong,
+.evidenceList small {
   display: block;
 }
 
-.evidenceScroll td small {
-  max-width: 330px;
+.evidenceList article > div:first-child > strong {
+  color: var(--ui-ink-deep);
+  font-size: 9.5px;
+  font-weight: 800;
+}
+
+.evidenceList article > div:last-child > strong {
+  color: var(--ui-ink-deep);
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.evidenceList small {
   margin-top: 2px;
   color: var(--ui-muted);
   font-size: 8.5px;
@@ -1280,11 +1444,13 @@
   line-height: 1.45;
 }
 
-.evidenceScroll a {
+.evidenceList a {
   display: inline-flex;
   align-items: center;
   gap: 3px;
+  margin-top: 3px;
   color: var(--ui-teal-hover);
+  font-size: 8.5px;
   font-weight: 800;
 }
 
@@ -1472,12 +1638,20 @@
   .viewTabs a {
     min-height: 44px;
     gap: 0;
-    font-size: 11px;
+    font-size: 10.5px;
     white-space: nowrap;
   }
 
   .viewTabs a svg {
     display: none;
+  }
+
+  .tabLabelDesktop {
+    display: none;
+  }
+
+  .tabLabelMobile {
+    display: inline;
   }
 
   .sectionHeading {
@@ -1498,12 +1672,12 @@
   }
 
   .contentSection + .supportGrid,
-  .financeSection + .supportGrid {
+  .financeSection + .supportGrid,
+  .yearbookView + .supportGrid {
     margin-top: 14px;
   }
 
-  .feeDecisionHeading,
-  .costBoundaryHeading {
+  .feeDecisionHeading {
     display: grid;
     gap: 8px;
   }
@@ -1513,31 +1687,30 @@
     justify-self: start;
   }
 
-  .feeEquation,
-  .costFormula {
+  .feeTariffPanel {
     grid-template-columns: 1fr;
-    gap: 7px;
+    gap: 8px;
   }
 
-  .feeEquationArrow {
-    transform: rotate(90deg);
+  .feeTariffPanel > strong {
+    white-space: normal;
   }
 
-  .costFormula > span {
-    line-height: 1;
+  .feeRecoveryPanelHeading {
+    align-items: end;
   }
 
-  .feeEquationCard {
-    min-height: 132px;
+  .feeRecoveryLedger {
+    grid-template-columns: 1fr;
   }
 
-  .feeAssumptions summary,
+  .feeRecoveryLedger > div + div {
+    border-top: 1px solid var(--ui-divider);
+    border-left: 0;
+  }
+
   .disclaimer summary {
     min-height: 44px;
-  }
-
-  .costBoundaryHeading > strong {
-    white-space: normal;
   }
 
   .supportGrid {
@@ -1549,8 +1722,8 @@
     align-items: stretch;
   }
 
-  .yearbookToolbar label {
-    width: 100%;
+  .yearbookSourcePageLink {
+    justify-self: start;
   }
 
   .yearbookMeta a {
@@ -1558,8 +1731,69 @@
     margin-left: 0;
   }
 
-  .yearbookTableScroll {
+  .yearbookGroupToolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .yearbookRowsViewport {
     max-height: 56vh;
+  }
+
+  .yearbookRowsTable thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .yearbookRowsTable,
+  .yearbookRowsTable tbody,
+  .yearbookRowsTable tr,
+  .yearbookRowsTable th,
+  .yearbookRowsTable td {
+    display: block;
+    width: 100%;
+  }
+
+  .yearbookRowsTable tbody tr {
+    border-bottom: 1px solid var(--ui-divider);
+    padding: 9px 10px;
+  }
+
+  .yearbookRowsTable th,
+  .yearbookRowsTable td {
+    border: 0;
+    padding: 0;
+  }
+
+  .yearbookRowsTable td {
+    margin-top: 5px;
+    text-align: left;
+  }
+
+  .yearbookRowsTable th:first-child {
+    width: 100%;
+  }
+
+  .yearbookHeadingRow,
+  .yearbookNoteRow {
+    padding: 9px 10px !important;
+  }
+
+  .yearbookHeadingRow th,
+  .yearbookNoteRow th {
+    background: transparent;
+  }
+
+  .evidenceList article {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .evidenceList article > div:last-child {
+    text-align: left;
   }
 
   .revisionCard {

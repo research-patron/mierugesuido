@@ -5,7 +5,7 @@ export function formatPercent(value: number | null | undefined, digits = 1) {
 
 export function formatRevisionRate(value: number | null | undefined, digits = 1) {
   if (value == null || !Number.isFinite(value)) return "算定不可";
-  if (value <= 0) return "経費回収率100%以上";
+  if (value <= 0) return "不足なし";
   return `${(value * 100).toFixed(digits)}%`;
 }
 

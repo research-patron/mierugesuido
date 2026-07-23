@@ -5,7 +5,6 @@ import {
   calculateExpenseRecoveryRate,
   calculateFeeUnitPrice,
   calculateRequiredRevisionRateTo100,
-  calculateRequiredHouseholdFee20m3,
   calculateRequiredRevisionRateTo150yen,
   calculateRequiredRevisionRateTo80,
   calculateTreatmentCost,
@@ -34,7 +33,11 @@ describe("calculation formulas", () => {
     expect(calculateTreatmentCost(100, null)).toBeNull();
     expect(calculateExpenseRecoveryRate(100, 0)).toBeNull();
     expect(calculateRequiredRevisionRateTo100(0)).toBeNull();
-    expect(calculateRequiredHouseholdFee20m3(3000, 0)).toBeNull();
+  });
+
+  it("keeps a zero recovery observation distinct from an uncomputable required increase", () => {
+    expect(calculateExpenseRecoveryRate(0, 100)).toBe(0);
+    expect(calculateRequiredRevisionRateTo100(0)).toBeNull();
   });
 
   it("rejects negative accounting inputs instead of producing negative rates or unit costs", () => {
@@ -69,11 +72,16 @@ describe("calculation formulas", () => {
     expect(isIncreasingTrend([100, 105, -110, 115, 120])).toBe(false);
   });
 
-  it("converts the official household 20m3 tariff to a 100% recovery scenario", () => {
-    expect(calculateRequiredHouseholdFee20m3(3000, 80)).toBe(3750);
-    expect(calculateRequiredHouseholdFee20m3(3355, 100)).toBe(3355);
-    expect(calculateRequiredHouseholdFee20m3(3047, 103.9923)).toBe(2930);
-    expect(calculateRequiredHouseholdFee20m3(null, 80)).toBeNull();
+  it("never turns a recovery surplus into a negative required increase", () => {
+    expect(calculateRequiredRevisionRateTo100(100)).toBe(0);
+    expect(calculateRequiredRevisionRateTo100(103.9923)).toBe(0);
+  });
+
+  it("fixes the Mogami R6 business-wide recovery figures without converting the household tariff", () => {
+    const recoveryRate = calculateExpenseRecoveryRate(32_688, 70_477);
+    expect(recoveryRate).toBe(46.3811);
+    expect(70_477 - 32_688).toBe(37_789);
+    expect(calculateRequiredRevisionRateTo100(recoveryRate)).toBe(1.156051);
   });
 
   it("labels fee adequacy by recovery rate and unit price", () => {

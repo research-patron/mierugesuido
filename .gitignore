@@ -16,6 +16,7 @@ prisma/dev.db*
 data/processed
 data/raw/e-stat
 data/raw/gis
+data/raw/soumu-yearbook-r6
 artifacts
 tmp
 *.log

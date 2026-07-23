@@ -19,9 +19,12 @@ import { getPrefectureCode, prefectures } from "@/lib/prefectures";
 import { prisma } from "@/lib/prisma";
 import { rankingLabels, type RankingType } from "@/lib/rankings";
 import {
-  buildYearbookOriginalDataIndex,
-  compactYearbookOriginalData,
-  emptyYearbookOriginalData
+  assertOfficialHeadlineValues,
+  buildYearbookIndividualDataIndex,
+  emptyYearbookIndividualData,
+  prepareOfficialYearbookSources,
+  type YearbookAccountingType,
+  type YearbookTarget
 } from "@/scripts/static/yearbookOriginalData";
 
 const sourceRoot = path.join(process.cwd(), "data", "static");
@@ -104,43 +107,90 @@ async function main() {
     available: Boolean(source.downloadedAt || source.localPath)
   })));
 
-  const yearbookSources = await prisma.sourceFile.findMany({
-    where: {
-      surveyYear: latestFiscalYear + 1,
-      localPath: { not: null },
-      tableNo: { not: null }
-    },
-    orderBy: [{ accountingType: "asc" }, { tableNo: "asc" }, { id: "asc" }]
-  });
   const yearbookBusinesses = await prisma.sewerBusiness.findMany({
     where: { annualFinancials: { some: { surveyYear: latestFiscalYear } } },
     select: {
       businessKey: true,
       accountingType: true,
-      municipality: { select: { municipalityCode: true } }
+      municipality: {
+        select: {
+          municipalityCode: true,
+          municipalityName: true,
+          prefectureName: true
+        }
+      }
     }
   });
-  const yearbookTargetKeys = new Set(yearbookBusinesses.flatMap((business) => {
+  const yearbookTargets = yearbookBusinesses.flatMap((business): YearbookTarget[] => {
     const municipalityCode = business.municipality.municipalityCode;
-    return municipalityCode
-      ? [`${municipalityCode}|${business.businessKey}|${business.accountingType}`]
-      : [];
-  }));
-  const yearbookIndex = buildYearbookOriginalDataIndex(
+    if (!municipalityCode || !isYearbookAccountingType(business.accountingType)) return [];
+    return [{
+      municipalityCode,
+      municipalityName: business.municipality.municipalityName,
+      prefectureName: business.municipality.prefectureName,
+      businessKey: business.businessKey,
+      accountingType: business.accountingType
+    }];
+  });
+  const yearbookSources = await prepareOfficialYearbookSources({
+    cacheDirectory: path.join(process.cwd(), "data", "raw", "soumu-yearbook-r6"),
+    targetBusinessKeys: new Set(yearbookTargets.map((target) => target.businessKey))
+  });
+  const yearbookIndex = buildYearbookIndividualDataIndex(
     yearbookSources,
-    latestFiscalYear,
-    yearbookTargetKeys
+    yearbookTargets,
+    latestFiscalYear
   );
   process.stdout.write(
-    `yearbook originals: ${yearbookIndex.originalRows} rows from ${yearbookIndex.sourceFilesRead} workbooks`
+    `yearbook individual tables: ${yearbookIndex.originalRows} rows from ${yearbookIndex.sourceFilesRead} official workbooks`
       + `${yearbookIndex.warnings.length ? ` (${yearbookIndex.warnings.length} warnings)` : ""}\n`
   );
+  const unmatchedYearbookWarnings = yearbookIndex.warnings.filter((warning) => warning.startsWith("個表に一致する団体列がありません"));
+  if (unmatchedYearbookWarnings.length) {
+    process.stderr.write(
+      `yearbook unmatched business columns: ${unmatchedYearbookWarnings.length}\n`
+        + `${unmatchedYearbookWarnings.slice(0, 40).join("\n")}\n`
+    );
+  }
 
   const peerPairs = new Set<string>();
   await mapConcurrent(mapMunicipalities, 10, async (item, index) => {
     if (!item.municipalityCode) return;
     const detail = await getMunicipalityDetail(item.municipalityCode);
     if (!detail) return;
+    const yearbookData = yearbookIndex.byMunicipality.get(item.municipalityCode)
+      ?? emptyYearbookIndividualData(latestFiscalYear);
+    for (const business of detail.businesses) {
+      if (!isYearbookAccountingType(business.accountingType)) continue;
+      const annual = business.annualFinancials.find((candidate: any) => candidate.surveyYear === latestFiscalYear);
+      if (!annual || (annual.householdFee20m3Yen == null && annual.diagnosisResult?.expenseRecoveryRate == null)) continue;
+      const hasOfficialBusiness = yearbookData.businesses.some((candidate) => (
+        candidate.businessKey === business.businessKey
+        && candidate.accountingType === business.accountingType
+      ));
+      if (!hasOfficialBusiness) continue;
+      const exactExpenseRecoveryRate = annual.sewerFeeRevenue != null
+        && annual.wastewaterTreatmentCost != null
+        && annual.sewerFeeRevenue > 0
+        && annual.wastewaterTreatmentCost > 0
+        ? annual.sewerFeeRevenue / annual.wastewaterTreatmentCost * 100
+        : null;
+      try {
+        assertOfficialHeadlineValues(yearbookData, {
+          businessKey: business.businessKey,
+          accountingType: business.accountingType,
+          householdFee20m3Yen: annual.householdFee20m3Yen != null && annual.householdFee20m3Yen > 0
+            ? annual.householdFee20m3Yen
+            : null,
+          expenseRecoveryRate: exactExpenseRecoveryRate
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        throw new Error(
+          `${detail.prefectureName}/${detail.municipalityName}/${item.municipalityCode}/${business.businessKey}: ${message}`
+        );
+      }
+    }
     for (const business of detail.businesses) {
       if (business.annualFinancials.length === 0 || isFlowSewerBusiness(business)) continue;
       peerPairs.add(`${detail.prefectureName}\t${business.businessKey}`);
@@ -151,10 +201,7 @@ async function main() {
     );
     await writeJson(
       path.join(publicRoot, "yearbook", `${item.municipalityCode}.json`),
-      compactYearbookOriginalData(
-        yearbookIndex.byMunicipality.get(item.municipalityCode)
-          ?? emptyYearbookOriginalData(latestFiscalYear)
-      )
+      yearbookData
     );
     if ((index + 1) % 100 === 0 || index + 1 === mapMunicipalities.length) {
       process.stdout.write(`static details: ${index + 1}/${mapMunicipalities.length}\n`);
@@ -274,7 +321,12 @@ function compactDiagnosis(diagnosis: any) {
     calculationTraceJson: _calculationTraceJson,
     ...values
   } = diagnosis;
-  return values;
+  return {
+    ...values,
+    requiredRevisionRateTo100: values.requiredRevisionRateTo100 == null
+      ? null
+      : Math.max(values.requiredRevisionRateTo100, 0)
+  };
 }
 
 function compactListItem(item: any) {
@@ -337,6 +389,10 @@ function findAnnual(businesses: any[], year: number, preferredAccountingType?: s
 
 function accountingPriority(value?: string | null) {
   return value === "legal_applied" ? 2 : value === "non_legal_applied" ? 1 : 0;
+}
+
+function isYearbookAccountingType(value: string): value is YearbookAccountingType {
+  return value === "legal_applied" || value === "non_legal_applied";
 }
 
 function isFlowSewerBusiness(business: any) {

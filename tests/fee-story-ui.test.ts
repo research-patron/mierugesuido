@@ -13,10 +13,11 @@ const etlSource = readFileSync(
 
 describe("household 20m3 fee and recovery-story UI", () => {
   it("keeps the official household tariff separate from the average unit price", () => {
-    expect(detailSource).toContain('label="一般家庭用20m³／月"');
+    expect(detailSource).toContain("家庭の料金表");
+    expect(detailSource).toContain("一般家庭用20m³／月");
     expect(detailSource).toContain("料金表データ未取得");
-    expect(detailSource).toContain("料金表上の月額と、決算から算定する経費回収率を分けて確認します");
-    expect(detailSource).toContain("一般家庭用20m³月額</strong>は料金表上の税込月額");
+    expect(detailSource).toContain("対象も単位も異なるため、家庭向け料金表と事業全体の決算を分けて表示します");
+    expect(detailSource).toContain("全利用者の実績平均や事業全体の費用回収額ではありません");
   });
 
   it("uses the official fee-recovery cost boundary instead of gross operating expense", () => {
@@ -24,13 +25,16 @@ describe("household 20m3 fee and recovery-story UI", () => {
     expect(detailSource).toContain("維持管理費分");
     expect(detailSource).toContain("資本費分");
     expect(detailSource).toContain("営業費用と、経費回収率の対象となる汚水処理費は同じ範囲ではありません");
-    expect(detailSource).toContain("差（100%相当額 − 現在額・参考）");
-    expect(detailSource).toContain("formatSignedMonthlyDifference(difference)");
-    expect(detailSource).toContain("使用料収入が対象費用を賄えており、使用料水準は不足していません");
-    expect(detailSource).toContain("差額は値下げを示すものではありません");
-    expect(detailSource).not.toContain("マイナスは100%相当額が現在額を下回ることを示します");
-    expect(detailSource).not.toContain("追加試算なし");
-    expect(detailSource).not.toContain("引下げ額は試算しません");
+    expect(detailSource).toContain("年間下水道使用料収入");
+    expect(detailSource).toContain("年間不足額");
+    expect(detailSource).toContain("事業全体の使用料収入を${requiredIncreaseRate.toFixed(1)}%増やす必要がある");
+    expect(detailSource).toContain("家庭の20m³月額への換算ではありません");
+    expect(detailSource).toContain("Math.abs(opex + capital - treatment) < 0.5");
+    expect(detailSource).toContain("内訳が未取得または合計と一致しないため、確認できた合計だけを表示しています");
+    expect(detailSource).not.toContain("経費回収率100%相当の月額");
+    expect(detailSource).not.toContain("現在の月額との差");
+    expect(detailSource).not.toContain("formatSignedMonthlyDifference");
+    expect(detailSource).not.toContain("calculateRequiredHouseholdFee20m3");
     expect(detailSource).not.toContain("改定リスクスコア");
   });
 

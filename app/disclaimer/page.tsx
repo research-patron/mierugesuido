@@ -7,7 +7,7 @@ export default function DisclaimerPage() {
       <h1 className="text-3xl font-bold text-ink">免責表示</h1>
       <DisclaimerBox>{footerDisclaimer}</DisclaimerBox>
       <section className="rounded-md border border-line bg-white p-5">
-        <h2 className="text-xl font-bold text-ink">経費回収率100%相当の参考額</h2>
+        <h2 className="text-xl font-bold text-ink">使用料収入の必要増加率</h2>
         <p className="mt-3 text-sm leading-7 text-slate-600">{detailDisclaimer}</p>
       </section>
       <section className="rounded-md border border-line bg-white p-5">

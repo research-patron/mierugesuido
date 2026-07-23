@@ -58,7 +58,7 @@ function RevisionsContent() {
             <div>
               <h1 className="text-3xl font-black text-ink sm:text-4xl">下水道使用料の公式改定情報</h1>
               <p className="mt-2 max-w-4xl text-sm font-medium leading-7 text-slate-700">
-                自治体が公式に公表した下水道使用料の改定情報を掲載します。ランキングで表示する「100%相当の増収率」は決算データに基づく単純試算であり、自治体が公表する使用料改定率とは異なります。
+                自治体が公式に公表した下水道使用料の改定情報を掲載します。ランキングの「使用料収入の必要増加率」は事業全体の決算データに基づく単純計算であり、家庭の月額換算や自治体が公表する使用料改定率ではありません。
               </p>
             </div>
             <div className="rounded-md border border-teal/40 bg-white/90 p-4">

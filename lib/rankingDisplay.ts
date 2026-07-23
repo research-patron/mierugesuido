@@ -3,7 +3,7 @@ import { formatMoneyThousandYen, formatPercent, formatRevisionRate, formatYenPer
 
 export const rankingMetricLabels: Record<RankingType, string> = {
   "expense-recovery-low": "経費回収率",
-  "required-revision-high": "100%相当の増収率（単純試算）",
+  "required-revision-high": "使用料収入の必要増加率（単純計算）",
   "fee-unit-low": "使用料単価",
   "treatment-cost-high": "汚水処理原価",
   "transfer-dependency-high": "基準外繰入金"
@@ -13,7 +13,7 @@ export function rankingMetricValue(item: any, type: RankingType): number | null 
   const value = type === "expense-recovery-low"
     ? item.expenseRecoveryRate
     : type === "required-revision-high"
-      ? item.requiredRevisionRateTo100
+      ? Math.max(item.requiredRevisionRateTo100 ?? 0, 0)
       : type === "fee-unit-low"
         ? item.feeUnitPriceYenPerM3
         : type === "treatment-cost-high"

@@ -1,237 +1,512 @@
-import { existsSync } from "node:fs";
+import { mkdir, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import XLSX from "xlsx";
 
-type YearbookSource = {
-  id: number;
-  surveyYear: number;
-  accountingType: string | null;
-  tableNo: number | null;
-  tableName: string | null;
-  sourceUrl: string | null;
-  localPath: string | null;
-};
+export const YEARBOOK_SOURCE_PAGE =
+  "https://www.soumu.go.jp/main_sosiki/c-zaisei/kouei_R06/index_ge.html";
 
-export type YearbookOriginalTable = {
-  id: string;
-  tableNo: number;
-  tableName: string;
-  sheetName: string;
-  sourceUrl: string | null;
-  columns: string[];
-  rows: Array<Array<[number, string]>>;
-};
+export type YearbookAccountingType = "legal_applied" | "non_legal_applied";
 
-export type YearbookOriginalBusiness = {
+export type YearbookTarget = {
+  municipalityCode: string;
+  municipalityName: string;
+  prefectureName: string;
   businessKey: string;
-  accountingType: "legal_applied" | "non_legal_applied";
-  tables: YearbookOriginalTable[];
+  accountingType: YearbookAccountingType;
 };
 
-export type YearbookOriginalMunicipality = {
+export type YearbookOfficialSource = {
+  id: string;
+  groupNo: number;
+  groupTitle: string;
+  accountingType: YearbookAccountingType;
+  businessCategoryCode: string;
+  businessTypeName: string;
+  sourceUrl: string;
+  localPath?: string;
+};
+
+export type YearbookIndividualRow = {
+  rowNumber: number;
+  labelCells: string[];
+  valueText: string;
+  kind: "data" | "heading" | "note";
+};
+
+export type YearbookIndividualGroup = {
+  id: string;
+  title: string;
+  businessTypeName: string;
+  workbookUrl: string;
+  sheetName: string;
+  rows: YearbookIndividualRow[];
+};
+
+export type YearbookIndividualBusiness = {
+  businessKey: string;
+  accountingType: YearbookAccountingType;
+  operatorName: string;
+  groups: YearbookIndividualGroup[];
+};
+
+export type YearbookIndividualData = {
   fiscalYear: number;
-  fiscalYearLabel: string;
-  formatNote: string;
-  businesses: YearbookOriginalBusiness[];
+  sourcePageUrl: string;
+  businesses: YearbookIndividualBusiness[];
 };
 
-export type CompactYearbookOriginalTable = Omit<YearbookOriginalTable, "columns"> & {
-  columnSetId: string;
-};
-
-export type CompactYearbookOriginalMunicipality = Omit<YearbookOriginalMunicipality, "businesses"> & {
-  columnSets: Record<string, string[]>;
-  businesses: Array<Omit<YearbookOriginalBusiness, "tables"> & {
-    tables: CompactYearbookOriginalTable[];
-  }>;
-};
-
-type MutableBusiness = Omit<YearbookOriginalBusiness, "tables"> & {
-  tables: Map<string, YearbookOriginalTable>;
-};
-
-type MutableMunicipality = Map<string, MutableBusiness>;
-
-export type YearbookOriginalDataIndex = {
-  byMunicipality: Map<string, YearbookOriginalMunicipality>;
+export type YearbookIndividualDataIndex = {
+  byMunicipality: Map<string, YearbookIndividualData>;
   sourceFilesRead: number;
   originalRows: number;
+  matchedBusinessCount: number;
   warnings: string[];
 };
 
-const SEWER_INDUSTRY_CODES = new Set(["17", "18"]);
+export type YearbookHeadlineValues = {
+  businessKey: string;
+  accountingType: YearbookAccountingType;
+  householdFee20m3Yen: number | null;
+  expenseRecoveryRate: number | null;
+};
 
-export function buildYearbookOriginalDataIndex(
-  sources: YearbookSource[],
-  fiscalYear: number,
-  targetBusinessKeys?: ReadonlySet<string>
-): YearbookOriginalDataIndex {
-  const mutable = new Map<string, MutableMunicipality>();
-  const warnings: string[] = [];
-  let sourceFilesRead = 0;
-  let originalRows = 0;
+const BUSINESS_CATEGORY_BY_LABEL: Record<string, string> = {
+  公共下水道: "17/1",
+  特定公共下水道: "17/2",
+  流域下水道: "17/3",
+  特定環境保全公共下水道: "17/4",
+  農業集落排水施設: "17/5",
+  漁業集落排水施設: "17/6",
+  林業集落排水施設: "17/7",
+  簡易排水施設: "17/8",
+  小規模集合排水処理施設: "17/9",
+  特定地域生活排水処理施設: "18/0",
+  個別排水処理施設: "18/1"
+};
 
-  for (const source of sources) {
-    const accountingType = normalizeAccountingType(source.accountingType);
-    if (!accountingType || source.tableNo == null || !source.localPath) continue;
-    const tableNo = source.tableNo;
-    const filePath = path.isAbsolute(source.localPath)
-      ? source.localPath
-      : path.resolve(process.cwd(), source.localPath);
-    if (!existsSync(filePath)) {
-      warnings.push(`source ${source.id}: original workbook is unavailable`);
+export function discoverOfficialYearbookSources(
+  html: string,
+  sourcePageUrl = YEARBOOK_SOURCE_PAGE
+): YearbookOfficialSource[] {
+  const normalized = html.normalize("NFKC");
+  const start = normalized.search(/<h2>\s*12[.．]\s*個表\s*<\/h2>/i);
+  const end = normalized.search(/<h2>\s*13[.．]\s*付表\s*<\/h2>/i);
+  if (start < 0 || end <= start) throw new Error("総務省ページの「12．個表」を確認できませんでした");
+
+  const sources: YearbookOfficialSource[] = [];
+  let groupNo: number | null = null;
+  let groupTitle = "";
+  for (const line of normalized.slice(start, end).split(/\r?\n/)) {
+    const text = htmlText(line);
+    const groupMatch = text.match(/^\(([1-8])\)\s*(.+)$/);
+    if (groupMatch && !line.includes("href=")) {
+      groupNo = Number(groupMatch[1]);
+      groupTitle = groupMatch[2].trim();
       continue;
     }
+    if (groupNo == null) continue;
+    const anchor = line.match(/<a\s+href="([^"]+\.xls)">([\s\S]*?)<img\b/i);
+    if (!anchor) continue;
+    const businessTypeName = normalizeBusinessTypeName(htmlText(anchor[2]));
+    const businessCategoryCode = BUSINESS_CATEGORY_BY_LABEL[businessTypeName];
+    if (!businessCategoryCode) continue;
+    const sourceUrl = new URL(anchor[1], sourcePageUrl).toString();
+    if (new URL(sourceUrl).hostname !== "www.soumu.go.jp") {
+      throw new Error(`想定外の個表URLです: ${sourceUrl}`);
+    }
+    const fileName = path.basename(new URL(sourceUrl).pathname);
+    sources.push({
+      id: `${groupNo}-${fileName}`,
+      groupNo,
+      groupTitle,
+      accountingType: groupNo <= 5 ? "legal_applied" : "non_legal_applied",
+      businessCategoryCode,
+      businessTypeName,
+      sourceUrl
+    });
+  }
+  if (sources.length === 0) throw new Error("総務省ページから個表Excelを抽出できませんでした");
+  return sources;
+}
 
+export async function prepareOfficialYearbookSources({
+  cacheDirectory,
+  targetBusinessKeys,
+  fetchImpl = fetch
+}: {
+  cacheDirectory: string;
+  targetBusinessKeys: ReadonlySet<string>;
+  fetchImpl?: typeof fetch;
+}) {
+  const pageResponse = await fetchImpl(YEARBOOK_SOURCE_PAGE);
+  if (!pageResponse.ok) throw new Error(`総務省の個表一覧を取得できませんでした (${pageResponse.status})`);
+  const pageHtml = new TextDecoder("shift_jis").decode(await pageResponse.arrayBuffer());
+  const targetCategories = new Set([...targetBusinessKeys].map(businessCategoryFromBusinessKey));
+  const sources = discoverOfficialYearbookSources(pageHtml)
+    .filter((source) => targetCategories.has(source.businessCategoryCode));
+  if (sources.length === 0) throw new Error("表示対象事業に対応する総務省個表がありません");
+
+  await mkdir(cacheDirectory, { recursive: true });
+  await mapConcurrent(sources, 4, async (source) => {
+    const fileName = path.basename(new URL(source.sourceUrl).pathname);
+    const localPath = path.join(cacheDirectory, fileName);
+    if (!await isUsableWorkbook(localPath)) {
+      const response = await fetchImpl(source.sourceUrl);
+      if (!response.ok) throw new Error(`総務省個表を取得できませんでした: ${source.sourceUrl}`);
+      const bytes = new Uint8Array(await response.arrayBuffer());
+      if (bytes.byteLength < 1024) throw new Error(`総務省個表のファイルサイズが不正です: ${source.sourceUrl}`);
+      await writeFile(localPath, bytes);
+    }
+    source.localPath = localPath;
+  });
+  return sources;
+}
+
+export function buildYearbookIndividualDataIndex(
+  sources: YearbookOfficialSource[],
+  targets: YearbookTarget[],
+  fiscalYear: number
+): YearbookIndividualDataIndex {
+  const byMunicipality = new Map<string, YearbookIndividualData>();
+  const warnings: string[] = [];
+  const matchedTargets = new Set<string>();
+  const targetsByMatchKey = new Map<string, YearbookTarget[]>();
+  const targetsByOperatorKey = new Map<string, YearbookTarget[]>();
+  for (const target of targets) {
+    const key = targetMatchKey(
+      target.prefectureName,
+      target.municipalityName,
+      businessCategoryFromBusinessKey(target.businessKey),
+      target.accountingType
+    );
+    const matches = targetsByMatchKey.get(key) ?? [];
+    matches.push(target);
+    targetsByMatchKey.set(key, matches);
+    const operatorKey = targetOperatorKey(
+      target.municipalityName,
+      businessCategoryFromBusinessKey(target.businessKey),
+      target.accountingType
+    );
+    const operatorMatches = targetsByOperatorKey.get(operatorKey) ?? [];
+    operatorMatches.push(target);
+    targetsByOperatorKey.set(operatorKey, operatorMatches);
+  }
+
+  let sourceFilesRead = 0;
+  let originalRows = 0;
+  for (const source of sources) {
+    if (!source.localPath) {
+      warnings.push(`${source.id}: 個表ファイルがありません`);
+      continue;
+    }
     let workbook: XLSX.WorkBook;
     try {
-      workbook = XLSX.readFile(filePath, { cellDates: false });
+      workbook = XLSX.readFile(source.localPath, {
+        cellDates: false,
+        cellFormula: true,
+        cellNF: true,
+        cellText: true
+      });
     } catch {
-      warnings.push(`source ${source.id}: original workbook could not be read`);
+      warnings.push(`${source.id}: 個表ファイルを読み取れませんでした`);
       continue;
     }
     sourceFilesRead += 1;
 
-    workbook.SheetNames.forEach((sheetName, sheetIndex) => {
+    for (const sheetName of workbook.SheetNames) {
+      if (sheetName.toLowerCase() === "index") continue;
       const worksheet = workbook.Sheets[sheetName];
-      const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(worksheet, {
-        defval: "",
-        raw: false
-      });
-      if (rows.length === 0) return;
-      const columns = Object.keys(rows[0]);
-      const tableId = `${tableNo}-${source.id}-${sheetIndex}`;
-
-      for (const row of rows) {
-        if (toInteger(row["決算年度"]) !== fiscalYear) continue;
-        if (toInteger(row["表番号"]) !== tableNo) continue;
-        const municipalityCode = normalizeCode(row["団体コード"], 6);
-        const industryCode = normalizeCode(row["業種コード"], 2);
-        const businessCode = normalizeCode(row["事業コード"], 1);
-        const facilityCode = normalizeCode(row["施設コード"], 3) || "000";
-        if (!municipalityCode || !SEWER_INDUSTRY_CODES.has(industryCode) || !businessCode) continue;
-
-        const businessKey = `${industryCode}-${businessCode}-${facilityCode}`;
-        const targetKey = `${municipalityCode}|${businessKey}|${accountingType}`;
-        if (targetBusinessKeys && !targetBusinessKeys.has(targetKey)) continue;
-        const municipality = mutable.get(municipalityCode) ?? new Map<string, MutableBusiness>();
-        const businessMapKey = `${businessKey}:${accountingType}`;
-        const business = municipality.get(businessMapKey) ?? {
-          businessKey,
-          accountingType,
-          tables: new Map<string, YearbookOriginalTable>()
-        };
-        const table: YearbookOriginalTable = business.tables.get(tableId) ?? {
-          id: tableId,
-          tableNo,
-          tableName: source.tableName ?? `第${tableNo}表`,
-          sheetName,
-          sourceUrl: source.sourceUrl,
-          columns,
-          rows: []
-        };
-        table.rows.push(sparseOriginalRow(row, columns));
-        business.tables.set(tableId, table);
-        municipality.set(businessMapKey, business);
-        mutable.set(municipalityCode, municipality);
-        originalRows += 1;
+      const range = worksheet["!ref"] ? XLSX.utils.decode_range(worksheet["!ref"]!) : null;
+      if (!range) continue;
+      const marker = findMarkerCell(worksheet, 8, "団体名", range);
+      if (!marker) {
+        warnings.push(`${source.id}/${sheetName}: 団体名行を確認できませんでした`);
+        continue;
       }
-    });
+      const workbookTitle = displayedCellText(worksheet, 2, 1) || source.groupTitle;
+      const workbookBusinessType = normalizeBusinessTypeName(displayedCellText(worksheet, 3, 1)) || source.businessTypeName;
+      let prefectureName = "";
+      for (let column = marker.c + 1; column <= range.e.c; column += 1) {
+        const directPrefecture = displayedCellText(worksheet, 8, column);
+        if (directPrefecture) prefectureName = directPrefecture;
+        const operatorName = displayedCellText(worksheet, 9, column);
+        if (!operatorName) continue;
+        const matchingTargets = prefectureName
+          ? targetsByMatchKey.get(targetMatchKey(
+            prefectureName,
+            operatorName,
+            source.businessCategoryCode,
+            source.accountingType
+          )) ?? []
+          : targetsByOperatorKey.get(targetOperatorKey(
+            operatorName,
+            source.businessCategoryCode,
+            source.accountingType
+          )) ?? [];
+        if (matchingTargets.length > 1) {
+          throw new Error(
+            `個表の団体列が複数の自治体に一致しました: ${prefectureName || "都道府県表示なし"}/${operatorName}/${source.businessTypeName}`
+          );
+        }
+        const target = matchingTargets[0];
+        if (!target) continue;
+        matchedTargets.add(targetIdentity(target));
+        const rows = extractIndividualRows(worksheet, column, marker.c, range.e.r);
+        originalRows += rows.length;
+        const data = byMunicipality.get(target.municipalityCode) ?? emptyYearbookIndividualData(fiscalYear);
+        const business = data.businesses.find((candidate) => (
+          candidate.businessKey === target.businessKey
+          && candidate.accountingType === target.accountingType
+        )) ?? {
+          businessKey: target.businessKey,
+          accountingType: target.accountingType,
+          operatorName,
+          groups: []
+        };
+        business.groups.push({
+          id: `${source.id}-${sheetName}`,
+          title: workbookTitle,
+          businessTypeName: workbookBusinessType,
+          workbookUrl: source.sourceUrl,
+          sheetName,
+          rows
+        });
+        if (!data.businesses.includes(business)) data.businesses.push(business);
+        byMunicipality.set(target.municipalityCode, data);
+      }
+    }
+  }
+
+  for (const target of targets) {
+    if (!matchedTargets.has(targetIdentity(target))) {
+      warnings.push(
+        `個表に一致する団体列がありません: ${target.prefectureName}/${target.municipalityName}/${target.businessKey}/${target.accountingType}`
+      );
+    }
+  }
+
+  for (const data of byMunicipality.values()) {
+    data.businesses.sort((a, b) => `${a.businessKey}:${a.accountingType}`.localeCompare(`${b.businessKey}:${b.accountingType}`, "ja"));
+    for (const business of data.businesses) {
+      business.groups.sort((a, b) => groupNumber(a.id) - groupNumber(b.id) || a.id.localeCompare(b.id, "ja"));
+    }
   }
 
   return {
-    byMunicipality: new Map(
-      [...mutable.entries()].map(([municipalityCode, businesses]) => [
-        municipalityCode,
-        {
-          fiscalYear,
-          fiscalYearLabel: japaneseFiscalYearLabel(fiscalYear),
-          formatNote: "列名・列順・値は、総務省・e-Stat公開Excelの原表形式を維持しています。",
-          businesses: [...businesses.values()]
-            .map((business) => ({
-              businessKey: business.businessKey,
-              accountingType: business.accountingType,
-              tables: [...business.tables.values()].sort(compareTables)
-            }))
-            .sort((a, b) => `${a.businessKey}:${a.accountingType}`.localeCompare(`${b.businessKey}:${b.accountingType}`, "ja"))
-        }
-      ])
-    ),
+    byMunicipality,
     sourceFilesRead,
     originalRows,
+    matchedBusinessCount: matchedTargets.size,
     warnings
   };
 }
 
-export function emptyYearbookOriginalData(fiscalYear: number): YearbookOriginalMunicipality {
-  return {
-    fiscalYear,
-    fiscalYearLabel: japaneseFiscalYearLabel(fiscalYear),
-    formatNote: "列名・列順・値は、総務省・e-Stat公開Excelの原表形式を維持しています。",
-    businesses: []
-  };
+export function emptyYearbookIndividualData(fiscalYear: number): YearbookIndividualData {
+  return { fiscalYear, sourcePageUrl: YEARBOOK_SOURCE_PAGE, businesses: [] };
 }
 
-export function compactYearbookOriginalData(
-  data: YearbookOriginalMunicipality
-): CompactYearbookOriginalMunicipality {
-  const columnSetIdByValue = new Map<string, string>();
-  const columnSets: Record<string, string[]> = {};
-  const businesses = data.businesses.map((business) => ({
-    businessKey: business.businessKey,
-    accountingType: business.accountingType,
-    tables: business.tables.map((table) => {
-      const key = JSON.stringify(table.columns);
-      let columnSetId = columnSetIdByValue.get(key);
-      if (!columnSetId) {
-        columnSetId = `columns-${columnSetIdByValue.size + 1}`;
-        columnSetIdByValue.set(key, columnSetId);
-        columnSets[columnSetId] = table.columns;
-      }
-      const { columns: _columns, ...values } = table;
-      return { ...values, columnSetId };
-    })
-  }));
-  return {
-    fiscalYear: data.fiscalYear,
-    fiscalYearLabel: data.fiscalYearLabel,
-    formatNote: data.formatNote,
-    columnSets,
-    businesses
-  };
-}
+export function assertOfficialHeadlineValues(
+  data: YearbookIndividualData,
+  expected: YearbookHeadlineValues
+) {
+  const business = data.businesses.find((candidate) => (
+    candidate.businessKey === expected.businessKey
+    && candidate.accountingType === expected.accountingType
+  ));
+  if (!business) {
+    throw new Error(`照合対象の公式個表がありません: ${expected.businessKey}/${expected.accountingType}`);
+  }
 
-function compareTables(a: YearbookOriginalTable, b: YearbookOriginalTable) {
-  return a.tableNo - b.tableNo || a.id.localeCompare(b.id, "ja");
-}
-
-function normalizeAccountingType(value: string | null) {
-  if (value === "legal_applied" || value === "non_legal_applied") return value;
-  return null;
-}
-
-function normalizeCode(value: unknown, width: number) {
-  const text = value == null ? "" : String(value).trim().replace(/\.0+$/, "");
-  return text ? text.padStart(width, "0") : "";
-}
-
-function toInteger(value: unknown) {
-  const number = Number(value);
-  return Number.isInteger(number) ? number : null;
-}
-
-function originalCellText(value: unknown) {
-  return value == null ? "" : String(value);
-}
-
-function sparseOriginalRow(row: Record<string, unknown>, columns: string[]) {
-  return columns.flatMap((column, columnIndex): Array<[number, string]> => {
-    const value = originalCellText(row[column]);
-    return value === "" ? [] : [[columnIndex, value]];
+  assertOfficialValue({
+    business,
+    fieldLabel: "一般家庭用20m³／月",
+    pattern: /一般家庭用20m3.*月.*(?:使用料|円)/,
+    expected: expected.householdFee20m3Yen,
+    officialPrecision: 0
+  });
+  assertOfficialValue({
+    business,
+    fieldLabel: "経費回収率",
+    pattern: /汚水処理費に対する使用料の割合/,
+    expected: expected.expenseRecoveryRate,
+    officialPrecision: 1
   });
 }
 
-function japaneseFiscalYearLabel(year: number) {
-  if (year >= 2019) return `R${year - 2018}`;
-  return `${year}年度`;
+function extractIndividualRows(
+  worksheet: XLSX.WorkSheet,
+  valueColumn: number,
+  labelEndColumn: number,
+  lastRow: number
+): YearbookIndividualRow[] {
+  const rows: YearbookIndividualRow[] = [];
+  for (let row = 10; row <= lastRow; row += 1) {
+    const labelCells = Array.from(
+      { length: Math.max(labelEndColumn, 1) },
+      (_, index) => displayedCellText(worksheet, row, index + 1)
+    ).filter(Boolean);
+    const valueText = displayedCellText(worksheet, row, valueColumn);
+    const labelText = labelCells.filter(Boolean).join(" ");
+    if (!labelText && !valueText) continue;
+    rows.push({
+      rowNumber: row + 1,
+      labelCells,
+      valueText,
+      kind: /^(\(?注\)?|（注）)/.test(labelText)
+        ? "note"
+        : valueText === ""
+          ? "heading"
+          : "data"
+    });
+  }
+  return rows;
+}
+
+function assertOfficialValue({
+  business,
+  fieldLabel,
+  pattern,
+  expected,
+  officialPrecision
+}: {
+  business: YearbookIndividualBusiness;
+  fieldLabel: string;
+  pattern: RegExp;
+  expected: number | null;
+  officialPrecision: number;
+}) {
+  if (expected == null) return;
+  const candidates = business.groups.flatMap((group) => group.rows)
+    .filter((row) => pattern.test(normalizedRowLabel(row)));
+  if (candidates.length !== 1) {
+    throw new Error(
+      `${fieldLabel}の公式行を一意に確認できません: ${business.operatorName}/${business.businessKey} (${candidates.length}件)`
+    );
+  }
+  const official = parseOfficialNumber(candidates[0].valueText);
+  if (official == null) {
+    throw new Error(`${fieldLabel}の公式値が数値ではありません: ${business.operatorName}/${business.businessKey}`);
+  }
+  const expectedAtPrecision = roundTo(expected, officialPrecision);
+  const officialAtPrecision = roundTo(official, officialPrecision);
+  if (expectedAtPrecision !== officialAtPrecision) {
+    throw new Error(
+      `${fieldLabel}が公式個表と一致しません: ${business.operatorName}/${business.businessKey} `
+        + `(計算用=${expectedAtPrecision}, 公式個表=${officialAtPrecision})`
+    );
+  }
+}
+
+function normalizedRowLabel(row: YearbookIndividualRow) {
+  return row.labelCells.join("").normalize("NFKC").replace(/[\s　]/g, "");
+}
+
+function parseOfficialNumber(value: string) {
+  const normalized = value.normalize("NFKC").replace(/[,，%％円]/g, "").trim();
+  if (!normalized || normalized === "-") return null;
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function roundTo(value: number, precision: number) {
+  const factor = 10 ** precision;
+  return Math.round((value + Number.EPSILON) * factor) / factor;
+}
+
+function findMarkerCell(
+  worksheet: XLSX.WorkSheet,
+  row: number,
+  expected: string,
+  range: XLSX.Range
+) {
+  for (let column = range.s.c; column <= range.e.c; column += 1) {
+    if (displayedCellText(worksheet, row, column) === expected) return { r: row, c: column };
+  }
+  return null;
+}
+
+function displayedCellText(worksheet: XLSX.WorkSheet, row: number, column: number) {
+  const cell = worksheet[XLSX.utils.encode_cell({ r: row, c: column })] as XLSX.CellObject | undefined;
+  if (!cell || cell.v == null) return "";
+  return String(cell.w ?? cell.v).trim();
+}
+
+function businessCategoryFromBusinessKey(businessKey: string) {
+  const [industryCode, businessCode] = businessKey.trim().split(/[-/]/);
+  return `${industryCode}/${Number(businessCode)}`;
+}
+
+function normalizeBusinessTypeName(value: string) {
+  return value
+    .normalize("NFKC")
+    .replace(/^\([ァ-ヶア-ン]\)\s*/, "")
+    .replace(/\s+/g, "")
+    .replace(/[12]$/, "")
+    .trim();
+}
+
+function targetMatchKey(
+  prefectureName: string,
+  operatorName: string,
+  businessCategoryCode: string,
+  accountingType: YearbookAccountingType
+) {
+  return [
+    normalizeName(prefectureName),
+    normalizeName(operatorName),
+    businessCategoryCode,
+    accountingType
+  ].join("|");
+}
+
+function targetIdentity(target: YearbookTarget) {
+  return `${target.municipalityCode}|${target.businessKey}|${target.accountingType}`;
+}
+
+function targetOperatorKey(
+  operatorName: string,
+  businessCategoryCode: string,
+  accountingType: YearbookAccountingType
+) {
+  return [normalizeName(operatorName), businessCategoryCode, accountingType].join("|");
+}
+
+function normalizeName(value: string) {
+  return value.normalize("NFKC").replace(/[\s　]/g, "").trim();
+}
+
+function htmlText(value: string) {
+  return value
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function groupNumber(id: string) {
+  const value = Number(id.split("-")[0]);
+  return Number.isFinite(value) ? value : Number.MAX_SAFE_INTEGER;
+}
+
+async function isUsableWorkbook(filePath: string) {
+  try {
+    return (await stat(filePath)).size >= 1024;
+  } catch {
+    return false;
+  }
+}
+
+async function mapConcurrent<T>(items: T[], concurrency: number, worker: (item: T) => Promise<void>) {
+  let nextIndex = 0;
+  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, async () => {
+    while (nextIndex < items.length) {
+      const item = items[nextIndex++];
+      await worker(item);
+    }
+  }));
 }

@@ -32,7 +32,6 @@ import { accountingTypeLabel, businessCategoryCode, displayBusinessName } from "
 import { detailDisclaimer, formulaCopy } from "@/lib/copy";
 import { getFieldDefinition } from "@/lib/fieldDefinitions";
 import { unitLabels } from "@/lib/fieldLabels";
-import { calculateRequiredHouseholdFee20m3 } from "@/lib/calculations";
 import {
   formatMoneyThousandYen,
   formatSettlementFiscalLabel,
@@ -41,7 +40,7 @@ import {
 import { transferBasisAmount, type TransferBasisBreakdown } from "@/lib/prefecturePeerComparison";
 import styles from "@/app/municipalities/[municipalityCode]/page.module.css";
 
-type DetailView = "fees" | "finance" | "prefecture";
+type DetailView = "fees" | "finance" | "prefecture" | "yearbook";
 type MunicipalityDetail = any;
 type DetailBusiness = MunicipalityDetail["businesses"][number];
 type DetailAnnual = DetailBusiness["annualFinancials"][number];
@@ -67,7 +66,6 @@ export function MunicipalityDetailClient({ municipalityCode }: { municipalityCod
   const searchParams = useSearchParams();
   const [municipality, setMunicipality] = useState<MunicipalityDetail | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
-  const [yearbookOpen, setYearbookOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -137,7 +135,10 @@ export function MunicipalityDetailClient({ municipalityCode }: { municipalityCod
 
   const { latest, latestBusiness } = selectedGroup;
   const qualityFlags = parseStringArray(latest.flagsJson);
-  const diagnosis = sanitizeAmbiguousDiagnosis(latest.diagnosisResult, qualityFlags);
+  const diagnosis = withExactRecoveryRate(
+    sanitizeAmbiguousDiagnosis(latest.diagnosisResult, qualityFlags),
+    latest
+  );
   const fiscal = formatSettlementFiscalLabel({
     surveyYear: latest.surveyYear,
     fiscalYearLabel: latest.fiscalYearLabel
@@ -158,6 +159,7 @@ export function MunicipalityDetailClient({ municipalityCode }: { municipalityCod
       : yenPerMonthMetric(latest.householdFee20m3Yen);
   const accounting = accountingMetric(latestBusiness.accountingType, latest);
   const localComparisonLabel = prefectureComparisonLabel(municipality.prefectureName);
+  const localComparisonShortLabel = prefectureComparisonShortLabel(municipality.prefectureName);
 
   return (
     <div className={styles.page}>
@@ -282,25 +284,41 @@ export function MunicipalityDetailClient({ municipalityCode }: { municipalityCod
             href={detailHref(municipalityCode, selectedGroup.key, "fees")}
             className={view === "fees" ? styles.activeTab : undefined}
             aria-current={view === "fees" ? "page" : undefined}
+            aria-label="料金と経費回収率"
           >
             <ChartNoAxesCombined size={18} aria-hidden="true" />
-            料金と経費回収率
+            <span className={styles.tabLabelDesktop}>料金と経費回収率</span>
+            <span className={styles.tabLabelMobile}>料金・回収</span>
           </Link>
           <Link
             href={detailHref(municipalityCode, selectedGroup.key, "finance")}
             className={view === "finance" ? styles.activeTab : undefined}
             aria-current={view === "finance" ? "page" : undefined}
+            aria-label={financeTabLabel}
           >
             <FileChartColumnIncreasing size={18} aria-hidden="true" />
-            {financeTabLabel}
+            <span className={styles.tabLabelDesktop}>{financeTabLabel}</span>
+            <span className={styles.tabLabelMobile}>R6財務</span>
           </Link>
           <Link
             href={detailHref(municipalityCode, selectedGroup.key, "prefecture")}
             className={view === "prefecture" ? styles.activeTab : undefined}
             aria-current={view === "prefecture" ? "page" : undefined}
+            aria-label={localComparisonLabel}
           >
             <MapPinned size={18} aria-hidden="true" />
-            {localComparisonLabel}
+            <span className={styles.tabLabelDesktop}>{localComparisonLabel}</span>
+            <span className={styles.tabLabelMobile}>{localComparisonShortLabel}</span>
+          </Link>
+          <Link
+            href={detailHref(municipalityCode, selectedGroup.key, "yearbook")}
+            className={view === "yearbook" ? styles.activeTab : undefined}
+            aria-current={view === "yearbook" ? "page" : undefined}
+            aria-label="年鑑・根拠データ"
+          >
+            <Database size={18} aria-hidden="true" />
+            <span className={styles.tabLabelDesktop}>年鑑・根拠データ</span>
+            <span className={styles.tabLabelMobile}>年鑑データ</span>
           </Link>
         </nav>
 
@@ -321,6 +339,27 @@ export function MunicipalityDetailClient({ municipalityCode }: { municipalityCod
         ) : view === "finance" ? (
           <section className={styles.financeSection} aria-label="R6財務の読み解き">
             <FinancialStory {...financialStory} />
+          </section>
+        ) : view === "yearbook" ? (
+          <section className={styles.yearbookView} aria-labelledby="yearbook-view-title">
+            <div className={styles.yearbookViewHeading}>
+              <span>{fiscal}・選択中の決算事業</span>
+              <h2 id="yearbook-view-title">年鑑・根拠データ</h2>
+              <p>この画面の計算に使用する主要項目と、総務省「地方公営企業年鑑」の公式個表を確認できます。</p>
+            </div>
+            <section className={`${styles.evidenceSection} ${styles.yearbookEvidenceSection}`} aria-labelledby="indicator-evidence-title">
+              <div>
+                <strong id="indicator-evidence-title">この画面で使用する主要項目</strong>
+                <small>{evidenceEntries.length}項目・計算用e-Statデータの出典</small>
+              </div>
+              <EvidenceContent entries={evidenceEntries} />
+            </section>
+            <YearbookOriginalData
+              enabled={view === "yearbook"}
+              municipalityCode={municipality.municipalityCode}
+              businessKey={latestBusiness.businessKey}
+              accountingType={latestBusiness.accountingType}
+            />
           </section>
         ) : prefecturePeerComparison ? (
           <section className={styles.financeSection} aria-label={`${localComparisonLabel}の比較`}>
@@ -371,29 +410,6 @@ export function MunicipalityDetailClient({ municipalityCode }: { municipalityCod
             </div>
           </details>
 
-          <details
-            className={`${styles.disclosure} ${styles.yearbookDisclosure}`}
-            onToggle={(event) => setYearbookOpen(event.currentTarget.open)}
-          >
-            <summary>
-              <span><Database size={18} aria-hidden="true" /></span>
-              <div><strong>地方公営企業年鑑の元データ</strong><small>R6の原表を公式の列名・列順のまま表示</small></div>
-              <ChevronDown size={17} aria-hidden="true" />
-            </summary>
-            <YearbookOriginalData
-              enabled={yearbookOpen}
-              municipalityCode={municipality.municipalityCode}
-              businessKey={latestBusiness.businessKey}
-              accountingType={latestBusiness.accountingType}
-            />
-            <section className={styles.evidenceSection} aria-labelledby="indicator-evidence-title">
-              <div>
-                <strong id="indicator-evidence-title">本サイトで使用する主要項目</strong>
-                <small>{evidenceEntries.length}項目の原表トレース</small>
-              </div>
-              <EvidenceContent entries={evidenceEntries} />
-            </section>
-          </details>
         </section>
 
         <details className={styles.disclaimer}>
@@ -519,9 +535,12 @@ function isFlowSewerBusiness(business: Pick<DetailBusiness, "businessKey" | "bus
 function buildTrendPoints(group: BusinessGroup): TrendPoint[] {
   return [2020, 2021, 2022, 2023, 2024].map((year) => {
     const annual = findAnnual(group, year);
-    const diagnosis = sanitizeAmbiguousDiagnosis(
-      annual?.diagnosisResult ?? null,
-      parseStringArray(annual?.flagsJson)
+    const diagnosis = withExactRecoveryRate(
+      sanitizeAmbiguousDiagnosis(
+        annual?.diagnosisResult ?? null,
+        parseStringArray(annual?.flagsJson)
+      ),
+      annual
     );
     return {
       year,
@@ -555,6 +574,28 @@ function sanitizeAmbiguousDiagnosis(
   };
 }
 
+function withExactRecoveryRate(
+  diagnosis: DetailAnnual["diagnosisResult"],
+  annual?: DetailAnnual | null
+) {
+  if (!diagnosis) return diagnosis;
+  const revenue = finiteOrNull(annual?.sewerFeeRevenue);
+  const cost = finiteOrNull(annual?.wastewaterTreatmentCost);
+  if (revenue == null || revenue < 0 || cost == null || cost <= 0) {
+    return {
+      ...diagnosis,
+      expenseRecoveryRate: null,
+      requiredRevisionRateTo100: null
+    };
+  }
+  const expenseRecoveryRate = revenue / cost * 100;
+  return {
+    ...diagnosis,
+    expenseRecoveryRate,
+    requiredRevisionRateTo100: revenue > 0 ? Math.max(cost / revenue - 1, 0) : null
+  };
+}
+
 function findAnnual(group: BusinessGroup, year: number, preferredAccountingType?: string | null) {
   return group.businesses
     .flatMap((business: any) => business.annualFinancials
@@ -581,7 +622,7 @@ function businessTone(businessKey: string) {
 }
 
 function parseDetailView(value?: string): DetailView {
-  return value === "finance" || value === "prefecture" ? value : "fees";
+  return value === "finance" || value === "prefecture" || value === "yearbook" ? value : "fees";
 }
 
 function prefectureComparisonLabel(prefectureName: string) {
@@ -589,6 +630,13 @@ function prefectureComparisonLabel(prefectureName: string) {
   if (prefectureName === "東京都") return "都内市区町村";
   if (prefectureName === "大阪府" || prefectureName === "京都府") return "府内市町村";
   return "県内市町村";
+}
+
+function prefectureComparisonShortLabel(prefectureName: string) {
+  if (prefectureName === "北海道") return "道内比較";
+  if (prefectureName === "東京都") return "都内比較";
+  if (prefectureName === "大阪府" || prefectureName === "京都府") return "府内比較";
+  return "県内比較";
 }
 
 type MetricParts = { value: string; unit?: string };
@@ -676,13 +724,15 @@ function FeeRecoveryStory({
 }) {
   const currentFee = positiveFiniteOrNull(annual.householdFee20m3Yen);
   const recoveryRate = finiteOrNull(diagnosis?.expenseRecoveryRate);
-  const referenceFee = calculateRequiredHouseholdFee20m3(currentFee, recoveryRate);
   const hasShortfall = recoveryRate != null && recoveryRate < 100;
-  const canEstimateReference = currentFee != null && recoveryRate != null && recoveryRate > 0;
-  const difference = currentFee != null && referenceFee != null ? referenceFee - currentFee : null;
+  const revenue = finiteOrNull(annual.sewerFeeRevenue);
   const opex = finiteOrNull(annual.opexComponent);
   const capital = finiteOrNull(annual.capitalCostComponent);
   const treatment = finiteOrNull(annual.wastewaterTreatmentCost);
+  const balance = revenue != null && treatment != null ? revenue - treatment : null;
+  const requiredIncreaseRate = revenue != null && treatment != null && revenue > 0
+    ? Math.max(treatment / revenue - 1, 0) * 100
+    : null;
   const componentsReady = opex != null && capital != null && treatment != null;
   const componentsReconciled = componentsReady && Math.abs(opex + capital - treatment) < 0.5;
 
@@ -690,120 +740,80 @@ function FeeRecoveryStory({
     <section className={styles.feeDecision} aria-labelledby="fee-decision-heading">
       <div className={styles.feeDecisionHeading}>
         <div>
-          <span>{fiscal} 料金表 × 決算</span>
-          <h2 id="fee-decision-heading">一般家庭用20m³月額と経費回収率</h2>
-          <p>料金表上の月額と、決算から算定する経費回収率を分けて確認します。</p>
+          <span>{fiscal} 料金表・決算</span>
+          <h2 id="fee-decision-heading">家庭の料金と事業全体の費用回収</h2>
+          <p>対象も単位も異なるため、家庭向け料金表と事業全体の決算を分けて表示します。</p>
         </div>
         <span className={hasShortfall ? styles.feeDecisionWarning : styles.feeDecisionReady}>
           <ShieldCheck size={15} aria-hidden="true" />
-          {recoveryRate == null ? "判定不可" : hasShortfall ? "経費回収率100%未満" : "経費回収率100%以上"}
+          {recoveryRate == null ? "判定不可" : hasShortfall ? "使用料収入が不足" : "汚水処理費を回収"}
         </span>
       </div>
 
-      <div className={styles.feeEquation} aria-label="現在の一般家庭用20立方メートル月額と経費回収率100パーセント相当の参考額">
-        <FeeEquationCard
-          label={`${fiscal}の料金表`}
-          title="一般家庭用20m³／月"
-          value={currentFee == null ? "未取得" : `${Math.round(currentFee).toLocaleString("ja-JP")}円`}
-          note="税込。総務省33表の料金表上の金額"
-        />
-        <ArrowRight className={styles.feeEquationArrow} size={22} aria-hidden="true" />
-        <FeeEquationCard
-          label="R6決算からの参考額"
-          title="経費回収率100%相当の月額"
-          value={!canEstimateReference
-            ? "算定不可"
-            : referenceFee != null
-              ? `約${referenceFee.toLocaleString("ja-JP")}円`
-              : "算定不可"}
-          note={!canEstimateReference
-            ? "経費回収率が0%以下、または一般家庭用20m³月額が未取得"
-            : `現在額 × 100 ÷ ${recoveryRate?.toFixed(1)}% の単純逆算`}
-          emphasized
-        />
-        <ArrowRight className={styles.feeEquationArrow} size={22} aria-hidden="true" />
-        <FeeEquationCard
-          label="差（100%相当額 − 現在額・参考）"
-          title="現在の月額との差"
-          value={!canEstimateReference
-            ? "算定不可"
-            : difference != null
-              ? formatSignedMonthlyDifference(difference)
-              : "算定不可"}
-          note={difference == null
-            ? "100%相当額を算定できないため差も表示できません"
-            : difference < 0
-              ? "この年度の費用回収では、使用料収入が対象費用を賄えており、使用料水準は不足していません。差額は値下げを示すものではありません"
-              : difference > 0
-                ? "この年度は使用料収入だけでは対象費用を賄えていないため、100%相当額が現在額を上回ります"
-                : "この年度は使用料収入と対象費用が同水準です"}
-          verdict
-        />
-      </div>
-
-      <div className={styles.costBoundary}>
-        <div className={styles.costBoundaryHeading}>
+      <div className={styles.feeDecisionFlow}>
+        <section className={styles.feeTariffPanel} aria-labelledby="household-tariff-title">
           <div>
-            <span>経費回収率の対象費用</span>
-            <h3>汚水処理費（公費負担分等を除く）</h3>
+            <span>家庭の料金表</span>
+            <h3 id="household-tariff-title">一般家庭用20m³／月</h3>
           </div>
-          <strong>{treatment == null ? "未取得" : formatMoneyThousandYen(treatment)}</strong>
-        </div>
-        {componentsReconciled ? (
-          <div className={styles.costFormula} aria-label={`維持管理費分${formatMoneyThousandYen(opex)}プラス資本費分${formatMoneyThousandYen(capital)}イコール汚水処理費${formatMoneyThousandYen(treatment)}`}>
-            <CostTerm label="維持管理費分" value={formatMoneyThousandYen(opex)} />
-            <span aria-hidden="true">＋</span>
-            <CostTerm label="資本費分" value={formatMoneyThousandYen(capital)} />
-            <span aria-hidden="true">＝</span>
-            <CostTerm label="汚水処理費" value={formatMoneyThousandYen(treatment)} result />
-          </div>
-        ) : (
-          <p className={styles.costUnavailable}>内訳が未取得または合計と一致しないため、確認できた合計だけを表示しています。</p>
-        )}
-        <div className={styles.costBoundaryNote}>
-          <strong>営業費用と、経費回収率の対象となる汚水処理費は同じ範囲ではありません。</strong>
-          <p>雨水処理などの公費負担分を除き、汚水に係る維持管理費と資本費を総務省基準で整理した額です。営業費用には含まれない企業債利息等が資本費に入る場合もあります。</p>
-        </div>
-      </div>
+          <strong>{currentFee == null ? "未取得" : `${Math.round(currentFee).toLocaleString("ja-JP")}円／月`}</strong>
+          <p>税込。地方公営企業年鑑「個表」の料金表上の金額です。全利用者の実績平均や事業全体の費用回収額ではありません。</p>
+        </section>
 
-      <details className={styles.feeAssumptions}>
-        <summary>100%相当額の前提と、2つの「単価」の違い</summary>
-        <div>
-          <p><strong>一般家庭用20m³月額</strong>は料金表上の税込月額、<strong>使用料単価</strong>は全利用者の年間使用料収入÷年間有収水量による実績平均です。</p>
-          <p>参考額は、費用・有収水量・税率が変わらず、基本料金と従量料金を同じ割合で改定すると仮定した単純試算です。自治体が決定した改定額ではなく、将来更新費や人口減少も織り込んでいません。</p>
-        </div>
-      </details>
+        <section className={styles.feeRecoveryPanel} aria-labelledby="business-recovery-title">
+          <div className={styles.feeRecoveryPanelHeading}>
+            <div>
+              <span>事業全体の費用回収</span>
+              <h3 id="business-recovery-title">経費回収率</h3>
+            </div>
+            <strong>{recoveryRate == null ? "算定不可" : `${recoveryRate.toFixed(1)}%`}</strong>
+          </div>
+          <dl className={styles.feeRecoveryLedger}>
+            <div>
+              <dt>年間下水道使用料収入</dt>
+              <dd>{formatThousandYenExact(revenue)}</dd>
+            </div>
+            <div>
+              <dt>汚水処理費（公費負担分等を除く）</dt>
+              <dd>{formatThousandYenExact(treatment)}</dd>
+            </div>
+            <div className={balance != null && balance < 0 ? styles.feeRecoveryShortfall : styles.feeRecoveryBalance}>
+              <dt>{balance == null ? "差額" : balance < 0 ? "年間不足額" : "年間余剰額"}</dt>
+              <dd>{balance == null ? "算定不可" : formatThousandYenExact(Math.abs(balance))}</dd>
+            </div>
+          </dl>
+
+          <p className={styles.feeRecoveryInterpretation}>
+            {requiredIncreaseRate == null
+              ? "使用料収入または汚水処理費が未取得・不適切なため、必要増加率は算定できません。"
+              : requiredIncreaseRate > 0
+                ? `費用・有収水量等を一定とすると、事業全体の使用料収入を${requiredIncreaseRate.toFixed(1)}%増やす必要がある単純計算です。家庭の20m³月額への換算ではありません。`
+                : "この年度は、事業全体の使用料収入が経費回収率の対象費用を賄っています。値下げ可能額を示すものではありません。"}
+          </p>
+
+          <details className={styles.costBreakdown}>
+            <summary>
+              汚水処理費の内訳と対象範囲
+              <ChevronDown size={16} aria-hidden="true" />
+            </summary>
+            {componentsReconciled ? (
+              <dl className={styles.costBreakdownRows}>
+                <div><dt>維持管理費分</dt><dd>{formatThousandYenExact(opex)}</dd></div>
+                <div><dt>資本費分</dt><dd>{formatThousandYenExact(capital)}</dd></div>
+                <div><dt>汚水処理費 合計</dt><dd>{formatThousandYenExact(treatment)}</dd></div>
+              </dl>
+            ) : (
+              <p className={styles.costUnavailable}>内訳が未取得または合計と一致しないため、確認できた合計だけを表示しています。</p>
+            )}
+            <div className={styles.costBoundaryNote}>
+              <strong>営業費用と、経費回収率の対象となる汚水処理費は同じ範囲ではありません。</strong>
+              <p>雨水処理などの公費負担分を除き、汚水に係る維持管理費と資本費を総務省基準で整理した額です。営業費用に含まれない企業債利息等が資本費に入る場合もあります。</p>
+            </div>
+          </details>
+        </section>
+      </div>
     </section>
   );
-}
-
-function FeeEquationCard({
-  label,
-  title,
-  value,
-  note,
-  emphasized = false,
-  verdict = false
-}: {
-  label: string;
-  title: string;
-  value: string;
-  note: string;
-  emphasized?: boolean;
-  verdict?: boolean;
-}) {
-  return (
-    <article className={`${styles.feeEquationCard} ${emphasized ? styles.feeEquationCardEmphasis : ""} ${verdict ? styles.feeEquationCardVerdict : ""}`}>
-      <span>{label}</span>
-      <h3>{title}</h3>
-      <strong>{value}</strong>
-      <p>{note}</p>
-    </article>
-  );
-}
-
-function CostTerm({ label, value, result = false }: { label: string; value: string; result?: boolean }) {
-  return <div className={result ? styles.costTermResult : undefined}><span>{label}</span><strong>{value}</strong></div>;
 }
 
 function buildCurrentFundingContext(group: BusinessGroup): CurrentFundingContext {
@@ -870,33 +880,36 @@ function positiveFiniteOrNull(value: number | null | undefined) {
   return value == null || !Number.isFinite(value) || value <= 0 ? null : value;
 }
 
-function formatSignedMonthlyDifference(value: number) {
-  const rounded = Math.round(value);
-  if (rounded === 0) return "±0円／月";
-  const sign = rounded > 0 ? "+" : "−";
-  return `${sign}${Math.abs(rounded).toLocaleString("ja-JP")}円／月`;
+function formatThousandYenExact(value: number | null | undefined) {
+  if (value == null || !Number.isFinite(value)) return "未取得";
+  return `${Math.round(value).toLocaleString("ja-JP")}千円`;
 }
 
 function EvidenceContent({ entries }: { entries: Array<[string, any]> }) {
   if (entries.length === 0) return <p className={styles.emptySupport}>表示できる根拠データは未登録です。</p>;
   return (
-    <div className={styles.evidenceScroll}>
-      <table>
-        <thead><tr><th>項目</th><th>値</th><th>出典表</th><th>原資料</th></tr></thead>
-        <tbody>
-          {entries.map(([field, item]) => {
-            const definition = getFieldDefinition(field);
-            return (
-              <tr key={field}>
-                <td><strong>{definition.label}</strong><small>{definition.meaning}</small></td>
-                <td>{formatTraceValue(item?.value)} {unitLabels[item?.unit] ?? item?.unit ?? definition.unit}</td>
-                <td>{sourceTableLabel(item, definition.sourceTable)}</td>
-                <td>{item?.sourceUrl ? <a href={item.sourceUrl} target="_blank" rel="noreferrer">原資料 <ExternalLink size={12} /></a> : "未登録"}</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+    <div className={styles.evidenceList}>
+      {entries.map(([field, item]) => {
+        const definition = getFieldDefinition(field);
+        return (
+          <article key={field}>
+            <div>
+              <strong>{definition.label}</strong>
+              <small>{definition.meaning}</small>
+            </div>
+            <div>
+              <strong>{formatTraceValue(item?.value)} {unitLabels[item?.unit] ?? item?.unit ?? definition.unit}</strong>
+              <small>{sourceTableLabel(item, definition.sourceTable)}</small>
+              {item?.sourceUrl ? (
+                <a href={item.sourceUrl} target="_blank" rel="noreferrer">
+                  e-Stat原資料
+                  <ExternalLink size={12} aria-hidden="true" />
+                </a>
+              ) : <small>原資料リンク未登録</small>}
+            </div>
+          </article>
+        );
+      })}
     </div>
   );
 }

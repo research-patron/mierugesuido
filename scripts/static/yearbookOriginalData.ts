@@ -59,6 +59,7 @@ export type YearbookIndividualDataIndex = {
   byMunicipality: Map<string, YearbookIndividualData>;
   sourceFilesRead: number;
   originalRows: number;
+  reconciledRows: number;
   matchedBusinessCount: number;
   warnings: string[];
 };
@@ -194,6 +195,7 @@ export function buildYearbookIndividualDataIndex(
 
   let sourceFilesRead = 0;
   let originalRows = 0;
+  let reconciledRows = 0;
   for (const source of sources) {
     if (!source.localPath) {
       warnings.push(`${source.id}: 個表ファイルがありません`);
@@ -223,10 +225,20 @@ export function buildYearbookIndividualDataIndex(
         warnings.push(`${source.id}/${sheetName}: 団体名行を確認できませんでした`);
         continue;
       }
+      const itemHeader = findMarkerCell(worksheet, 9, "項目", range);
+      if (!itemHeader) {
+        warnings.push(`${source.id}/${sheetName}: 項目列を確認できませんでした`);
+        continue;
+      }
+      const firstValueColumn = findFirstValueColumn(worksheet, marker.c, range);
+      if (firstValueColumn == null) {
+        warnings.push(`${source.id}/${sheetName}: 自治体の値列を確認できませんでした`);
+        continue;
+      }
       const workbookTitle = displayedCellText(worksheet, 2, 1) || source.groupTitle;
       const workbookBusinessType = normalizeBusinessTypeName(displayedCellText(worksheet, 3, 1)) || source.businessTypeName;
       let prefectureName = "";
-      for (let column = marker.c + 1; column <= range.e.c; column += 1) {
+      for (let column = firstValueColumn; column <= range.e.c; column += 1) {
         const directPrefecture = displayedCellText(worksheet, 8, column);
         if (directPrefecture) prefectureName = directPrefecture;
         const operatorName = displayedCellText(worksheet, 9, column);
@@ -251,7 +263,22 @@ export function buildYearbookIndividualDataIndex(
         const target = matchingTargets[0];
         if (!target) continue;
         matchedTargets.add(targetIdentity(target));
-        const rows = extractIndividualRows(worksheet, column, marker.c, range.e.r);
+        const rows = extractIndividualRows(
+          worksheet,
+          column,
+          itemHeader.c,
+          firstValueColumn - 1,
+          range.e.r
+        );
+        reconciledRows += assertExtractedRowsMatchWorksheet({
+          worksheet,
+          rows,
+          valueColumn: column,
+          labelStartColumn: itemHeader.c,
+          labelEndColumn: firstValueColumn - 1,
+          lastRow: range.e.r,
+          sourceLabel: `${source.id}/${sheetName}/${operatorName}`
+        });
         originalRows += rows.length;
         const data = byMunicipality.get(target.municipalityCode) ?? emptyYearbookIndividualData(fiscalYear);
         const business = data.businesses.find((candidate) => (
@@ -296,6 +323,7 @@ export function buildYearbookIndividualDataIndex(
     byMunicipality,
     sourceFilesRead,
     originalRows,
+    reconciledRows,
     matchedBusinessCount: matchedTargets.size,
     warnings
   };
@@ -336,14 +364,15 @@ export function assertOfficialHeadlineValues(
 function extractIndividualRows(
   worksheet: XLSX.WorkSheet,
   valueColumn: number,
+  labelStartColumn: number,
   labelEndColumn: number,
   lastRow: number
 ): YearbookIndividualRow[] {
   const rows: YearbookIndividualRow[] = [];
   for (let row = 10; row <= lastRow; row += 1) {
     const labelCells = Array.from(
-      { length: Math.max(labelEndColumn, 1) },
-      (_, index) => displayedCellText(worksheet, row, index + 1)
+      { length: Math.max(labelEndColumn - labelStartColumn + 1, 1) },
+      (_, index) => displayedCellText(worksheet, row, labelStartColumn + index)
     ).filter(Boolean);
     const valueText = displayedCellText(worksheet, row, valueColumn);
     const labelText = labelCells.filter(Boolean).join(" ");
@@ -360,6 +389,54 @@ function extractIndividualRows(
     });
   }
   return rows;
+}
+
+function assertExtractedRowsMatchWorksheet({
+  worksheet,
+  rows,
+  valueColumn,
+  labelStartColumn,
+  labelEndColumn,
+  lastRow,
+  sourceLabel
+}: {
+  worksheet: XLSX.WorkSheet;
+  rows: YearbookIndividualRow[];
+  valueColumn: number;
+  labelStartColumn: number;
+  labelEndColumn: number;
+  lastRow: number;
+  sourceLabel: string;
+}) {
+  const byRowNumber = new Map(rows.map((row) => [row.rowNumber, row]));
+  let reconciledRows = 0;
+  for (let rowIndex = 10; rowIndex <= lastRow; rowIndex += 1) {
+    const officialLabels = Array.from(
+      { length: Math.max(labelEndColumn - labelStartColumn + 1, 1) },
+      (_, index) => displayedCellText(worksheet, rowIndex, labelStartColumn + index)
+    ).filter(Boolean);
+    const officialValue = displayedCellText(worksheet, rowIndex, valueColumn);
+    if (officialLabels.length === 0 && officialValue === "") continue;
+
+    const extracted = byRowNumber.get(rowIndex + 1);
+    if (!extracted) {
+      throw new Error(`${sourceLabel}/${rowIndex + 1}行: 公式行が自治体別抜粋から欠落しています`);
+    }
+    if (JSON.stringify(extracted.labelCells) !== JSON.stringify(officialLabels)) {
+      throw new Error(`${sourceLabel}/${rowIndex + 1}行: 公式項目名が原表と一致しません`);
+    }
+    if (extracted.valueText !== officialValue) {
+      throw new Error(`${sourceLabel}/${rowIndex + 1}行: 表示値が原表と一致しません`);
+    }
+    if (officialValue !== "" && officialLabels.length === 0) {
+      throw new Error(`${sourceLabel}/${rowIndex + 1}行: 値に対応する公式項目名がありません`);
+    }
+    reconciledRows += 1;
+  }
+  if (reconciledRows !== rows.length) {
+    throw new Error(`${sourceLabel}: 自治体別抜粋の行数が原表と一致しません`);
+  }
+  return reconciledRows;
 }
 
 function assertOfficialValue({
@@ -421,6 +498,19 @@ function findMarkerCell(
 ) {
   for (let column = range.s.c; column <= range.e.c; column += 1) {
     if (displayedCellText(worksheet, row, column) === expected) return { r: row, c: column };
+  }
+  return null;
+}
+
+function findFirstValueColumn(
+  worksheet: XLSX.WorkSheet,
+  markerColumn: number,
+  range: XLSX.Range
+) {
+  for (let column = markerColumn + 1; column <= range.e.c; column += 1) {
+    const prefecture = displayedCellText(worksheet, 8, column);
+    const operator = displayedCellText(worksheet, 9, column);
+    if (prefecture || operator) return column;
   }
   return null;
 }

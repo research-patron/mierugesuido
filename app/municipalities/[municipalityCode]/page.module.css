@@ -1004,6 +1004,7 @@
 
 .yearbookViewHeading,
 .yearbookEvidenceSection,
+.yearbookAuditSection,
 .yearbookView > .yearbookOriginal {
   min-width: 0;
   border: 1px solid var(--ui-border);
@@ -1044,6 +1045,10 @@
   overflow: hidden;
   border-top: 1px solid var(--ui-border);
   padding-top: 12px;
+}
+
+.yearbookAuditSection {
+  overflow: hidden;
 }
 
 .yearbookView > .yearbookOriginal {
@@ -1327,6 +1332,123 @@
   font-weight: 600;
 }
 
+.yearbookAuditHeading {
+  padding: 14px 16px 11px;
+}
+
+.yearbookAuditHeading > span {
+  display: block;
+  color: var(--ui-teal-hover);
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.yearbookAuditHeading h3 {
+  margin: 2px 0 0;
+  color: var(--ui-ink-deep);
+  font-size: 14px;
+  font-weight: 850;
+  line-height: 1.45;
+}
+
+.yearbookAuditHeading p {
+  margin: 3px 0 0;
+  color: var(--ui-muted);
+  font-size: 9.5px;
+  font-weight: 600;
+  line-height: 1.55;
+}
+
+.yearbookCalculationList {
+  border-top: 1px solid var(--ui-divider);
+  padding: 0 16px;
+}
+
+.yearbookCalculationList article {
+  display: grid;
+  grid-template-columns: minmax(190px, 0.42fr) minmax(0, 1fr);
+  gap: 20px;
+  padding: 11px 2px;
+}
+
+.yearbookCalculationList article + article {
+  border-top: 1px solid var(--ui-divider);
+}
+
+.yearbookCalculationValue strong,
+.yearbookCalculationValue span {
+  display: block;
+}
+
+.yearbookCalculationValue strong {
+  color: var(--ui-ink);
+  font-size: 9.5px;
+  font-weight: 800;
+}
+
+.yearbookCalculationValue span {
+  margin-top: 2px;
+  color: var(--ui-ink-deep);
+  font-size: 13px;
+  font-weight: 850;
+  font-variant-numeric: tabular-nums;
+}
+
+.yearbookCalculationTrace p {
+  margin: 0;
+  color: var(--ui-ink);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.55;
+}
+
+.yearbookReferenceLine,
+.yearbookVerified,
+.yearbookMismatch,
+.yearbookNoIndividualRow {
+  display: block;
+  margin-top: 3px;
+  font-size: 8.5px;
+  font-weight: 650;
+  line-height: 1.55;
+}
+
+.yearbookReferenceLine {
+  color: var(--ui-muted);
+}
+
+.yearbookReferenceLine a {
+  color: var(--ui-teal-hover);
+  font-weight: 800;
+}
+
+.yearbookVerified {
+  color: #147a65;
+}
+
+.yearbookVerified svg {
+  margin-right: 3px;
+  vertical-align: -2px;
+}
+
+.yearbookMismatch {
+  color: #b42318;
+}
+
+.yearbookNoIndividualRow {
+  color: var(--ui-muted);
+}
+
+.yearbookAuditFootnote {
+  border-top: 1px solid var(--ui-divider);
+  margin: 0;
+  padding: 9px 16px 11px;
+  color: var(--ui-muted);
+  font-size: 8.5px;
+  font-weight: 650;
+  line-height: 1.55;
+}
+
 .yearbookStatus {
   display: flex;
   align-items: center;
@@ -1434,6 +1556,11 @@
   color: var(--ui-ink-deep);
   font-size: 10px;
   font-weight: 850;
+}
+
+.evidenceList article > div:first-child .yearbookReferenceLine,
+.evidenceList article > div:first-child .yearbookNoIndividualRow {
+  margin-top: 5px;
 }
 
 .evidenceList small {
@@ -1733,6 +1860,11 @@
 
   .yearbookGroupToolbar {
     grid-template-columns: 1fr;
+  }
+
+  .yearbookCalculationList article {
+    grid-template-columns: 1fr;
+    gap: 7px;
   }
 
   .yearbookRowsViewport {

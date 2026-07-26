@@ -18,12 +18,14 @@ import { municipalitiesToCsv } from "@/lib/municipalityCsv";
 import { getPrefectureCode, prefectures } from "@/lib/prefectures";
 import { prisma } from "@/lib/prisma";
 import { rankingLabels, type RankingType } from "@/lib/rankings";
+import { assertMappedEvidenceMatchesOfficial } from "@/lib/yearbookEvidence";
 import {
   assertOfficialHeadlineValues,
   buildYearbookIndividualDataIndex,
   emptyYearbookIndividualData,
   prepareOfficialYearbookSources,
   type YearbookAccountingType,
+  type YearbookIndividualData,
   type YearbookTarget
 } from "@/scripts/static/yearbookOriginalData";
 
@@ -142,9 +144,14 @@ async function main() {
     latestFiscalYear
   );
   process.stdout.write(
-    `yearbook individual tables: ${yearbookIndex.originalRows} rows from ${yearbookIndex.sourceFilesRead} official workbooks`
+    `yearbook individual tables: ${yearbookIndex.originalRows} rows reconciled with ${yearbookIndex.sourceFilesRead} official workbooks`
       + `${yearbookIndex.warnings.length ? ` (${yearbookIndex.warnings.length} warnings)` : ""}\n`
   );
+  if (yearbookIndex.reconciledRows !== yearbookIndex.originalRows) {
+    throw new Error(
+      `個表の全行照合件数が一致しません: 抽出=${yearbookIndex.originalRows}, 照合=${yearbookIndex.reconciledRows}`
+    );
+  }
   const unmatchedYearbookWarnings = yearbookIndex.warnings.filter((warning) => warning.startsWith("個表に一致する団体列がありません"));
   if (unmatchedYearbookWarnings.length) {
     process.stderr.write(
@@ -197,7 +204,7 @@ async function main() {
     }
     await writeJson(
       path.join(publicRoot, "municipalities", `${item.municipalityCode}.json`),
-      compactMunicipalityDetail(detail)
+      compactMunicipalityDetail(detail, yearbookData)
     );
     await writeJson(
       path.join(publicRoot, "yearbook", `${item.municipalityCode}.json`),
@@ -234,12 +241,27 @@ async function main() {
   await prisma.$disconnect();
 }
 
-function compactMunicipalityDetail(detail: any) {
+function compactMunicipalityDetail(detail: any, yearbookData: YearbookIndividualData) {
   const businesses = detail.businesses.map((business: any) => {
     const sameKey = detail.businesses.filter((candidate: any) => candidate.businessKey === business.businessKey);
     const financialAnnual = findAnnual(sameKey, 2024, business.accountingType);
     const previousFinancialAnnual = findAnnual(sameKey, 2023, business.accountingType);
     const latest = [...business.annualFinancials].sort((a: any, b: any) => b.surveyYear - a.surveyYear)[0] ?? null;
+    const evidenceEntries = compactEvidence(latest?.sourceTraceJson, business.accountingType);
+    const officialBusiness = yearbookData.businesses.find((candidate) => (
+      candidate.businessKey === business.businessKey
+      && candidate.accountingType === business.accountingType
+    ));
+    if (!isFlowSewerBusiness(business)) {
+      try {
+        assertMappedEvidenceMatchesOfficial(officialBusiness, evidenceEntries);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        throw new Error(
+          `${detail.prefectureName}/${detail.municipalityName}/${business.businessKey}/${business.accountingType}: ${message}`
+        );
+      }
+    }
     return {
       businessKey: business.businessKey,
       businessName: business.businessName,
@@ -254,7 +276,7 @@ function compactMunicipalityDetail(detail: any) {
         financialStatementItems: []
       }, previousFinancialAnnual),
       financialStatementsReady: Boolean(financialAnnual?.financialStatementItems.length),
-      evidenceEntries: compactEvidence(latest?.sourceTraceJson),
+      evidenceEntries,
       annualFinancials: business.annualFinancials.map(compactAnnual)
     };
   });
@@ -359,10 +381,14 @@ function compactRevisionEvent(event: any) {
   };
 }
 
-function compactEvidence(sourceTraceJson?: string | null): Array<[string, any]> {
+function compactEvidence(
+  sourceTraceJson?: string | null,
+  accountingType?: string | null
+): Array<[string, any]> {
   const trace = parseJson(sourceTraceJson);
   return Object.entries(trace)
     .filter(([, item]: [string, any]) => item?.value != null)
+    .filter(([field]) => accountingType !== "legal_applied" || field !== "generalAccountTransfer")
     .sort(([a], [b]) => evidenceOrder(a) - evidenceOrder(b))
     .slice(0, 14)
     .map(([field, item]: [string, any]) => [field, {

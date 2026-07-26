@@ -1163,3 +1163,62 @@ final result: passed
 - No database, Prisma schema, migration, official workbook, generated static data, or accounting calculation changed in this placement pass.
 
 final result: passed
+
+## Superseding official-individual-table source-first and row-reconciliation gate — 2026-07-26
+
+This gate supersedes the preceding yearbook-tab order that placed the site's mapped source list before the Ministry's official individual-table extraction and did not preserve item labels once the workbook hierarchy moved out of the first item column.
+
+### Official workbook parsing and full reconciliation
+
+- Root cause: the previous parser treated the `団体名` marker column as the end of the item-label range. In the Ministry workbooks, `項目` begins in column B while later hierarchy labels continue through columns C–E, so rows from 20 onward could retain a value while losing its item name.
+- The parser now finds the row-10 `項目` header independently, finds the first municipality value column from the prefecture and operator header rows, and preserves every official item cell between those boundaries in workbook order.
+- Static generation checks every extracted row against the workbook in memory: row number, ordered hierarchy cells, exact display text, dash, blank, note, and row count must match. A data row with a value and no item label is a generation error.
+- The R6 generation reconciled 1,318,745 source-column rows across 86 official Ministry workbooks. The generated display payload contains 1,288,820 rows across 1,586 municipality files, with `0` value-bearing rows lacking an item label.
+- The existing 57 exact-match warnings are confined to law-applied `18-0` records for which the Ministry workbook has no corresponding operator column. They remain explicit unavailable states and are not guessed or counted as reconciled display data.
+
+### Source-first information architecture and calculation trace
+
+- The dedicated `年鑑・根拠データ` view now shows `地方公営企業年鑑「個表」の自治体別抜粋` first, including the Ministry source page, selected official Excel, accounting basis, business type, operator, individual-table selector, official row order, and exact display values.
+- Below the official extraction, `主要指標の計算式と公式個表の参照行` shows each published calculation, its formula, exact numerator and denominator rows, and comparison with the official published result.
+- `この画面で使用する主要項目` then shows each site field as a vertical evidence row with its official individual-table number, official row number, label, official display value, e-Stat source, and reconciliation status.
+- Table 40 transfer-basis fields are explicitly identified as direct Table 40 sources rather than being assigned a fictitious `12．個表` row.
+- The law-applied source list no longer shows the legacy field labelled `一般会計繰入金（法非適用）`; it was misleading for law-applied businesses and has no valid official-individual-table mapping in that scope.
+
+### Fixed Mogami Town R6 evidence
+
+- `一般家庭用20m³／月`: individual table (2), row 17, `2,910円`.
+- `下水道使用料収入`: individual table (3), row 13, `32,688千円`.
+- `年間有収水量`: individual table (1), row 74, `220,554m³`.
+- `汚水処理費（維持管理費分）`: individual table (2), row 69, `55,050千円`.
+- `汚水処理費（資本費分）`: individual table (2), row 80, `15,427千円`.
+- `汚水処理費`: individual table (2), row 88, `70,477千円`.
+- `使用料単価`: individual table (2), row 24, official `148.21円/m³`; the site's one-decimal display is `148.2円/m³`.
+- `汚水処理原価`: individual table (2), row 25, official `319.55円/m³`; the site's one-decimal display is `319.5円/m³`.
+- `経費回収率`: individual table (2), row 28, official `46.4%`; the unrounded `32,688 ÷ 70,477 × 100` calculation agrees at the official display precision.
+- `経常損益`: individual table (3), row 61, `3,959千円`; `当年度純損益`: individual table (3), row 62, `4,428千円`.
+- The derived annual shortfall remains `37,789千円` and the required revenue increase remains `115.6%`, with both source rows shown immediately beside the formula.
+
+### Responsive, interaction, and visual evidence
+
+- Desktop was checked at 1491 × 1055. The browser content width was 1,480px and the page introduced no horizontal overflow.
+- Mobile was checked at 390 × 844. The browser content width and page scroll width were both 379px; official rows and evidence items stack vertically, and only the bounded official-row panel scrolls internally.
+- The native `公式個表の全項目を見る` disclosure opens and closes with its visible focus treatment. The individual-table selector was switched from table (1) to table (2), and the displayed tariff and recovery rows changed with the selected official table.
+- The post-build browser log contained only the React development-information message and no warning or error.
+- Accepted runtime captures, kept outside the publication diff:
+  - `artifacts/design-qa/yearbook-source-audit-2026-07-26/09-postbuild-desktop-source-1491x1055.png`
+  - `10-postbuild-desktop-audit-1491x1055.png`
+  - `11-postbuild-mobile-source-390x844.png`
+  - `11b-postbuild-mobile-source-row20-390x844.png`
+  - `12-postbuild-mobile-audit-390x844.png`
+- The supplied problem image and the final post-build source view were inspected together in `13-reference-postbuild-comparison.png`. The comparison confirms that the orphaned rows now carry their official hierarchy labels while the values remain unchanged.
+
+### Regression, protected scope, and intentional subtraction
+
+- `pnpm static:data`: passed; 86 official workbooks, 1,318,745 reconciled source-column rows, 1,586 municipality detail payloads, and 312 comparison pairs.
+- `pnpm lint`: passed.
+- `pnpm test`: 30/30 files and 181/181 tests passed.
+- `pnpm build`: passed; 1,649 static pages generated.
+- No database, Prisma schema, migration, source workbook, imported e-Stat value, accounting formula, route, navigation destination, business switch, map, ranking value, or search behavior changed.
+- Intentional subtraction: the misleading law-applied `一般会計繰入金（法非適用）` evidence row was removed from the public source list. No underlying source field was deleted; the row was excluded because its accounting label and official-row provenance do not apply to the selected legal-applied business.
+
+final result: passed

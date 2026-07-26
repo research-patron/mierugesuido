@@ -57,7 +57,7 @@ describe("地方公営企業年鑑『個表』の自治体別抜粋", () => {
     const rows: unknown[][] = Array.from({ length: 15 }, () => []);
     rows[2][1] = "（2）業務概況（その2）及び費用構成に関する調（法適用企業）";
     rows[3][1] = "（ア）公共下水道";
-    rows[8][4] = "団体名";
+    rows[8][1] = "団体名";
     rows[8][5] = "新潟県";
     rows[9][1] = "項目";
     rows[9][5] = "新潟市";
@@ -72,6 +72,14 @@ describe("地方公営企業年鑑『個表』の自治体別抜粋", () => {
     rows[14][1] = "（注）数値は表示単位未満を四捨五入している。";
 
     const worksheet = XLSX.utils.aoa_to_sheet(rows);
+    worksheet["!merges"] = [
+      XLSX.utils.decode_range("B11:B11"),
+      XLSX.utils.decode_range("C11:E11"),
+      XLSX.utils.decode_range("B12:E12"),
+      XLSX.utils.decode_range("C13:E13"),
+      XLSX.utils.decode_range("C14:E14"),
+      XLSX.utils.decode_range("B15:E15")
+    ];
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "№2");
     XLSX.writeFile(workbook, filePath);
@@ -101,6 +109,7 @@ describe("地方公営企業年鑑『個表』の自治体別抜粋", () => {
 
     expect(result.sourceFilesRead).toBe(1);
     expect(result.matchedBusinessCount).toBe(1);
+    expect(result.reconciledRows).toBe(5);
     expect(business).toMatchObject({
       businessKey: "17-1-000",
       accountingType: "legal_applied",
@@ -134,6 +143,68 @@ describe("地方公営企業年鑑『個表』の自治体別抜粋", () => {
     })).toThrow("一般家庭用20m³／月が公式個表と一致しません");
   });
 
+  it("restores labels stored in the official item hierarchy columns after the first section row", () => {
+    const directory = mkdtempSync(path.join(tmpdir(), "yearbook-hierarchy-"));
+    temporaryDirectories.push(directory);
+    const filePath = path.join(directory, "official.xlsx");
+    const rows: unknown[][] = Array.from({ length: 14 }, () => []);
+    rows[2][1] = "（1）施設及び業務概況（その1）に関する調（法適用企業）";
+    rows[3][1] = "（ア）公共下水道";
+    rows[8][1] = "団体名";
+    rows[8][5] = "山形県";
+    rows[9][1] = "項目";
+    rows[9][5] = "最上町";
+    rows[10][1] = "８．施設及び業務\n（１）行政区域内人口（人）（Ａ）";
+    rows[10][5] = 7308;
+    rows[11][2] = "（２）市街地人口（人）（Ｂ）";
+    rows[11][5] = "-";
+    rows[12][2] = "（３）全体計画人口（人）（Ｃ）";
+    rows[12][5] = 3100;
+    rows[13][3] = "イ　Ｄ／Ｂ×100（％）";
+    rows[13][5] = "-";
+
+    const worksheet = XLSX.utils.aoa_to_sheet(rows);
+    worksheet["!merges"] = [
+      XLSX.utils.decode_range("B11:E11"),
+      XLSX.utils.decode_range("C12:E12"),
+      XLSX.utils.decode_range("C13:E13"),
+      XLSX.utils.decode_range("D14:E14")
+    ];
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "№2");
+    XLSX.writeFile(workbook, filePath);
+
+    const result = buildYearbookIndividualDataIndex([{
+      id: "1-001065539.xls",
+      groupNo: 1,
+      groupTitle: "施設及び業務概況（その1）に関する調（法適用企業）",
+      accountingType: "legal_applied",
+      businessCategoryCode: "17/1",
+      businessTypeName: "公共下水道",
+      sourceUrl: "https://www.soumu.go.jp/main_content/001065539.xls",
+      localPath: filePath
+    }], [{
+      municipalityCode: "063622",
+      municipalityName: "最上町",
+      prefectureName: "山形県",
+      businessKey: "17-1-000",
+      accountingType: "legal_applied"
+    }], 2024);
+
+    expect(result.reconciledRows).toBe(4);
+    expect(result.byMunicipality.get("063622")?.businesses[0].groups[0].rows).toEqual([
+      {
+        rowNumber: 11,
+        labelCells: ["８．施設及び業務\n（１）行政区域内人口（人）（Ａ）"],
+        valueText: "7308",
+        kind: "data"
+      },
+      { rowNumber: 12, labelCells: ["（２）市街地人口（人）（Ｂ）"], valueText: "-", kind: "data" },
+      { rowNumber: 13, labelCells: ["（３）全体計画人口（人）（Ｃ）"], valueText: "3100", kind: "data" },
+      { rowNumber: 14, labelCells: ["イ　Ｄ／Ｂ×100（％）"], valueText: "-", kind: "data" }
+    ]);
+  });
+
   it("returns an explicit empty official payload when no workbook column matches", () => {
     expect(emptyYearbookIndividualData(2024)).toEqual({
       fiscalYear: 2024,
@@ -142,9 +213,10 @@ describe("地方公営企業年鑑『個表』の自治体別抜粋", () => {
     });
   });
 
-  it("places the official extraction in a dedicated URL-backed tab and progressively reveals all rows", () => {
+  it("places the official extraction first, then shows calculations and exact source-row mappings", () => {
     const detailSource = readFileSync("components/MunicipalityDetailClient.tsx", "utf8");
     const viewerSource = readFileSync("components/municipality-detail/YearbookOriginalData.tsx", "utf8");
+    const evidenceSource = readFileSync("lib/yearbookEvidence.ts", "utf8");
     const generatorSource = readFileSync("scripts/static/generate.ts", "utf8");
 
     expect(detailSource).toContain("地方公営企業年鑑「個表」");
@@ -153,9 +225,14 @@ describe("地方公営企業年鑑『個表』の自治体別抜粋", () => {
     expect(detailSource).toContain("年鑑・根拠データ");
     expect(detailSource).not.toContain("setYearbookOpen");
     expect(detailSource).not.toContain("yearbookDisclosure");
+    expect(detailSource.indexOf("<YearbookOriginalData")).toBeGreaterThan(detailSource.indexOf("年鑑・根拠データ"));
     expect(viewerSource).toContain("/data/static/yearbook/${municipalityCode}.json");
     expect(viewerSource).toContain("公式個表の全項目を見る");
     expect(viewerSource).toContain("公式の項目順・階層・表示値");
+    expect(viewerSource.indexOf("yearbookOriginal")).toBeLessThan(viewerSource.indexOf("<YearbookCalculationAudit"));
+    expect(viewerSource).toContain("主要指標の計算式と公式個表の参照行");
+    expect(viewerSource).toContain("個表（{reference.groupNumber}）{reference.rowNumber}行");
+    expect(evidenceSource).toContain("この値は「12．個表」ではなく");
     expect(viewerSource).not.toContain("e-Stat公開Excelのまま");
     expect(viewerSource).not.toContain("yearbookTableScroll");
     expect(viewerSource).toContain("candidate.businessKey === businessKey && candidate.accountingType === accountingType");

@@ -30,8 +30,6 @@ import { YearbookOriginalData } from "@/components/municipality-detail/YearbookO
 import { TrendChart, type TrendPoint } from "@/components/TrendChart";
 import { accountingTypeLabel, businessCategoryCode, displayBusinessName } from "@/lib/businessDisplay";
 import { detailDisclaimer, formulaCopy } from "@/lib/copy";
-import { getFieldDefinition } from "@/lib/fieldDefinitions";
-import { unitLabels } from "@/lib/fieldLabels";
 import {
   formatMoneyThousandYen,
   formatSettlementFiscalLabel,
@@ -345,20 +343,16 @@ export function MunicipalityDetailClient({ municipalityCode }: { municipalityCod
             <div className={styles.yearbookViewHeading}>
               <span>{fiscal}・選択中の決算事業</span>
               <h2 id="yearbook-view-title">年鑑・根拠データ</h2>
-              <p>この画面の計算に使用する主要項目と、総務省「地方公営企業年鑑」の公式個表を確認できます。</p>
+              <p>総務省「地方公営企業年鑑」の公式個表を先に確認し、その下でこのサイトの主要項目・計算式・参照行を照合できます。</p>
             </div>
-            <section className={`${styles.evidenceSection} ${styles.yearbookEvidenceSection}`} aria-labelledby="indicator-evidence-title">
-              <div>
-                <strong id="indicator-evidence-title">この画面で使用する主要項目</strong>
-                <small>{evidenceEntries.length}項目・計算用e-Statデータの出典</small>
-              </div>
-              <EvidenceContent entries={evidenceEntries} />
-            </section>
             <YearbookOriginalData
               enabled={view === "yearbook"}
               municipalityCode={municipality.municipalityCode}
               businessKey={latestBusiness.businessKey}
               accountingType={latestBusiness.accountingType}
+              evidenceEntries={evidenceEntries}
+              annual={latest}
+              diagnosis={diagnosis}
             />
           </section>
         ) : prefecturePeerComparison ? (
@@ -885,35 +879,6 @@ function formatThousandYenExact(value: number | null | undefined) {
   return `${Math.round(value).toLocaleString("ja-JP")}千円`;
 }
 
-function EvidenceContent({ entries }: { entries: Array<[string, any]> }) {
-  if (entries.length === 0) return <p className={styles.emptySupport}>表示できる根拠データは未登録です。</p>;
-  return (
-    <div className={styles.evidenceList}>
-      {entries.map(([field, item]) => {
-        const definition = getFieldDefinition(field);
-        return (
-          <article key={field}>
-            <div>
-              <strong>{definition.label}</strong>
-              <small>{definition.meaning}</small>
-            </div>
-            <div>
-              <strong>{formatTraceValue(item?.value)} {unitLabels[item?.unit] ?? item?.unit ?? definition.unit}</strong>
-              <small>{sourceTableLabel(item, definition.sourceTable)}</small>
-              {item?.sourceUrl ? (
-                <a href={item.sourceUrl} target="_blank" rel="noreferrer">
-                  e-Stat原資料
-                  <ExternalLink size={12} aria-hidden="true" />
-                </a>
-              ) : <small>原資料リンク未登録</small>}
-            </div>
-          </article>
-        );
-      })}
-    </div>
-  );
-}
-
 function parseStringArray(value?: string | null) {
   if (!value) return [];
   try {
@@ -922,16 +887,4 @@ function parseStringArray(value?: string | null) {
   } catch {
     return [];
   }
-}
-
-function formatTraceValue(value: unknown) {
-  const number = typeof value === "number" ? value : Number(value);
-  if (Number.isFinite(number)) return number.toLocaleString("ja-JP");
-  return value == null ? "不明" : String(value);
-}
-
-function sourceTableLabel(item: any, fallback: string) {
-  const tableNo = item?.tableNo ? `${item.tableNo}表` : "";
-  const tableName = item?.tableName ?? fallback;
-  return [tableNo, tableName].filter(Boolean).join(" ");
 }

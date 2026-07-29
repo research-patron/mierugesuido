@@ -238,4 +238,18 @@ describe("地方公営企業年鑑『個表』の自治体別抜粋", () => {
     expect(viewerSource).toContain("candidate.businessKey === businessKey && candidate.accountingType === accountingType");
     expect(generatorSource).toContain('path.join(publicRoot, "yearbook", `${item.municipalityCode}.json`)');
   });
+
+  it("opens the official rows initially and preserves the item-value columns on mobile", () => {
+    const viewerSource = readFileSync("components/municipality-detail/YearbookOriginalData.tsx", "utf8");
+    const detailStyles = readFileSync("app/municipalities/[municipalityCode]/page.module.css", "utf8");
+
+    expect(viewerSource).toContain("const [allItemsOpen, setAllItemsOpen] = useState(true)");
+    expect(viewerSource).toContain("open={allItemsOpen}");
+    expect(viewerSource).toContain("onToggle={(event) => setAllItemsOpen(event.currentTarget.open)}");
+    expect(detailStyles).toContain(".yearbookRowsTable thead th + th,\n.yearbookRowsTable tbody td");
+    expect(detailStyles).toContain("border-left: 1px solid var(--ui-border)");
+    expect(detailStyles).not.toContain(
+      ".yearbookRowsTable,\n  .yearbookRowsTable tbody,\n  .yearbookRowsTable tr"
+    );
+  });
 });

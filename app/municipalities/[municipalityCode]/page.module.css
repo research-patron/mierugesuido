@@ -1241,6 +1241,23 @@
   max-height: 460px;
   overflow-y: auto;
   overscroll-behavior: contain;
+  scrollbar-color: #9eb5c1 transparent;
+  scrollbar-width: thin;
+}
+
+.yearbookRowsViewport::-webkit-scrollbar {
+  width: 8px;
+}
+
+.yearbookRowsViewport::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.yearbookRowsViewport::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: #9eb5c1;
+  background-clip: padding-box;
 }
 
 .yearbookRowsViewport:focus-visible {
@@ -1271,7 +1288,7 @@
   top: 0;
   border-top: 1px solid var(--ui-divider);
   border-bottom: 1px solid var(--ui-divider);
-  background: #fff;
+  background: #f6fafb;
   color: var(--ui-muted);
   font-weight: 800;
 }
@@ -1282,6 +1299,11 @@
   padding: 8px 10px;
   text-align: left;
   vertical-align: top;
+}
+
+.yearbookRowsTable thead th + th,
+.yearbookRowsTable tbody td {
+  border-left: 1px solid var(--ui-border);
 }
 
 .yearbookRowsTable th:first-child {
@@ -1862,6 +1884,10 @@
     grid-template-columns: 1fr;
   }
 
+  .yearbookView > .yearbookOriginal {
+    padding: 14px 10px 10px;
+  }
+
   .yearbookCalculationList article {
     grid-template-columns: 1fr;
     gap: 7px;
@@ -1871,52 +1897,22 @@
     max-height: 56vh;
   }
 
-  .yearbookRowsTable thead {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
-  }
-
-  .yearbookRowsTable,
-  .yearbookRowsTable tbody,
-  .yearbookRowsTable tr,
-  .yearbookRowsTable th,
-  .yearbookRowsTable td {
-    display: block;
-    width: 100%;
-  }
-
-  .yearbookRowsTable tbody tr {
-    border-bottom: 1px solid var(--ui-divider);
-    padding: 9px 10px;
+  .yearbookRowsTable {
+    font-size: 10px;
   }
 
   .yearbookRowsTable th,
   .yearbookRowsTable td {
-    border: 0;
-    padding: 0;
-  }
-
-  .yearbookRowsTable td {
-    margin-top: 5px;
-    text-align: left;
+    padding: 9px 8px;
   }
 
   .yearbookRowsTable th:first-child {
-    width: 100%;
+    width: 70%;
   }
 
-  .yearbookHeadingRow,
-  .yearbookNoteRow {
-    padding: 9px 10px !important;
-  }
-
-  .yearbookHeadingRow th,
-  .yearbookNoteRow th {
-    background: transparent;
+  .yearbookRowsTable td {
+    text-align: right;
+    vertical-align: middle;
   }
 
   .evidenceList article {

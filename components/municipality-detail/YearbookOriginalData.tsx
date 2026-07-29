@@ -71,6 +71,7 @@ export function YearbookOriginalData({
   const [data, setData] = useState<IndividualData | null>(null);
   const [failed, setFailed] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState("");
+  const [allItemsOpen, setAllItemsOpen] = useState(true);
 
   useEffect(() => {
     if (!enabled || data || failed) return;
@@ -101,6 +102,10 @@ export function YearbookOriginalData({
       setSelectedGroupId(business.groups[0].id);
     }
   }, [business, selectedGroupId]);
+
+  useEffect(() => {
+    setAllItemsOpen(true);
+  }, [accountingType, businessKey]);
 
   if (!enabled) return null;
   if (failed) {
@@ -153,7 +158,11 @@ export function YearbookOriginalData({
           </a>
         </div>
 
-        <details className={styles.yearbookAllDetails}>
+        <details
+          className={styles.yearbookAllDetails}
+          open={allItemsOpen}
+          onToggle={(event) => setAllItemsOpen(event.currentTarget.open)}
+        >
           <summary>
             <span>
               <strong>公式個表の全項目を見る</strong>

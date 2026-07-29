@@ -1222,3 +1222,45 @@ This gate supersedes the preceding yearbook-tab order that placed the site's map
 - Intentional subtraction: the misleading law-applied `一般会計繰入金（法非適用）` evidence row was removed from the public source list. No underlying source field was deleted; the row was excluded because its accounting label and official-row provenance do not apply to the selected legal-applied business.
 
 final result: passed
+
+## Superseding official-individual-table readability and default-open gate — 2026-07-26
+
+This gate supersedes the preceding responsive treatment that converted each official workbook row into a vertically stacked item/value block on mobile and kept the complete official extraction closed on initial load.
+
+### Information architecture and interaction
+
+- `公式個表の全項目を見る` is now open on initial load, so the official workbook selector, table title, item labels, row numbers, and values are visible without an extra disclosure action.
+- The disclosure remains a native keyboard-operable `details` control. It can still be closed and reopened, and switching the selected accounting basis or business restores the official extraction to the open state.
+- No official value, workbook row, calculation, source link, selector option, route, or navigation behavior changed.
+
+### Table readability and responsive layout
+
+- A neutral 1px vertical rule now separates `公式項目` and `値`; it uses the existing border token rather than an emphasized one-sided accent.
+- The sticky table heading uses the existing pale blue-gray surface treatment, improving column recognition without creating another card or decorative edge.
+- The bounded row viewport retains vertical scrolling with a thinner, quieter native scrollbar treatment.
+- The former mobile block transformation was removed. Mobile now preserves the same two-column table structure as desktop, using a 70% item column and a 30% value column, right-aligned values, and compact 9px × 8px cell padding.
+- The 390px viewport measured 379px of browser content width and 379px of document scroll width, so the page introduces no horizontal overflow.
+- At the accepted mobile table state, the individual-table disclosure measured 25px from both the left and right content edges. The apparent empty right half in the supplied image was the result of stacking the value beneath the label, not an oversized page margin.
+- The official extraction card uses slightly tighter mobile horizontal padding while preserving the product's existing panel radius, spacing, typography, and semantic colors.
+
+### Reference comparison and interaction evidence
+
+- The supplied desktop problem image and the 1491 × 1055 implementation capture were inspected together in:
+  - `artifacts/design-qa/yearbook-table-readability-2026-07-26/07-comparison-desktop.png`
+- The supplied mobile problem image and the 390 × 844 implementation capture were inspected together in:
+  - `artifacts/design-qa/yearbook-table-readability-2026-07-26/08-comparison-mobile.png`
+- Accepted implementation captures, kept outside the publication diff:
+  - `05-after-desktop-table-1491x1055.png`
+  - `06-final-mobile-table-390x844.png`
+- Fresh-load inspection confirmed that the workbook selector is present immediately. Close/reopen interaction was verified, and runtime inspection reported no page-level horizontal overflow.
+
+### Regression and protected scope
+
+- `pnpm lint`: passed.
+- `pnpm test`: 30/30 files and 182/182 tests passed.
+- `pnpm build`: passed; 1,649 static pages generated.
+- `git diff --check`: passed.
+- No database, Prisma schema, migration, ETL, official workbook, static financial data, source value, or accounting formula changed.
+- Intentional layout replacement: the mobile-only stacked row presentation was removed and replaced with the same item/value columns used on desktop. No user-facing data or function was removed.
+
+final result: passed

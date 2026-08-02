@@ -6,12 +6,17 @@ import {
   ATLAS_KAGOSHIMA_REMOTE_ISLAND_CUTOFF_Y,
   ATLAS_NAGASAKI_REMOTE_ISLAND_MIN_X,
   ATLAS_NAGASAKI_REMOTE_ISLAND_MIN_Y,
+  ATLAS_OKINAWA_OVERVIEW_SCALE_Y,
+  NATIONAL_OKINAWA_INSET_MAX_X,
+  NATIONAL_OKINAWA_INSET_MAX_Y,
+  NATIONAL_OKINAWA_INSET_MIN_X,
   NATIONAL_OVERVIEW_VIEWBOX,
   NATIONAL_TOKYO_REMOTE_ISLAND_CUTOFF_Y,
   atlasDisplayPath,
   atlasOverviewPath,
   combineBounds,
   mapFeatureHref,
+  nationalInsetDisplayPath,
   nationalOverviewPath,
   pathScreenBounds,
   screenViewBox,
@@ -75,6 +80,14 @@ function cssBlockFromStart(startPattern: string) {
   return cssSource.slice(start, end + 1);
 }
 
+function fidelityCssBlock(selector: string) {
+  const start = fidelityCssSource.indexOf(`${selector} {`);
+  expect(start, `${selector} fidelity block exists`).toBeGreaterThanOrEqual(0);
+  const end = fidelityCssSource.indexOf("}", start);
+  expect(end, `${selector} fidelity block closes`).toBeGreaterThan(start);
+  return fidelityCssSource.slice(start, end + 1);
+}
+
 function componentSnippetAround(pattern: string, radius = 420) {
   const index = componentSource.indexOf(pattern);
   expect(index, `${pattern} exists`).toBeGreaterThanOrEqual(0);
@@ -108,6 +121,12 @@ function componentFunctionBlock(name: string) {
   return componentSource.slice(start, nextFunction > start ? nextFunction : undefined);
 }
 
+function numericJsxProp(source: string, prop: string) {
+  const value = source.match(new RegExp(`${prop}=\\{([\\d.]+)\\}`))?.[1];
+  expect(value, `${prop} numeric value exists`).toBeTruthy();
+  return Number(value);
+}
+
 describe("national map UI guardrails", () => {
   it("keeps the main atlas layer focused on the readable main map", () => {
     const [x, y, width, height] = NATIONAL_OVERVIEW_VIEWBOX.trim().split(/\s+/).map(Number);
@@ -132,7 +151,8 @@ describe("national map UI guardrails", () => {
 
     expect(splitSubpaths(displayPath).length).toBeLessThan(splitSubpaths(tokyo.path).length);
     expect(displayBounds[3]).toBeLessThanOrEqual(NATIONAL_TOKYO_REMOTE_ISLAND_CUTOFF_Y);
-    expect(componentSource).toContain("const displayPath = atlasDisplayPath(feature);");
+    expect(componentSource).toContain("paths.set(feature.code, atlasDisplayPath(feature));");
+    expect(componentSource).toContain("const displayPath = nationalInsetDisplayPath(feature);");
   });
 
   it("omits Nagasaki and Kagoshima archipelagos from the atlas overview only", () => {
@@ -151,20 +171,44 @@ describe("national map UI guardrails", () => {
     expect(componentSource).toContain("atlasDisplayPath");
   });
 
-  it("applies Hokkaido vertical correction only to the atlas display path", () => {
-    const hokkaido = featureByName("北海道");
-    const overviewPath = atlasOverviewPath(hokkaido);
-    const displayPath = atlasDisplayPath(hokkaido);
-    const overviewBounds = pathBounds(overviewPath);
-    const displayBounds = pathBounds(displayPath);
+  it("corrects the latitude-dependent flattening of the detached Hokkaido and Okinawa maps", () => {
+    const correctedFeatures = [
+      { feature: featureByName("北海道"), scaleY: ATLAS_HOKKAIDO_OVERVIEW_SCALE_Y },
+      { feature: featureByName("沖縄県"), scaleY: ATLAS_OKINAWA_OVERVIEW_SCALE_Y }
+    ];
 
-    expect(ATLAS_HOKKAIDO_OVERVIEW_SCALE_Y).toBeGreaterThan(1);
-    expect(displayPath).not.toBe(overviewPath);
-    expect(displayBounds[0]).toBeCloseTo(overviewBounds[0], 1);
-    expect(displayBounds[2]).toBeCloseTo(overviewBounds[2], 1);
-    expect(displayBounds[3] - displayBounds[1]).toBeGreaterThan((overviewBounds[3] - overviewBounds[1]) * 1.07);
+    expect(ATLAS_HOKKAIDO_OVERVIEW_SCALE_Y).toBeCloseTo(1.38, 2);
+    expect(ATLAS_OKINAWA_OVERVIEW_SCALE_Y).toBeCloseTo(1.11, 2);
+    for (const { feature, scaleY } of correctedFeatures) {
+      const overviewPath = atlasOverviewPath(feature);
+      const displayPath = atlasDisplayPath(feature);
+      const overviewBounds = pathBounds(overviewPath);
+      const displayBounds = pathBounds(displayPath);
+
+      expect(displayPath).not.toBe(overviewPath);
+      expect(displayBounds[0]).toBeCloseTo(overviewBounds[0], 1);
+      expect(displayBounds[2]).toBeCloseTo(overviewBounds[2], 1);
+      expect(Math.abs(
+        (displayBounds[3] - displayBounds[1])
+        - (overviewBounds[3] - overviewBounds[1]) * scaleY
+      )).toBeLessThan(0.2);
+    }
     expect(componentSource).toContain("atlasDisplayPath(feature)");
     expect(componentSource).toContain("pathScreenBounds(atlasDisplayPath(feature))");
+  });
+
+  it("keeps the national Okinawa inset readable while retaining the full prefecture path elsewhere", () => {
+    const okinawa = featureByName("沖縄県");
+    const fullDisplayPath = atlasDisplayPath(okinawa);
+    const insetDisplayPath = nationalInsetDisplayPath(okinawa);
+    const insetBounds = pathBounds(insetDisplayPath);
+
+    expect(splitSubpaths(insetDisplayPath).length).toBeLessThan(splitSubpaths(fullDisplayPath).length);
+    expect(insetBounds[0]).toBeGreaterThanOrEqual(NATIONAL_OKINAWA_INSET_MIN_X);
+    expect(insetBounds[2]).toBeLessThanOrEqual(NATIONAL_OKINAWA_INSET_MAX_X);
+    expect(insetBounds[3]).toBeLessThanOrEqual(NATIONAL_OKINAWA_INSET_MAX_Y + 3);
+    expect((insetBounds[2] - insetBounds[0]) / (insetBounds[3] - insetBounds[1])).toBeLessThan(1.15);
+    expect(splitSubpaths(okinawa.path)).toHaveLength(splitSubpaths(fullDisplayPath).length);
   });
 
   it("uses the same home renderer, selector, and three controls for home and atlas", () => {
@@ -176,21 +220,32 @@ describe("national map UI guardrails", () => {
     expect(explorer).toContain("focusedRegion={focusedRegion}");
     expect(explorer).toContain("activeRegion={focusedRegion}");
     expect(explorer).toContain("onRegionChange={focusRegion}");
+    expect(explorer).not.toContain("onShowNational");
     expect(explorer).toContain("setFocusedRegion((current) => current === region ? null : region);");
     expect(explorer).toContain("setFocusedRegion(null);");
     expect(explorer).toContain('className="map-control-stack map-control-stack--home"');
     expect(explorer.match(/aria-label="拡大"/g)).toHaveLength(1);
     expect(explorer.match(/aria-label="縮小"/g)).toHaveLength(1);
     expect(explorer.match(/aria-label="全国を表示"/g)).toHaveLength(1);
+    expect(explorer).toContain('onClick={showNationalView} className="map-reset-button"');
     expect(explorer).toContain('"gis-map-surface--home-national"');
     expect(componentSource).not.toContain("function AtlasNationalMap");
     expect(componentSource).not.toContain("ATLAS_VIEWBOX");
     expect(componentSource).not.toContain("ATLAS_CONNECTORS");
     expect(componentSource).not.toContain("map-control-stack--atlas");
     expect(homeRenderer).toContain('const viewBox = compact ? "0 0 390 440" : "0 0 980 500";');
-    expect(homeRenderer).toContain('{ title: "北海道", name: "北海道", x: 250, y: 18, width: 160, height: 104 }');
-    expect(homeRenderer).toContain('{ title: "沖縄県", name: "沖縄県", x: 812, y: 372, width: 142, height: 94 }');
-    expect(fidelityCssSource).toContain(".home-map-layout--home,\n.home-map-layout--atlas");
+    expect(homeRenderer).toContain('{ title: "北海道", name: "北海道", x: 232, y: 16, width: 232, height: 162 }');
+    expect(homeRenderer).toContain('{ title: "沖縄県", name: "沖縄県", x: 796, y: 360, width: 170, height: 116 }');
+    const insetRenderer = componentFunctionBlock("HomeInsetMap");
+    expect(insetRenderer).toContain('data-map-inset-code={feature.code}');
+    expect(insetRenderer).toContain("nationalInsetDisplayPath(feature)");
+    expect(insetRenderer).toContain('overflow="visible"');
+    expect(insetRenderer).toContain('className={clsx("home-map-inset gis-region"');
+    expect(insetRenderer.match(/role="link"/g)).toHaveLength(1);
+    expect(insetRenderer.match(/tabIndex=\{0\}/g)).toHaveLength(1);
+    expect(insetRenderer).not.toContain("home-map-inset-frame");
+    expect(insetRenderer).not.toContain("home-map-inset-plus");
+    expect(fidelityCssSource).toContain(".home-map-layout--atlas");
   });
 
   it("focuses every selector region while keeping the default national composition", () => {
@@ -223,15 +278,26 @@ describe("national map UI guardrails", () => {
     expect(prefecturesByRegion("九州・沖縄").some((prefecture) => prefecture.code === "47")).toBe(true);
     expect(homeRenderer).toContain("atlasOverviewScreenViewBox(focusedMainFeatures, 18)");
     expect(homeRenderer).toContain('focusedRegion === "北海道・東北"');
-    expect(homeRenderer).toContain('{ title: "北海道", name: "北海道", x: 250, y: 92, width: 250, height: 178 }');
-    expect(homeRenderer).toContain('{ title: "沖縄県", name: "沖縄県", x: 774, y: 352, width: 180, height: 116 }');
+    expect(homeRenderer).toContain('{ title: "北海道", name: "北海道", x: 232, y: 68, width: 292, height: 208 }');
+    expect(homeRenderer).toContain('{ title: "沖縄県", name: "沖縄県", x: 758, y: 336, width: 208, height: 142 }');
     expect(homeRenderer).toContain('data-focused-region={focusedRegion ?? "national"}');
     expect(homeRenderer).toContain('showLabels={Boolean(focusedRegion)}');
     expect(componentSource).toContain("nationalFocusLabelOffsets");
     expect(componentSource).toContain('scope="national"');
     expect(selector).toContain('role="group" aria-label="地図の表示地域"');
     expect(selector).toContain('aria-controls="national-prefecture-map"');
+    expect(selector).not.toContain("onShowNational");
+    expect(selector).not.toContain("prefecture-region-tab--national");
+    expect(selector).not.toMatch(/>\s*全国\s*</);
     expect(selector).toContain("aria-pressed={region === activeRegion}");
+    expect(regionNames).toHaveLength(6);
+    expect(regionNames).not.toContain("全国");
+    const selectorColumns = fidelityCssBlock(".prefecture-region-tabs")
+      .match(/grid-template-columns:\s*([^;]+);/)?.[1]
+      .trim()
+      .split(/\s+/);
+    expect(selectorColumns).toHaveLength(6);
+    expect(fidelityCssSource).not.toContain(".prefecture-region-tabs .prefecture-region-tab--national");
     expect(fidelityCssSource).toContain(".home-national-map-stage");
     expect(fidelityCssSource).toContain("animation: home-national-map-stage-in 210ms ease-out both");
     expect(fidelityCssSource).toContain("pointer-events: none");
@@ -249,7 +315,9 @@ describe("national map UI guardrails", () => {
     expect(statusColorBlock).toContain("nationalRecoveryBand(recoveryRate)");
     expect(statusColorBlock).not.toContain("feeUnitPrice");
     expect(statusColorBlock).toContain('nationalRecoveryColors["データなし・対象外"]');
-    expect(componentSource).toContain("<MapHeading>経費回収率</MapHeading>");
+    expect(componentSource).toContain("<MapHeading>経費回収率（{activeScopeLabel}）</MapHeading>");
+    expect(componentSource).toContain('role="radiogroup" aria-label="地図に表示する下水道事業"');
+    expect(componentSource).toContain('role="radio"');
     expect(componentSource).not.toContain("<MapHeading>経費回収率と使用料単価</MapHeading>");
     expect(componentSource).not.toContain("ATLAS_REGION_COLORS");
     expect(componentSource).not.toContain("atlasRegionColor");
@@ -263,15 +331,24 @@ describe("national map UI guardrails", () => {
     const shapeBlock = componentFunctionBlock("FlatPrefectureShape");
     const silhouetteIndex = shapeBlock.indexOf('className="gis-prefecture-silhouette"');
     const fillIndex = shapeBlock.indexOf('className={clsx("gis-shape"');
-    const boundaryWidth = Number(shapeBlock.match(/strokeWidth=\{4\}/)?.[0].match(/\d+/)?.[0]);
-    const coverWidth = Number(shapeBlock.match(/strokeWidth=\{2\.7\}/)?.[0].match(/\d+(?:\.\d+)?/)?.[0]);
+    const silhouettePath = componentPathElementAround('className="gis-prefecture-silhouette"');
+    const coverPath = componentPathElementAround('className={clsx("gis-shape"');
+    const boundaryWidth = numericJsxProp(silhouettePath, "strokeWidth");
+    const boundaryOpacity = numericJsxProp(silhouettePath, "strokeOpacity");
+    const coverWidth = numericJsxProp(coverPath, "strokeWidth");
+    const exposedBoundaryWidth = (boundaryWidth - coverWidth) / 2;
 
     expect(silhouetteIndex).toBeGreaterThanOrEqual(0);
     expect(fillIndex).toBeGreaterThan(silhouetteIndex);
     expect(shapeBlock).toContain('stroke="#263744"');
     expect(shapeBlock).toContain("stroke={fillColor}");
     expect(shapeBlock.match(/fillRule="nonzero"/g)).toHaveLength(2);
-    expect((boundaryWidth - coverWidth) / 2).toBeCloseTo(0.65, 5);
+    expect(boundaryWidth).toBe(4.5);
+    expect(boundaryOpacity).toBe(0.62);
+    expect(coverWidth).toBe(2.7);
+    expect(exposedBoundaryWidth).toBeCloseTo(0.9, 5);
+    expect(exposedBoundaryWidth).toBeGreaterThanOrEqual(0.85);
+    expect(exposedBoundaryWidth).toBeLessThanOrEqual(1.05);
     expect(shapeBlock).toContain('pointerEvents="none"');
     expect(componentSource).not.toContain("prefectureOutlinePath");
     expect(componentSource).not.toContain("gis-prefecture-outline");
@@ -350,9 +427,8 @@ describe("national map UI guardrails", () => {
     expect(componentSource).toContain("return normalizePrefectureName(name);");
   });
 
-  it("keeps atlas responsive through the shared home layout", () => {
-    expect(fidelityCssSource).toContain(".home-map-layout--home,\n.home-map-layout--atlas");
-    expect(fidelityCssSource).toContain("grid-template-columns: minmax(0, 2.302fr) minmax(0, 1fr)");
+  it("keeps atlas responsive separately from the stacked homepage layout", () => {
+    expect(fidelityCssSource).toMatch(/\.home-map-layout--atlas\s*\{[^}]*grid-template-columns:\s*minmax\(0, 2\.302fr\) minmax\(0, 1fr\)/s);
     expect(fidelityCssSource).toContain(".home-map-layout--atlas > .national-map-panel");
     expect(fidelityCssSource).toContain(".home-map-explorer--atlas .home-support-grid");
     expect(fidelityCssSource).toContain(".national-map-panel .gis-map-surface--home-national");

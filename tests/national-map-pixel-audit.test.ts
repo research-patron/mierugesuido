@@ -4,6 +4,7 @@ import { createRequire } from "node:module";
 import path from "node:path";
 import {
   atlasDisplayPath,
+  nationalInsetDisplayPath,
   pathScreenBounds,
   screenViewBox
 } from "@/lib/gisMapLayout";
@@ -66,13 +67,13 @@ function statusColorForCode(code: string) {
 
 function flatShapeSvg(displayPath: string, fillColor: string) {
   return [
-    `<path d="${displayPath}" fill="${fillColor}" fill-rule="nonzero" stroke="#263744" stroke-opacity="0.48" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" vector-effect="non-scaling-stroke" paint-order="stroke fill" shape-rendering="geometricPrecision"/>`,
+    `<path d="${displayPath}" fill="${fillColor}" fill-rule="nonzero" stroke="#263744" stroke-opacity="0.62" stroke-linecap="round" stroke-linejoin="round" stroke-width="4.5" vector-effect="non-scaling-stroke" paint-order="stroke fill" shape-rendering="geometricPrecision"/>`,
     `<path d="${displayPath}" fill="${fillColor}" fill-rule="nonzero" stroke="${fillColor}" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.7" vector-effect="non-scaling-stroke" paint-order="stroke fill" shape-rendering="geometricPrecision"/>`
   ].join("");
 }
 
 function exposedMunicipalityStrokeSvg(displayPath: string, fillColor: string) {
-  return `<path d="${displayPath}" fill="${fillColor}" fill-rule="nonzero" stroke="#263744" stroke-opacity="0.5" stroke-linecap="round" stroke-linejoin="round" stroke-width="0.65" vector-effect="non-scaling-stroke" shape-rendering="geometricPrecision"/>`;
+  return `<path d="${displayPath}" fill="${fillColor}" fill-rule="nonzero" stroke="#263744" stroke-opacity="0.62" stroke-linecap="round" stroke-linejoin="round" stroke-width="0.9" vector-effect="non-scaling-stroke" shape-rendering="geometricPrecision"/>`;
 }
 
 function overviewViewBox(features: GisFeature[], pad = 8) {
@@ -105,10 +106,10 @@ function insetSvg(
   frame: Frame,
   renderShape: (displayPath: string, fillColor: string) => string
 ) {
-  const displayPath = atlasDisplayPath(feature);
-  const viewBox = screenViewBox([{ ...feature, path: displayPath }], 8);
+  const displayPath = nationalInsetDisplayPath(feature);
+  const viewBox = screenViewBox([{ ...feature, path: displayPath }], feature.code === "47" ? 2 : 8);
   expect(viewBox).toBeTruthy();
-  return `<svg x="${frame.x + 10}" y="${frame.y + 24}" width="${frame.width - 20}" height="${frame.height - 32}" viewBox="${viewBox}" preserveAspectRatio="xMidYMid meet" overflow="hidden">${renderShape(displayPath, statusColorForCode(feature.code))}</svg>`;
+  return `<svg x="${frame.x}" y="${frame.y + 18}" width="${frame.width}" height="${frame.height - 18}" viewBox="${viewBox}" preserveAspectRatio="xMidYMid meet" overflow="visible">${renderShape(displayPath, statusColorForCode(feature.code))}</svg>`;
 }
 
 function renderHomeMap(
@@ -118,11 +119,11 @@ function renderHomeMap(
   const frame = compact ? MOBILE_FRAME : HOME_FRAME;
   const mainFrame = compact ? MOBILE_MAIN_FRAME : HOME_MAIN_FRAME;
   const hokkaidoFrame = compact
-    ? { x: 18, y: 14, width: 142, height: 88 }
-    : { x: 250, y: 18, width: 160, height: 104 };
+    ? { x: 16, y: 14, width: 172, height: 116 }
+    : { x: 232, y: 16, width: 232, height: 162 };
   const okinawaFrame = compact
-    ? { x: 232, y: 372, width: 128, height: 54 }
-    : { x: 812, y: 372, width: 142, height: 94 };
+    ? { x: 236, y: 370, width: 136, height: 66 }
+    : { x: 796, y: 360, width: 170, height: 116 };
   const mainFeatures = gisData.prefectures.filter((feature) => !feature.layoutGroup || feature.layoutGroup === "main");
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${frame.width}" height="${frame.height}" viewBox="0 0 ${frame.width} ${frame.height}">
     <rect width="${frame.width}" height="${frame.height}" fill="#ffffff"/>
@@ -201,19 +202,23 @@ describe("national map browserless pixel audit", () => {
     const image = await rasterize(renderHomeMap());
     const exposedMunicipalityImage = await rasterize(renderHomeMap(false, exposedMunicipalityStrokeSvg));
     const main = boundsFor(image, { x: 150, y: 20, width: 680, height: 470 }, isStatusFill);
-    const hokkaido = boundsFor(image, { x: 240, y: 10, width: 180, height: 120 }, (value) => colorDistance(value, statusColorForCode("01")) < 44);
-    const okinawa = boundsFor(image, { x: 800, y: 360, width: 160, height: 125 }, (value) => colorDistance(value, statusColorForCode("47")) < 44);
+    const hokkaido = boundsFor(image, { x: 220, y: 24, width: 260, height: 160 }, (value) => colorDistance(value, statusColorForCode("01")) < 44);
+    const okinawa = boundsFor(image, { x: 785, y: 370, width: 190, height: 115 }, (value) => colorDistance(value, statusColorForCode("47")) < 44);
     const whole = boundsFor(image, { x: 0, y: 0, width: HOME_FRAME.width, height: HOME_FRAME.height }, isStatusFill);
 
     expect(main.count).toBeGreaterThan(24000);
     expect(main.bounds?.width).toBeGreaterThan(500);
     expect(main.bounds?.height).toBeGreaterThan(350);
-    expect(hokkaido.count).toBeGreaterThan(1300);
-    expect(hokkaido.bounds?.x).toBeGreaterThanOrEqual(250);
-    expect(hokkaido.bounds?.y).toBeGreaterThanOrEqual(34);
-    expect(okinawa.count).toBeGreaterThan(120);
-    expect(okinawa.bounds?.x).toBeGreaterThanOrEqual(810);
-    expect(okinawa.bounds?.y).toBeGreaterThanOrEqual(390);
+    expect(hokkaido.count).toBeGreaterThan(4000);
+    expect(hokkaido.bounds?.x).toBeGreaterThanOrEqual(230);
+    expect(hokkaido.bounds?.y).toBeGreaterThanOrEqual(32);
+    expect(hokkaido.bounds && hokkaido.bounds.width / hokkaido.bounds.height).toBeGreaterThan(1.45);
+    expect(hokkaido.bounds && hokkaido.bounds.width / hokkaido.bounds.height).toBeLessThan(1.9);
+    expect(okinawa.count).toBeGreaterThan(180);
+    expect(okinawa.bounds?.x).toBeGreaterThanOrEqual(795);
+    expect(okinawa.bounds?.y).toBeGreaterThanOrEqual(380);
+    expect(okinawa.bounds && okinawa.bounds.width / okinawa.bounds.height).toBeGreaterThan(0.65);
+    expect(okinawa.bounds && okinawa.bounds.width / okinawa.bounds.height).toBeLessThan(1.15);
     expect(whole.count).toBeGreaterThan(27000);
     expect(internalInkPixels(image)).toBeLessThan(internalInkPixels(exposedMunicipalityImage) * 0.45);
   });
@@ -222,16 +227,20 @@ describe("national map browserless pixel audit", () => {
     const image = await rasterize(renderHomeMap(true));
     const exposedMunicipalityImage = await rasterize(renderHomeMap(true, exposedMunicipalityStrokeSvg));
     const main = boundsFor(image, { x: 10, y: 120, width: 370, height: 260 }, isStatusFill);
-    const hokkaido = boundsFor(image, { x: 10, y: 10, width: 160, height: 110 }, (value) => colorDistance(value, statusColorForCode("01")) < 44);
-    const okinawa = boundsFor(image, { x: 225, y: 365, width: 140, height: 70 }, (value) => colorDistance(value, statusColorForCode("47")) < 44);
+    const hokkaido = boundsFor(image, { x: 10, y: 24, width: 185, height: 112 }, (value) => colorDistance(value, statusColorForCode("01")) < 44);
+    const okinawa = boundsFor(image, { x: 225, y: 380, width: 155, height: 60 }, (value) => colorDistance(value, statusColorForCode("47")) < 44);
 
     expect(main.count).toBeGreaterThan(8500);
     expect(main.bounds?.width).toBeGreaterThan(270);
     expect(main.bounds?.height).toBeGreaterThan(180);
-    expect(hokkaido.count).toBeGreaterThan(700);
-    expect(hokkaido.bounds?.x).toBeLessThan(150);
-    expect(hokkaido.bounds?.y).toBeLessThan(105);
-    expect(okinawa.count).toBeGreaterThan(20);
+    expect(hokkaido.count).toBeGreaterThan(1900);
+    expect(hokkaido.bounds?.x).toBeLessThan(35);
+    expect(hokkaido.bounds?.y).toBeLessThan(45);
+    expect(hokkaido.bounds && hokkaido.bounds.width / hokkaido.bounds.height).toBeGreaterThan(1.45);
+    expect(hokkaido.bounds && hokkaido.bounds.width / hokkaido.bounds.height).toBeLessThan(1.9);
+    expect(okinawa.count).toBeGreaterThan(70);
+    expect(okinawa.bounds && okinawa.bounds.width / okinawa.bounds.height).toBeGreaterThan(0.65);
+    expect(okinawa.bounds && okinawa.bounds.width / okinawa.bounds.height).toBeLessThan(1.15);
     expect(okinawa.bounds?.x).toBeGreaterThanOrEqual(235);
     expect(okinawa.bounds?.y).toBeGreaterThanOrEqual(390);
     expect(internalInkPixels(image)).toBeLessThan(internalInkPixels(exposedMunicipalityImage) * 0.45);
@@ -248,5 +257,31 @@ describe("national map browserless pixel audit", () => {
     }
     expect(internalInkPixels(image)).toBe(0);
     expect(colorDistance(pixel(image, 8, 60), fillColor)).toBeGreaterThan(8);
+  });
+
+  it("renders a short, high-contrast transition at a synthetic outer boundary", async () => {
+    const fillColor = STATUS_COLORS[0];
+    const rectangle = "M30 20H90V60H30Z";
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="120" height="80" viewBox="0 0 120 80"><rect width="120" height="80" fill="#ffffff"/>${flatShapeSvg(rectangle, fillColor)}</svg>`;
+    const image = await rasterize(svg);
+    const scanline = Array.from({ length: 31 }, (_, offset) => ({
+      x: 15 + offset,
+      value: pixel(image, 15 + offset, 40)
+    }));
+    const firstEdge = scanline.find(({ value }) => colorDistance(value, "#ffffff") >= 24);
+    const firstFill = scanline.find(({ value }) => colorDistance(value, fillColor) <= 12);
+
+    expect(firstEdge, "outer edge becomes visibly darker than white").toBeDefined();
+    expect(firstFill, "scanline reaches the exact status fill").toBeDefined();
+    expect(firstEdge!.x).toBeGreaterThanOrEqual(27);
+    expect(firstEdge!.x).toBeLessThanOrEqual(29);
+    expect(firstFill!.x - firstEdge!.x).toBeGreaterThanOrEqual(1);
+    expect(firstFill!.x - firstEdge!.x).toBeLessThanOrEqual(3);
+    const strongestEdgeContrast = Math.max(...scanline
+      .filter(({ x }) => x >= firstEdge!.x && x < firstFill!.x)
+      .map(({ value }) => colorDistance(value, "#ffffff")));
+    expect(strongestEdgeContrast).toBeGreaterThan(70);
+    expect(colorDistance(pixel(image, 24, 40), "#ffffff")).toBeLessThan(4);
+    expect(colorDistance(pixel(image, 36, 40), fillColor)).toBeLessThan(4);
   });
 });

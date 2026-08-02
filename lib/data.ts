@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { revisionPeriodLabel, revisionPeriodOrder } from "@/lib/revisionEvents";
-import { matchesBusinessCategory } from "@/lib/businessDisplay";
+import { businessCategoryCode, matchesBusinessCategory } from "@/lib/businessDisplay";
 import { getPrefectureName } from "@/lib/prefectures";
 import type { RankingType } from "@/lib/rankings";
 import {
@@ -13,6 +13,13 @@ import {
 } from "@/lib/prefecturePeerComparison";
 
 type ComparableMapMunicipality = ReturnType<typeof toMapMunicipality>;
+
+export const mapBusinessScopes = {
+  public: { categoryCode: "17/1", label: "公共下水道" },
+  tokkan: { categoryCode: "17/4", label: "特定環境保全公共下水道" }
+} as const;
+
+export type MapBusinessScope = keyof typeof mapBusinessScopes;
 
 export async function getHomepageData(comparableInput?: ComparableMapMunicipality[]) {
   return withDatabaseFallback(async () => {
@@ -87,7 +94,7 @@ export async function getPrefectureSummaries(comparableInput?: ComparableMapMuni
     }));
 }
 
-export async function getMapMunicipalities() {
+export async function getMapMunicipalities(scope?: MapBusinessScope) {
   return withDatabaseFallback(async () => {
     const municipalities = await prisma.municipality.findMany({
       orderBy: [{ prefectureCode: "asc" }, { municipalityCode: "asc" }],
@@ -107,7 +114,7 @@ export async function getMapMunicipalities() {
     return municipalities
       .filter((municipality) => isAdministrativeMunicipality(municipality.municipalityName))
       .flatMap((municipality) => {
-        const comparable = toComparableMapMunicipality(municipality);
+        const comparable = toComparableMapMunicipality(municipality, scope);
         return comparable ? [comparable] : [];
       });
   }, []);
@@ -736,9 +743,13 @@ function sortRanking(a: any, b: any, type: RankingType) {
   return nullsLast(a.annualFinancial.nonStandardTransfer, b.annualFinancial.nonStandardTransfer, "desc");
 }
 
-function selectMapMunicipalityRepresentative(municipality: any) {
+function selectMapMunicipalityRepresentative(municipality: any, scope?: MapBusinessScope) {
+  const requestedCategory = scope ? mapBusinessScopes[scope].categoryCode : null;
   return municipality.businesses
-    .filter((business: any) => !isFlowSewerBusiness(business))
+    .filter((business: any) => (
+      !isFlowSewerBusiness(business)
+      && (!requestedCategory || businessCategoryCode(business) === requestedCategory)
+    ))
     .flatMap((business: any) =>
       business.annualFinancials.map((annual: any) => ({
         business,
@@ -749,13 +760,18 @@ function selectMapMunicipalityRepresentative(municipality: any) {
     .sort((a: any, b: any) => compareRepresentativeCandidates(a, b))[0];
 }
 
-function toComparableMapMunicipality(municipality: any) {
-  const representative = selectMapMunicipalityRepresentative(municipality);
+function toComparableMapMunicipality(municipality: any, scope?: MapBusinessScope) {
+  const representative = selectMapMunicipalityRepresentative(municipality, scope);
   if (!representative) return null;
-  return toMapMunicipality(municipality, representative);
+  return toMapMunicipality(municipality, representative, scope);
 }
 
-function toMapMunicipality(municipality: any, representative = selectMapMunicipalityRepresentative(municipality)) {
+function toMapMunicipality(
+  municipality: any,
+  representative = selectMapMunicipalityRepresentative(municipality),
+  scope?: MapBusinessScope
+) {
+  const requestedCategory = scope ? mapBusinessScopes[scope].categoryCode : null;
   const flags = parseJsonArray(representative?.annual?.flagsJson ?? null);
   const ambiguous = hasAmbiguousZeroFlag(representative?.annual?.flagsJson);
   return {
@@ -770,7 +786,11 @@ function toMapMunicipality(municipality: any, representative = selectMapMunicipa
     estatBusinessCategory: representative?.business?.estatBusinessCategory ?? null,
     businessCount: new Set(
       municipality.businesses
-        .filter((business: any) => !isFlowSewerBusiness(business) && business.annualFinancials.length > 0)
+        .filter((business: any) => (
+          !isFlowSewerBusiness(business)
+          && business.annualFinancials.length > 0
+          && (!requestedCategory || businessCategoryCode(business) === requestedCategory)
+        ))
         .map((business: any) => business.businessKey)
     ).size,
     accountingType: representative?.business?.accountingType ?? null,

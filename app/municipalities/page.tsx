@@ -120,26 +120,28 @@ function MunicipalitiesContent() {
             <StatCard icon={CircleDollarSign} label="サイト内平均：使用料単価" value={formatYenPerM3(overview.averageFeeUnitPriceYenPerM3).replace("円/m³", "")} unit={overview.averageFeeUnitPriceYenPerM3 == null ? undefined : "円/m³"} sub="法非適用を含む参考値・検索条件に非連動" tone="blue" />
             <StatCard icon={Bell} label="公式改定情報の登録" value={overview.revisionEventCount.toLocaleString("ja-JP")} unit="自治体" sub="公式公表情報・検索条件に非連動" tone="amber" />
           </div>
-          <p className="mt-3 text-xs font-bold leading-6 text-slate-600">
-            一覧は自治体ごと1件です。複数事業がある場合、最新年度のうち診断上の注意度が最も高い事業を表示します。自治体全体の合算値ではありません。
-          </p>
-          <div className="view-toggle" aria-label="表示形式">
-            <Link
-              href={municipalityHref({ q, prefecture, label, accountingType, businessType, hasRevisionEvent: hasRevisionEventParam, sort, limit: data.limit, view: "table", page: 1 })}
-              className={view === "table" ? "is-active" : undefined}
-              aria-current={view === "table" ? "true" : undefined}
-            >
-              <Table2 size={18} />
-              テーブル
-            </Link>
-            <Link
-              href={municipalityHref({ q, prefecture, label, accountingType, businessType, hasRevisionEvent: hasRevisionEventParam, sort, limit: data.limit, view: "card", page: 1 })}
-              className={view === "card" ? "is-active" : undefined}
-              aria-current={view === "card" ? "true" : undefined}
-            >
-              <LayoutGrid size={17} />
-              カード
-            </Link>
+          <div className="search-summary-footer">
+            <p className="text-xs font-bold leading-6 text-slate-600">
+              一覧は自治体ごと1件です。複数事業がある場合、最新年度のうち診断上の注意度が最も高い事業を表示します。自治体全体の合算値ではありません。
+            </p>
+            <div className="view-toggle" aria-label="表示形式">
+              <Link
+                href={municipalityHref({ q, prefecture, label, accountingType, businessType, hasRevisionEvent: hasRevisionEventParam, sort, limit: data.limit, view: "table", page: 1 })}
+                className={view === "table" ? "is-active" : undefined}
+                aria-current={view === "table" ? "true" : undefined}
+              >
+                <Table2 size={18} />
+                テーブル
+              </Link>
+              <Link
+                href={municipalityHref({ q, prefecture, label, accountingType, businessType, hasRevisionEvent: hasRevisionEventParam, sort, limit: data.limit, view: "card", page: 1 })}
+                className={view === "card" ? "is-active" : undefined}
+                aria-current={view === "card" ? "true" : undefined}
+              >
+                <LayoutGrid size={17} />
+                カード
+              </Link>
+            </div>
           </div>
         </div>
       </section>

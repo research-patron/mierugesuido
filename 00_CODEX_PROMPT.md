@@ -74,7 +74,7 @@ pnpm etl:all
 ```bash
 ESTAT_APP_ID=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 DATABASE_URL="file:./dev.db"
-NEXT_PUBLIC_SITE_NAME="全国下水道使用料適正診断"
+NEXT_PUBLIC_SITE_NAME="まる見え！全国の下水道使用料"
 ```
 
 `ESTAT_APP_ID` が未設定の場合、e-Stat API経由の取得は失敗させ、エラーメッセージで取得方法を案内すること。ただし、手動で `data/raw` にExcelを置いた場合はインポート可能にする。

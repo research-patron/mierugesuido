@@ -16,6 +16,8 @@ describe("household 20m3 fee and recovery-story UI", () => {
     expect(detailSource).toContain("家庭の料金表");
     expect(detailSource).toContain("一般家庭用20m³／月");
     expect(detailSource).toContain("料金表データ未取得");
+    expect(detailSource).toContain("税込・料金表上の標準額（使用料単価×20ではありません）");
+    expect(detailSource).not.toContain("税込・使用料単価 ${formatYenPerM3");
     expect(detailSource).toContain("対象も単位も異なるため、家庭向け料金表と事業全体の決算を分けて表示します");
     expect(detailSource).toContain("全利用者の実績平均や事業全体の費用回収額ではありません");
   });

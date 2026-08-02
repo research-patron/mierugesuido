@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CalendarDays, CircleHelp, Home, MapPin, Search, Trophy } from "lucide-react";
 import clsx from "clsx";
-import { siteName } from "@/lib/copy";
+import { siteName, siteSubtitle } from "@/lib/copy";
 
 const navItems = [
   { href: "/", label: "ホーム", icon: Home, exact: true },
@@ -25,8 +25,8 @@ export function SiteHeader() {
         <Link href="/" className="site-brand flex min-w-0 items-center gap-4" aria-label={`${siteName} ホーム`}>
           <SewerMark />
           <span className="site-brand-copy min-w-0">
-            <span className="site-title block truncate">{siteName}</span>
-            <span className="site-subtitle block truncate">家庭用料金と経費回収率を都道府県・市区町村で比較</span>
+            <span className="site-title block">{siteName}</span>
+            <span className="site-subtitle block">{siteSubtitle}</span>
           </span>
         </Link>
 

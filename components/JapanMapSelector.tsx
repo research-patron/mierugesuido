@@ -33,6 +33,7 @@ import {
   atlasDisplayPath,
   clamp,
   mapFeatureHref,
+  nationalInsetDisplayPath,
   pathScreenBounds,
   screenViewBox,
   type Bounds
@@ -123,6 +124,17 @@ type OverviewStats = {
   revisionEventCount: number;
 };
 
+export type MapScopeKey = "public" | "tokkan";
+
+export type MapScopeData = {
+  key: MapScopeKey;
+  categoryCode: "17/1" | "17/4";
+  label: string;
+  overview: OverviewStats;
+  mapMunicipalities: MapMunicipality[];
+  prefectureSummaries: PrefectureSummary[];
+};
+
 type JapanMapVariant = "home" | "atlas";
 
 const statusLegend = [
@@ -153,24 +165,38 @@ export function JapanMapSelector({
   summaries,
   municipalities = [],
   overview,
-  variant = "home"
+  variant = "home",
+  mapScopes,
+  initialScope = "public"
 }: {
   summaries: PrefectureSummary[];
   municipalities?: MapMunicipality[];
   overview?: OverviewStats;
   variant?: JapanMapVariant;
+  mapScopes?: Partial<Record<MapScopeKey, MapScopeData>>;
+  initialScope?: MapScopeKey;
 }) {
+  const [activeScope, setActiveScope] = useState<MapScopeKey>(initialScope);
+  const selectedScope = mapScopes?.[activeScope];
+  const selectedSummaries = selectedScope?.prefectureSummaries ?? summaries;
+  const selectedMunicipalities = selectedScope?.mapMunicipalities ?? municipalities;
+  const selectedOverview = selectedScope?.overview ?? overview ?? {
+    municipalityCount: selectedMunicipalities.length,
+    latestYear: null,
+    below100Rate: null,
+    revisionEventCount: selectedMunicipalities.filter((item) => item.hasRevisionEvent).length
+  };
+
   return (
     <NationalMapExplorer
-      summaries={summaries}
-      municipalities={municipalities}
+      key={activeScope}
+      summaries={selectedSummaries}
+      municipalities={selectedMunicipalities}
       variant={variant}
-      overview={overview ?? {
-        municipalityCount: municipalities.length,
-        latestYear: null,
-        below100Rate: null,
-        revisionEventCount: municipalities.filter((item) => item.hasRevisionEvent).length
-      }}
+      overview={selectedOverview}
+      activeScope={activeScope}
+      mapScopes={mapScopes}
+      onScopeChange={setActiveScope}
     />
   );
 }
@@ -179,12 +205,18 @@ export function NationalMapExplorer({
   summaries,
   municipalities,
   overview,
-  variant
+  variant,
+  activeScope,
+  mapScopes,
+  onScopeChange
 }: {
   summaries: PrefectureSummary[];
   municipalities: MapMunicipality[];
   overview: OverviewStats;
   variant: JapanMapVariant;
+  activeScope: MapScopeKey;
+  mapScopes?: Partial<Record<MapScopeKey, MapScopeData>>;
+  onScopeChange: (scope: MapScopeKey) => void;
 }) {
   const [data, setData] = useState<GisData | null>(null);
   const [error, setError] = useState(false);
@@ -294,6 +326,8 @@ export function NationalMapExplorer({
   }
 
   const MapHeading = variant === "home" ? "h1" : "h2";
+  const activeScopeLabel = mapScopes?.[activeScope]?.label
+    ?? (activeScope === "public" ? "公共下水道" : "特定環境保全公共下水道");
 
   return (
     <section className={clsx("home-map-explorer grid gap-4", `home-map-explorer--${variant}`)}>
@@ -301,13 +335,37 @@ export function NationalMapExplorer({
         <div className="panel national-map-panel overflow-hidden p-4">
           <div className="home-panel-title-row">
             <div>
-              <MapHeading>経費回収率</MapHeading>
+              <MapHeading>経費回収率（{activeScopeLabel}）</MapHeading>
             </div>
-            <InfoDisclosure label="全国マップの使い方">
-              {variant === "home"
-                ? "都道府県を選ぶと、市区町村別の詳細マップへ移動します。色は各市区町村の最新年度・最も注意度が高い表示事業1件の経費回収率を使った単純平均です。自治体全体の合算値や公式全国平均ではありません。"
-                : "都道府県を選ぶと、市区町村別の詳細マップを表示します。色は各市区町村の最新年度・最も注意度が高い表示事業1件の経費回収率を使った単純平均です。自治体全体の合算値や公式全国平均ではありません。"}
-            </InfoDisclosure>
+            <div className="map-scope-tools">
+              <div className="map-scope-switch" role="radiogroup" aria-label="地図に表示する下水道事業">
+                {(["public", "tokkan"] as const).map((scope) => {
+                  const scopeData = mapScopes?.[scope];
+                  const available = scopeData ? scopeData.overview.municipalityCount > 0 : scope === activeScope;
+                  const label = scope === "public" ? "公共下水道" : "特環下水道";
+                  return (
+                    <button
+                      key={scope}
+                      type="button"
+                      role="radio"
+                      aria-checked={activeScope === scope}
+                      aria-label={`${scope === "public" ? "公共下水道" : "特定環境保全公共下水道"}${available ? "" : "（データなし）"}`}
+                      className={clsx(activeScope === scope && "is-active")}
+                      disabled={!available}
+                      onClick={() => onScopeChange(scope)}
+                    >
+                      {label}
+                      {!available ? <span>データなし</span> : null}
+                    </button>
+                  );
+                })}
+              </div>
+              <InfoDisclosure label="全国マップの使い方">
+                {variant === "home"
+                  ? `都道府県を選ぶと、市区町村別の詳細マップへ移動します。色は${activeScopeLabel}だけを対象に、各市区町村の最新年度の経費回収率を都道府県ごとに単純平均したものです。公式の都道府県平均や加重平均ではありません。`
+                  : `都道府県を選ぶと、市区町村別の詳細マップを表示します。色は${activeScopeLabel}だけを対象に、各市区町村の最新年度の経費回収率を都道府県ごとに単純平均したものです。公式の都道府県平均や加重平均ではありません。`}
+              </InfoDisclosure>
+            </div>
           </div>
           <div
             ref={mapSurfaceRef}
@@ -373,7 +431,7 @@ export function NationalMapExplorer({
         />
       </div>
 
-      <div className="home-support-grid grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.45fr)]">
+      <div className="home-support-grid grid gap-4">
         <RankingPair items={municipalities} />
         <HowToCards />
       </div>
@@ -424,12 +482,12 @@ function HomeNationalMap({
     : { x: 515, y: 18, width: 430, height: 455 };
   const insetNames = compact
     ? [
-        { title: "北海道", name: "北海道", x: 18, y: 14, width: 142, height: 88 },
-        { title: "沖縄県", name: "沖縄県", x: 232, y: 372, width: 128, height: 54 }
+        { title: "北海道", name: "北海道", x: 16, y: 14, width: 172, height: 116 },
+        { title: "沖縄県", name: "沖縄県", x: 236, y: 370, width: 136, height: 66 }
       ]
     : [
-        { title: "北海道", name: "北海道", x: 250, y: 18, width: 160, height: 104 },
-        { title: "沖縄県", name: "沖縄県", x: 812, y: 372, width: 142, height: 94 }
+        { title: "北海道", name: "北海道", x: 232, y: 16, width: 232, height: 162 },
+        { title: "沖縄県", name: "沖縄県", x: 796, y: 360, width: 170, height: 116 }
       ];
   const focusedPrefectures = useMemo(
     () => focusedRegion ? prefecturesByRegion(focusedRegion) : [],
@@ -455,19 +513,21 @@ function HomeNationalMap({
     : mainFeatures;
   const visibleInsets = focusedRegion === "北海道・東北"
     ? [compact
-        ? { title: "北海道", name: "北海道", x: 18, y: 218, width: 175, height: 120 }
-        : { title: "北海道", name: "北海道", x: 250, y: 92, width: 250, height: 178 }]
+        ? { title: "北海道", name: "北海道", x: 14, y: 200, width: 190, height: 142 }
+        : { title: "北海道", name: "北海道", x: 232, y: 68, width: 292, height: 208 }]
     : focusedRegion === "九州・沖縄"
       ? [compact
-          ? { title: "沖縄県", name: "沖縄県", x: 238, y: 366, width: 132, height: 62 }
-          : { title: "沖縄県", name: "沖縄県", x: 774, y: 352, width: 180, height: 116 }]
+          ? { title: "沖縄県", name: "沖縄県", x: 230, y: 358, width: 148, height: 76 }
+          : { title: "沖縄県", name: "沖縄県", x: 758, y: 336, width: 208, height: 142 }]
       : focusedRegion
         ? []
         : insetNames;
   const transformCenter = focusedRegion
     ? { x: activeFocusFrame.x + activeFocusFrame.width / 2, y: activeFocusFrame.y + activeFocusFrame.height / 2 }
     : compact ? { x: 195, y: 244 } : { x: 520, y: 270 };
-  const homeTransform = `translate(${transformCenter.x} ${transformCenter.y}) scale(${homeZoom}) translate(-${transformCenter.x} -${transformCenter.y})`;
+  const homeTransform = homeZoom === 1
+    ? undefined
+    : `translate(${transformCenter.x} ${transformCenter.y}) scale(${homeZoom}) translate(-${transformCenter.x} -${transformCenter.y})`;
   const labelScale = focusedRegion && focusedViewBox
     ? nationalFocusLabelScale(focusedViewBox, activeFocusFrame, compact ? 11 : 13)
     : 1;
@@ -557,51 +617,53 @@ function HomeInsetMap({
   const diagnosisLabel = nationalRecoveryBandLabel(recoveryRate);
   const fillColor = atlasStatusColor(recoveryRate);
   const active = activePrefectureCode === feature.code;
-  const displayPath = atlasDisplayPath(feature);
-  const viewBox = screenViewBox([{ ...feature, path: displayPath }], 8);
+  const displayPath = nationalInsetDisplayPath(feature);
+  const viewBox = screenViewBox([{ ...feature, path: displayPath }], feature.code === "47" ? 2 : 8);
+  const titleX = feature.code === "47"
+    ? frame.x + frame.width / 2 - 45
+    : frame.x + 4;
 
   if (!viewBox) return null;
 
   return (
-    <g className="home-map-inset">
-      <rect x={frame.x} y={frame.y} width={frame.width} height={frame.height} rx="5" className="home-map-inset-frame" />
-      <text x={frame.x + 10} y={frame.y + 18} className="home-map-inset-title">{title}</text>
+    <g
+      className={clsx("home-map-inset gis-region", active && "gis-region--active")}
+      data-map-inset-code={feature.code}
+      data-map-region-code={feature.code}
+      role="link"
+      tabIndex={0}
+      aria-label={`${displayName}の詳細マップへ。経費回収率${formatPercent(recoveryRate)}、${diagnosisLabel}`}
+      onClick={() => onOpen(feature)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") onOpen(feature);
+      }}
+      onFocus={() => onActivate(feature.code)}
+      onBlur={() => onActivate(null)}
+      onPointerEnter={(event) => {
+        onActivate(feature.code);
+        onHover(event, feature, summary, featureMunicipalities);
+      }}
+      onPointerMove={(event) => onHover(event, feature, summary, featureMunicipalities)}
+      onMouseOver={(event) => {
+        onActivate(feature.code);
+        onHover(event, feature, summary, featureMunicipalities);
+      }}
+      onMouseMove={(event) => onHover(event, feature, summary, featureMunicipalities)}
+    >
+      <text x={titleX} y={frame.y + 14} className="home-map-inset-title">{title}</text>
       <svg
-        x={frame.x + 10}
-        y={frame.y + 24}
-        width={frame.width - 20}
-        height={frame.height - 32}
+        x={frame.x}
+        y={frame.y + 18}
+        width={frame.width}
+        height={frame.height - 18}
         viewBox={viewBox}
         preserveAspectRatio="xMidYMid meet"
-        overflow="hidden"
+        overflow="visible"
       >
-        <g
-          className={clsx("gis-region", active && "gis-region--active")}
-          role="link"
-          tabIndex={0}
-          aria-label={`${displayName}の詳細マップへ。経費回収率${formatPercent(recoveryRate)}、${diagnosisLabel}`}
-          onClick={() => onOpen(feature)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" || event.key === " ") onOpen(feature);
-          }}
-          onFocus={() => onActivate(feature.code)}
-          onBlur={() => onActivate(null)}
-          onPointerEnter={(event) => {
-            onActivate(feature.code);
-            onHover(event, feature, summary, featureMunicipalities);
-          }}
-          onPointerMove={(event) => onHover(event, feature, summary, featureMunicipalities)}
-          onMouseOver={(event) => {
-            onActivate(feature.code);
-            onHover(event, feature, summary, featureMunicipalities);
-          }}
-          onMouseMove={(event) => onHover(event, feature, summary, featureMunicipalities)}
-        >
+        <g>
           <FlatPrefectureShape path={displayPath} fillColor={fillColor} inset />
         </g>
       </svg>
-      <rect x={frame.x + frame.width - 21} y={frame.y + frame.height - 23} width="18" height="18" rx="3" className="home-map-inset-plus-bg" />
-      <path d={`M${frame.x + frame.width - 12} ${frame.y + frame.height - 19}V${frame.y + frame.height - 9}M${frame.x + frame.width - 17} ${frame.y + frame.height - 14}H${frame.x + frame.width - 7}`} className="home-map-inset-plus" />
     </g>
   );
 }
@@ -750,10 +812,10 @@ function FlatPrefectureShape({
         fill={fillColor}
         fillRule="nonzero"
         stroke="#263744"
-        strokeOpacity={0.48}
+        strokeOpacity={0.62}
         strokeLinecap="round"
         strokeLinejoin="round"
-        strokeWidth={4}
+        strokeWidth={4.5}
         className="gis-prefecture-silhouette"
         style={{ "--region-fill": fillColor } as CSSProperties}
         pointerEvents="none"
@@ -807,7 +869,7 @@ function PrefectureSelectorPanel({
       <div className="prefecture-selector-heading">
         <h2>都道府県を選択</h2>
         <InfoDisclosure label="都道府県選択の使い方">
-          地域タブまたは名称検索から県別マップへ移動できます。
+          地域タブで地図を拡大できます。全国へ戻る場合は、地図左下の「全国を表示」を選んでください。名称検索から県別マップへ移動できます。
         </InfoDisclosure>
       </div>
       <label className="prefecture-search-field">
@@ -831,6 +893,7 @@ function PrefectureSelectorPanel({
             aria-controls="national-prefecture-map"
           >
             {region}
+            {region === activeRegion ? <span className="sr-only">（選択中）</span> : null}
           </button>
         ))}
       </div>
@@ -1392,7 +1455,7 @@ function HowToCards() {
     { title: "全国の状況を把握する", text: "全国マップで、都道府県ごとの経費回収率区分をひと目で確認できます。", href: "/map", icon: MapIcon },
     { title: "自治体を探す", text: "キーワードや条件で自治体を検索し、指標や年度別推移を比較できます。", href: "/municipalities", icon: Search },
     { title: "ランキングで比較する", text: "経費回収率や使用料単価から、他自治体との位置づけを比較できます。", href: "/rankings", icon: ChartNoAxesColumnIncreasing },
-    { title: "公式改定情報を確認する", text: "使用料改定について登録した公式公表情報と原資料を確認できます。", href: "/revisions", icon: CalendarDays }
+    { title: "料金改定を確認する", text: "第33表の施行年月日と公式改定率を主に、家庭・業務料金への影響と自治体公表を分けて確認できます。", href: "/revisions", icon: CalendarDays }
   ];
   return (
     <section className="panel p-4">

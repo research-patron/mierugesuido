@@ -155,6 +155,23 @@ describe("getPrefectureMapData", () => {
       expenseRecoveryRate: 95
     });
   });
+
+  it("keeps public and special-environment businesses separate for national map scopes", async () => {
+    prismaMocks.municipalityFindMany.mockResolvedValue([
+      municipality("151009", "新潟市", [
+        business({ businessKey: "17-1-public", businessType: "公共下水道", risk: 10, recovery: 105 }),
+        business({ businessKey: "17-4-tokkan", businessType: "特定環境保全公共下水道", risk: 99, recovery: 42 })
+      ])
+    ]);
+
+    const publicRows = await getMapMunicipalities("public");
+    const tokkanRows = await getMapMunicipalities("tokkan");
+
+    expect(publicRows).toHaveLength(1);
+    expect(publicRows[0]).toMatchObject({ businessKey: "17-1-public", expenseRecoveryRate: 105 });
+    expect(tokkanRows).toHaveLength(1);
+    expect(tokkanRows[0]).toMatchObject({ businessKey: "17-4-tokkan", expenseRecoveryRate: 42 });
+  });
 });
 
 function municipality(

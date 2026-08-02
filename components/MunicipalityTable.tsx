@@ -22,7 +22,7 @@ export function MunicipalityTable({ items }: { items: any[] }) {
                 <p className="mt-1 text-xs font-bold text-muted">{accountingTypeLabel(item.accountingType)}{item.accountingType === "non_legal_applied" ? "・料金指標は参考" : ""}</p>
                 {item.flags?.length ? <p className="mt-1 text-xs font-bold text-amber-700" title={item.flags.join("、")}>データ要確認（{item.flags.length}）</p> : null}
               </div>
-            <span><span className="sr-only">診断: </span><Badge>{item.diagnosis?.feeAdequacyLabel ?? "判定不可"}</Badge></span>
+            <span><span className="sr-only">診断: </span><Badge>{compactRecoveryBand(item.diagnosis?.expenseRecoveryRate)}</Badge></span>
             </div>
             <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
               <MobileMetric label="経費回収率" value={formatPercent(item.diagnosis?.expenseRecoveryRate)} strong />
@@ -85,15 +85,12 @@ export function MunicipalityTable({ items }: { items: any[] }) {
                   </details>
                 </td>
                 <td className={recoveryClass(item.diagnosis?.expenseRecoveryRate)}>
-                  <span className="table-metric-with-badge">
-                    {formatPercent(item.diagnosis?.expenseRecoveryRate)}
-                    <Badge>{item.diagnosis?.feeAdequacyLabel ?? "判定不可"}</Badge>
-                  </span>
+                  {formatPercent(item.diagnosis?.expenseRecoveryRate)}
                 </td>
                 <td className="metric-plain">{formatYenNumber(item.diagnosis?.feeUnitPriceYenPerM3)}</td>
                 <td>{formatYenNumber(item.diagnosis?.treatmentCostYenPerM3)}</td>
                 <td className={revisionClass(item.diagnosis?.requiredRevisionRateTo100)}>{formatRevisionRate(item.diagnosis?.requiredRevisionRateTo100)}</td>
-                <td><Badge>{item.diagnosis?.feeAdequacyLabel ?? "判定不可"}</Badge></td>
+                <td><Badge>{compactRecoveryBand(item.diagnosis?.expenseRecoveryRate)}</Badge></td>
                 <td><Badge>{revisionStatusLabel(item.hasRevisionEvent)}</Badge></td>
                 <td>
                   <Link href={municipalityDetailHref(item.municipalityCode, item.businessKey)} className="row-chevron" aria-label={`${item.municipalityName}の${businessLabel}の詳細へ`}>
@@ -159,4 +156,12 @@ function revisionClass(value: number | null | undefined) {
 
 function revisionStatusLabel(hasRevisionEvent: boolean) {
   return hasRevisionEvent ? "登録あり" : "未登録";
+}
+
+function compactRecoveryBand(value: number | null | undefined) {
+  if (value == null || !Number.isFinite(value)) return "判定不可";
+  if (value >= 100) return "100%以上";
+  if (value >= 90) return "90〜100%";
+  if (value >= 80) return "80〜90%";
+  return "80%未満";
 }

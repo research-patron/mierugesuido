@@ -11,6 +11,7 @@ const mapComponentSource = readFileSync(path.join(root, "components/JapanMapSele
 const headerSource = readFileSync(path.join(root, "components/SiteHeader.tsx"), "utf8");
 const copySource = readFileSync(path.join(root, "lib/copy.ts"), "utf8");
 const cssSource = readFileSync(path.join(root, "app/globals.css"), "utf8");
+const fidelityCssSource = readFileSync(path.join(root, "app/ui-fidelity.css"), "utf8");
 const searchImplementationSource = `${searchSource}\n${searchFilterSource}`;
 
 function cssBlock(selector: string) {
@@ -27,9 +28,28 @@ function sourceAround(source: string, pattern: string, radius = 360) {
   return source.slice(Math.max(0, index - radius), index + pattern.length + radius);
 }
 
+function bracedBlock(source: string, startPattern: string) {
+  const start = source.indexOf(startPattern);
+  expect(start, `${startPattern} block exists`).toBeGreaterThanOrEqual(0);
+  const openingBrace = source.indexOf("{", start);
+  expect(openingBrace, `${startPattern} block opens`).toBeGreaterThan(start);
+  let depth = 0;
+  for (let index = openingBrace; index < source.length; index += 1) {
+    if (source[index] === "{") depth += 1;
+    if (source[index] === "}") depth -= 1;
+    if (depth === 0) return source.slice(start, index + 1);
+  }
+  throw new Error(`${startPattern} block does not close`);
+}
+
 describe("UI fidelity rebuild v2 guardrails", () => {
   it("keeps the updated product shell and reference navigation", () => {
-    expect(copySource).toContain('siteName = "全国下水道使用料適正診断"');
+    expect(copySource).toContain('siteName = "まる見え！全国の下水道使用料"');
+    expect(copySource).toContain('siteSubtitle = "― あなたのまちの使用料を診断・比較 ―"');
+    expect(headerSource).toContain("{siteSubtitle}");
+    expect(headerSource).not.toContain("block truncate");
+    expect(fidelityCssSource).toContain(".site-brand-copy");
+    expect(fidelityCssSource).toContain("white-space: nowrap;");
     for (const label of ["ホーム", "全国マップ", "自治体検索", "ランキング", "改定情報", "データの見方"]) {
       expect(headerSource).toContain(`label: "${label}"`);
     }
@@ -49,7 +69,7 @@ describe("UI fidelity rebuild v2 guardrails", () => {
   });
 
   it("separates home dashboard map from full atlas map", () => {
-    expect(homeSource).toContain("<JapanMapSelector summaries={prefectureSummaries} municipalities={mapMunicipalities} overview={data} />");
+    expect(homeSource).toContain("mapScopes={mapScopes} initialScope={defaultMapScope}");
     expect(mapPageSource).toContain('variant="atlas"');
     expect(mapComponentSource).toContain('type JapanMapVariant = "home" | "atlas"');
     expect(mapComponentSource).toContain('variant = "home"');
@@ -64,16 +84,33 @@ describe("UI fidelity rebuild v2 guardrails", () => {
     expect(mapComponentSource).toContain("normalizedQuery || !activeRegion");
     expect(mapComponentSource).toContain("activeRegion={focusedRegion}");
     expect(mapComponentSource).toContain("onRegionChange={focusRegion}");
-    expect(cssSource).toContain("grid-template-columns: minmax(0, 1fr) 424px;");
-    expect(cssSource).toContain("height: 452px;");
-    expect(cssBlock(".prefecture-region-list")).toContain("max-height: 290px");
-    expect(cssBlock(".home-map-explorer--home .home-support-grid")).toContain("0.82fr");
+    const homeMapLayout = bracedBlock(fidelityCssSource, ".home-map-layout--home");
+    const homeSupportLayout = bracedBlock(fidelityCssSource, ".home-map-explorer--home .home-support-grid");
+    expect(homeMapLayout).toContain("grid-template-columns: minmax(0, 1fr)");
+    expect(homeMapLayout).not.toContain(".home-map-layout--atlas");
+    expect(homeSupportLayout).toContain("grid-template-columns: minmax(0, 1fr)");
+    expect(homeSupportLayout).not.toContain(".home-map-explorer--atlas");
+  });
+
+  it("keeps four desktop KPI columns and the existing two-column mobile rail", () => {
+    const baseKpiLayout = bracedBlock(fidelityCssSource, ".home-kpi-cards");
+    const compactDesktop = bracedBlock(fidelityCssSource, "@media (max-width: 1280px)");
+    const mobileLayout = bracedBlock(fidelityCssSource, "@media (max-width: 900px)");
+    const mobileKpiLayout = bracedBlock(mobileLayout, ".home-kpi-cards");
+
+    expect(homeSource.match(/<StatCard\b/g)).toHaveLength(4);
+    expect(baseKpiLayout).toContain("grid-template-columns: repeat(4, minmax(0, 1fr))");
+    expect(compactDesktop).not.toMatch(/\.home-kpi-cards\s*\{[^}]*grid-template-columns/s);
+    expect(mobileKpiLayout).toContain("grid-template-columns: repeat(2, minmax(0, 1fr))");
   });
 
   it("keeps home dashboard required panels visible as real components", () => {
     expect(homeSource).toContain("home-kpi-cards");
     expect(homeSource).toContain("収録自治体数");
-    expect(homeSource).toContain("経費回収率100%未満の割合");
+    expect(homeSource).toContain("公共下水道：100%未満の割合");
+    expect(homeSource).toContain("R6 当年度改定の記載");
+    expect(homeSource).toContain("counts?.supported?.municipalityCount");
+    expect(homeSource).toContain("第33表の施行日と関連項目を照合");
     expect(mapComponentSource).toContain("<RankingPair items={municipalities} />");
     expect(mapComponentSource).toContain("<HowToCards />");
     expect(mapComponentSource).toContain('href="/municipalities" className="prefecture-all-link"');
@@ -98,6 +135,7 @@ describe("UI fidelity rebuild v2 guardrails", () => {
     expect(searchSource).toContain('const requestedLimit = Number(searchParams.get("limit") || 10);');
     expect(searchSource).toContain('fetch("/data/static/municipalities.json")');
     expect(searchSource).toContain("page-size-menu");
+    expect(searchSource).toContain("search-summary-footer");
     expect(cssSource).toContain("filter-advanced-grid");
     expect(cssBlock(".municipality-search-page .data-table td")).toContain("height: 40px");
   });

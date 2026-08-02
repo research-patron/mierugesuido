@@ -1,4 +1,5 @@
-export const siteName = "全国下水道使用料適正診断";
+export const siteName = "まる見え！全国の下水道使用料";
+export const siteSubtitle = "― あなたのまちの使用料を診断・比較 ―";
 
 export const footerDisclaimer =
   "本サイトの指標は、総務省/e-Stat等で公開されている地方公営企業決算情報に基づく参考値です。自治体の公式資料とあわせて確認してください。";
@@ -15,7 +16,7 @@ export const operatingRatioExplanation =
 export const formulaCopy = [
   {
     title: "一般家庭用20m³／月使用料",
-    formula: "総務省33表に記載された料金表上の税込額（使用料単価 × 20ではありません）"
+    formula: "総務省33表に記載された料金表上の税込標準額。20で割った値は『その1m³平均使用料』で、決算実績の使用料単価とは別です"
   },
   {
     title: "使用料単価",

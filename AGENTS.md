@@ -1,5 +1,30 @@
 # Current Goal: R2-R6 Accounting Eligibility, Data Completion, and Financial Storytelling
 
+## Goal Extension (2026-08-02 — Table 33 fee-revision evidence)
+
+- Use the sewer-business individual-table item `現行使用料施行年月日` as the primary R5-R6 fee-revision signal. Treat a changed date as a candidate until `前回使用料改定年月日`, official `実質使用料改定率`, household and business-use tariffs, and tariff-system fields are checked.
+- Keep the official current-year revision rates separate from the site's simple R5-R6 change in the household 20m³ monthly amount. Use the household amount as impact evidence, not as the definition of a revision, and do not classify consumption-tax-only changes as revisions.
+- Preserve official source meaning and units for the tariff-system code, water-volume rank count, minimum and maximum excess-unit prices, and progressivity. Do not infer missing values or replace official rates with calculated household changes.
+- Present confirmed supporting evidence, candidates requiring confirmation, and amount-only differences as distinct non-color-only states. Make clear that yearbook comparison is not a substitute for municipality ordinances, council materials, or announcements.
+- Parse the official R5/R6 law-applied and law-non-applied Table 33 workbooks from ignored local source caches, commit only compact derived static JSON, and keep ordinary tests runnable in a clean clone without downloaded workbooks.
+- Verify static generation, full tests, production build, desktop 1491 × 1055 and mobile 390 × 844 rendering, keyboard disclosures, and no horizontal overflow. Keep `design-qa.md` ending in `final result: passed` only after those gates succeed.
+
+## Goal Extension (2026-08-02 — desktop vertical flow and map sharpness)
+
+- On desktop, keep only the four top KPI cards in their current horizontal row. Stack the national map, prefecture selector, fee-level ranking, and site-usage guide as full-width sections in that reading order, matching the mobile section flow rather than retaining paired columns.
+- Give the prefecture selector enough horizontal space for its six real-region controls and municipality links. Remove the selector-side `全国` control because the map already provides an explicit `全国を表示` control; the map control must remain keyboard accessible and continue to restore the national state after a regional focus.
+- Determine from the live SVG implementation and rendered pixels whether the national map is visually blurred. Correct verified rendering causes without replacing the map with a bitmap, altering official geography/data, or hiding the issue through screenshot scaling.
+- Preserve the existing business-scope switch, map hover/navigation, all six regional filters, KPI content, ranking content, guide actions, mobile layout, and prefecture-detail geography. Do not change database, Prisma, migrations, ETL, or imported financial data for this UI-only extension.
+- Capture the pre-change and final desktop/mobile states, compare the supplied references and implementation in a combined visual, and keep `design-qa.md` ending in `final result: passed` only after the layout, national-return path, map sharpness, and full regression suite pass.
+
+## Goal Extension (2026-08-02 — product name and national-map return control)
+
+- Change the product title on every user-facing surface to `まる見え！全国の下水道使用料` and the visible header subtitle to `― あなたのまちの使用料を診断・比較 ―`, including metadata and accessible naming that derive from the shared product copy.
+- Remove the header truncation that clips the subtitle, and verify the complete title/subtitle at the supplied reference width as well as the 1491 × 1055 and 390 × 844 QA viewports without horizontal overflow.
+- Add an explicit `全国` control before `北海道・東北` in the home-page prefecture-region selector. It must restore the default national map after any regional focus, expose the active state without relying on color alone, and work by pointer and keyboard.
+- Preserve the existing region filters, prefecture navigation, map scope switch, and detailed prefecture geography. Do not change database, Prisma, migrations, ETL, or imported financial data for this UI-only extension.
+- Capture the pre-change state and final desktop/mobile states, record a superseding QA gate, and keep `design-qa.md` ending in `final result: passed` only after the requested copy, layout, and nationwide-return interaction are verified.
+
 ## Goal Extension (2026-07-17 — business switching and correctness audit)
 
 - Make it immediately clear that users can switch among every sewer-business record available for the municipality, such as public sewerage and special-environment public sewerage. Distinguish the current selection, other selectable records, and unavailable states with existing semantic colors, explicit text, and accessible controls rather than color alone.

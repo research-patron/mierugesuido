@@ -8,7 +8,7 @@ const prefecturePageSource = readFileSync(path.join(root, "app/map/[prefectureCo
 
 describe("map page shell guardrails", () => {
   it("keeps the national page aligned with the home KPI language and year display", () => {
-    for (const label of ["収録自治体数", "最新年度", "経費回収率100%未満の割合", "公式改定情報あり"]) {
+    for (const label of ["公共下水道の収録自治体数", "最新年度", "公共下水道：100%未満の割合", "R6 当年度改定の記載"]) {
       expect(nationalPageSource).toContain(`label="${label}"`);
     }
 

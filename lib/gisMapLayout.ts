@@ -24,7 +24,15 @@ export const NATIONAL_TOKYO_REMOTE_ISLAND_CUTOFF_Y = 325;
 export const ATLAS_KAGOSHIMA_REMOTE_ISLAND_CUTOFF_Y = 455;
 export const ATLAS_NAGASAKI_REMOTE_ISLAND_MIN_X = 383;
 export const ATLAS_NAGASAKI_REMOTE_ISLAND_MIN_Y = 360;
-export const ATLAS_HOKKAIDO_OVERVIEW_SCALE_Y = 1.12;
+export const NATIONAL_OKINAWA_INSET_MIN_X = 790;
+export const NATIONAL_OKINAWA_INSET_MAX_X = 830;
+export const NATIONAL_OKINAWA_INSET_MAX_Y = 680;
+// The source SVG is projected from longitude/latitude with the same scale on
+// both axes.  That makes detached islands look progressively flatter at higher
+// latitudes.  These latitude corrections restore the local aspect ratio while
+// keeping the official N03 coastline itself unchanged.
+export const ATLAS_HOKKAIDO_OVERVIEW_SCALE_Y = 1.38;
+export const ATLAS_OKINAWA_OVERVIEW_SCALE_Y = 1.11;
 const INSET_VIEWBOX_PAD = 4;
 
 export function nationalOverviewPath(feature: GisLayoutFeature) {
@@ -62,13 +70,44 @@ export function atlasOverviewPath(feature: GisLayoutFeature) {
 }
 
 export function atlasDisplayPath(feature: GisLayoutFeature) {
+  return latitudeCorrectedAtlasPath(feature, atlasOverviewPath(feature));
+}
+
+/**
+ * Keep the national overview readable in the same way as a conventional Japan
+ * atlas: the Okinawa inset emphasizes Okinawa Island and its nearby islands.
+ * The prefecture detail view still uses the unfiltered official path, so no
+ * island is removed from the detailed map or navigation.
+ */
+export function nationalInsetDisplayPath(feature: GisLayoutFeature) {
   const overviewPath = atlasOverviewPath(feature);
-  if (feature.code !== "01") return overviewPath;
+  if (feature.code !== "47") return latitudeCorrectedAtlasPath(feature, overviewPath);
+
+  const nearbyMainIslandPaths = splitSubpaths(overviewPath).filter((path) => {
+    const bounds = pathScreenBounds(path);
+    return bounds
+      && bounds[0] >= NATIONAL_OKINAWA_INSET_MIN_X
+      && bounds[2] <= NATIONAL_OKINAWA_INSET_MAX_X
+      && bounds[3] <= NATIONAL_OKINAWA_INSET_MAX_Y;
+  });
+  const insetPath = nearbyMainIslandPaths.length > 0
+    ? nearbyMainIslandPaths.join("")
+    : overviewPath;
+  return latitudeCorrectedAtlasPath(feature, insetPath);
+}
+
+function latitudeCorrectedAtlasPath(feature: GisLayoutFeature, overviewPath: string) {
+  const scaleY = feature.code === "01"
+    ? ATLAS_HOKKAIDO_OVERVIEW_SCALE_Y
+    : feature.code === "47"
+      ? ATLAS_OKINAWA_OVERVIEW_SCALE_Y
+      : 1;
+  if (scaleY === 1) return overviewPath;
 
   const bounds = pathScreenBounds(overviewPath);
   if (!bounds) return overviewPath;
   const originY = (bounds[1] + bounds[3]) / 2;
-  return scalePathY(overviewPath, ATLAS_HOKKAIDO_OVERVIEW_SCALE_Y, originY);
+  return scalePathY(overviewPath, scaleY, originY);
 }
 
 export function scalePathY(path: string, scale: number, originY: number) {

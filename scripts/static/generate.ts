@@ -13,12 +13,15 @@ import {
   getRankings,
   getRevisionEventSummary
 } from "@/lib/data";
+import { mapBusinessScopes, type MapBusinessScope } from "@/lib/data";
 import { buildFinancialStoryModel } from "@/lib/financialStoryModel";
 import { municipalitiesToCsv } from "@/lib/municipalityCsv";
 import { getPrefectureCode, prefectures } from "@/lib/prefectures";
 import { prisma } from "@/lib/prisma";
 import { rankingLabels, type RankingType } from "@/lib/rankings";
 import { assertMappedEvidenceMatchesOfficial } from "@/lib/yearbookEvidence";
+import { buildYearbookFeeComparison } from "@/lib/yearbookFeeChanges";
+import { loadYearbookFeeSnapshots } from "@/scripts/static/yearbookFeeRevisionData";
 import {
   assertOfficialHeadlineValues,
   buildYearbookIndividualDataIndex,
@@ -42,17 +45,45 @@ async function main() {
   await Promise.all([mkdir(sourceRoot, { recursive: true }), mkdir(publicRoot, { recursive: true })]);
 
   const mapMunicipalities = await getMapMunicipalities();
-  const [overview, prefectureSummaries, prefectureNames, municipalityList] = await Promise.all([
-    getHomepageData(mapMunicipalities),
-    getPrefectureSummaries(mapMunicipalities),
+  const scopeEntries = await Promise.all(
+    (Object.keys(mapBusinessScopes) as MapBusinessScope[]).map(async (scope) => {
+      const scopedMunicipalities = await getMapMunicipalities(scope);
+      const [scopedOverview, scopedSummaries] = await Promise.all([
+        getHomepageData(scopedMunicipalities),
+        getPrefectureSummaries(scopedMunicipalities)
+      ]);
+      return [scope, {
+        key: scope,
+        ...mapBusinessScopes[scope],
+        overview: scopedOverview,
+        mapMunicipalities: scopedMunicipalities,
+        prefectureSummaries: scopedSummaries
+      }] as const;
+    })
+  );
+  const mapScopes = Object.fromEntries(scopeEntries);
+  const defaultMapScope = "public" as const;
+  const defaultMapData = mapScopes[defaultMapScope];
+  const revisionSourceRoot = path.join(process.cwd(), "data", "raw", "e-stat");
+  const yearbookFeeSnapshots = (await Promise.all([
+    loadYearbookFeeSnapshots({ rootDir: revisionSourceRoot, surveyYear: 2023 }),
+    loadYearbookFeeSnapshots({ rootDir: revisionSourceRoot, surveyYear: 2024 })
+  ])).flat();
+  const yearbookFeeComparison = buildYearbookFeeComparison(yearbookFeeSnapshots);
+  const { items: _yearbookFeeChangeItems, ...yearbookFeeChangeSummary } = yearbookFeeComparison;
+  const [prefectureNames, municipalityList, searchOverview] = await Promise.all([
     getPrefectures(),
-    getMunicipalityList({ all: true, sort: "municipality-code" })
+    getMunicipalityList({ all: true, sort: "municipality-code" }),
+    getHomepageData(mapMunicipalities)
   ]);
 
   await writeJson(path.join(sourceRoot, "home.json"), {
-    overview,
-    mapMunicipalities,
-    prefectureSummaries,
+    defaultMapScope,
+    mapScopes,
+    overview: defaultMapData.overview,
+    mapMunicipalities: defaultMapData.mapMunicipalities,
+    prefectureSummaries: defaultMapData.prefectureSummaries,
+    yearbookFeeChangeSummary,
     prefectures: prefectureNames
   });
   await writeJson(path.join(publicRoot, "municipalities.json"), {
@@ -60,7 +91,7 @@ async function main() {
       ...compactListItem(item),
       municipalityNameKana: mapMunicipalities.find((candidate) => candidate.municipalityCode === item.municipalityCode)?.municipalityNameKana ?? null
     })),
-    overview,
+    overview: searchOverview,
     prefectures: prefectureNames
   });
   await writeJson(path.join(publicRoot, "search-index.json"), mapMunicipalities.map((item) => ({
@@ -90,7 +121,8 @@ async function main() {
   const revisions = {
     summary: await getRevisionEventSummary(),
     items: revisionRows.map(compactRevisionEvent),
-    prefectures: prefectureNames
+    prefectures: prefectureNames,
+    yearbookFeeComparison
   };
   await Promise.all([
     writeJson(path.join(sourceRoot, "revisions.json"), revisions),

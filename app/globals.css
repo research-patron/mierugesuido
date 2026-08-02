@@ -1768,7 +1768,7 @@ section.search-results-section {
   }
 }
 
-/* Updated reference implementation: 全国下水道使用料適正診断 */
+/* Updated product-shell implementation */
 body {
   background: #ffffff;
   color: #061a3a;
@@ -2510,7 +2510,8 @@ body {
   }
 
   .site-subtitle {
-    display: none;
+    display: block;
+    font-size: 0.68rem;
   }
 
   .home-kpi-cards,
@@ -2658,31 +2659,15 @@ body {
   display: block;
 }
 
-.home-map-inset-frame {
-  fill: rgba(255, 255, 255, 0.96);
-  stroke: #c3d8e5;
-  stroke-width: 1;
-  filter: drop-shadow(0 4px 10px rgba(6, 26, 58, 0.06));
-}
-
 .home-map-inset-title {
   fill: #061a3a;
   font-family: "Noto Sans JP", "Hiragino Sans", "Yu Gothic", Meiryo, sans-serif;
   font-size: 12px;
-  font-weight: 900;
-}
-
-.home-map-inset-plus-bg {
-  fill: #ffffff;
-  stroke: #c3d8e5;
-  stroke-width: 1;
-}
-
-.home-map-inset-plus {
-  fill: none;
-  stroke: #061a3a;
-  stroke-linecap: round;
-  stroke-width: 1.7;
+  font-weight: 800;
+  paint-order: stroke;
+  stroke: #fff;
+  stroke-linejoin: round;
+  stroke-width: 3px;
 }
 
 .home-map-explorer--home .home-support-grid {

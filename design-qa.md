@@ -164,6 +164,146 @@ Header navigation, search, filters, table/card views, sorting, pagination, munic
 
 final result: passed
 
+## Superseding desktop vertical-flow and national-map sharpness gate — 2026-08-02
+
+This gate supersedes the earlier desktop home composition and the earlier selector-side `全国` requirement. It is limited to homepage layout, national-map rendering, and the related controls; it does not change source data, aggregation, accounting logic, routes, or the database.
+
+### Visual review
+
+- Reviewed the supplied full-width-map reference, the 1491 × 1055 before capture, and the final rendered captures together. QA artifacts are retained under `artifacts/design-qa/desktop-stack-sharpness-2026-08-02/` and remain ignored from Git.
+- At 1491 × 1055, all four KPI cards share one row at `y = 104`. The remaining sections follow the requested document order without side-by-side compression: map `y = 245–842.84`, prefecture selector `y = 862.84–1481.84`, ranking `y = 1495.84–1748.84`, and usage guide `y = 1768.84–1994.84`.
+- The desktop map panel is 1428px wide and its SVG surface is 1394 × 521.84px. The selector expands to its content (`617px client height = 617px scroll height`), so the page—not a cramped nested pane—owns scrolling.
+- At 390 × 844, the KPI rail remains 2 × 2 and the page order remains map → selector → ranking → guide. The measured page width is `379px client = 379px scroll`, so there is no page-level horizontal overflow.
+- Desktop detail captures confirm that the ranking retains its useful high/low two-column comparison and the usage guide retains four internal cards while those two parent sections are vertically stacked.
+
+### Selector and interaction
+
+- The prefecture selector now contains exactly six regional buttons: `北海道・東北`, `関東`, `中部`, `近畿`, `中国・四国`, `九州・沖縄`. It no longer contains a duplicate `全国` tab.
+- The map retains exactly one native button with the accessible name `全国を表示`. Pointer verification changed the SVG state from `data-focused-region="関東"` back to `national`; the native button and its visible focus treatment preserve standard keyboard activation semantics.
+- The selector help text now tells users that regional tabs enlarge the map and that the map's lower-left `全国を表示` control returns to the national view.
+
+### Sharpness diagnosis and correction
+
+- The source is SVG, not a bitmap. Before correction, DPR was 1 and the 980 × 500 viewBox rendered at 944.8 × 438px; computed `filter`, `transform`, and `backdrop-filter` were all `none`. The visual softness was therefore not a low-resolution image or blur filter.
+- The previous two-layer outline exposed only `(4.0 − 2.7) ÷ 2 = 0.65px` of a 48%-opacity boundary, which becomes a single blended antialiased pixel at DPR 1.
+- The corrected outer stroke is 4.5px at 0.62 opacity over the unchanged 2.7px seam cover, exposing a 0.9px boundary. `geometricPrecision` and `non-scaling-stroke` remain in place, and `crispEdges` was not introduced, so coastlines remain smooth.
+- The default map no longer emits a no-op SVG transform. Browserless lossless raster tests verify a short 1–3px high-contrast outer transition while the synthetic internal municipality seam remains at zero pixels.
+
+### Verification
+
+- Targeted regression suite: 3 files / 25 tests passed.
+- Full regression suite: 32 files / 193 tests passed.
+- `pnpm lint`: passed.
+- `pnpm build`: passed; 1,649 static pages generated.
+- `git diff --check`: passed.
+- Final browser check: no warning/error console entries, one KPI row on desktop, six selector tabs, one map-side national-return button, national default state, and no horizontal overflow.
+- No database, Prisma schema, migration, ETL, GIS source, financial source value, aggregation, or formula changed for this gate.
+
+final result: passed
+
+## Final superseding gate index — 2026-08-02 desktop vertical flow and map sharpness
+
+The detailed `Superseding desktop vertical-flow and national-map sharpness gate — 2026-08-02` is the current acceptance gate for the homepage desktop composition, national-return control, and national-map edge rendering, regardless of earlier document order.
+
+- Desktop flow: only the four KPI cards remain horizontal; map, selector, ranking, and guide are vertically ordered at full content width.
+- National return: the duplicate selector-side `全国` tab is removed; the accessible map-side `全国を表示` button remains the single dedicated return control.
+- Map rendering: the vector source remains unchanged; the perceptually soft 0.65px boundary is corrected to a tested 0.9px boundary without jagged edge rendering or exposed municipal seams.
+- Responsive and validation: 1491 × 1055 and 390 × 844 passed, with 32 test files / 193 tests, typecheck, 1,649-page production build, console inspection, and diff check all passing.
+
+final result: passed
+
+## Final superseding product-name and national-return gate — 2026-08-02
+
+This gate supersedes every earlier product-name, header-subtitle, and prefecture-region-selector description regardless of document order.
+
+### Brand copy and header fit
+
+- Shared product title: `まる見え！全国の下水道使用料`.
+- Shared visible subtitle: `― あなたのまちの使用料を診断・比較 ―`.
+- The shared title continues to drive document metadata, municipality metadata, the accessible home label, and the About heading. The subtitle is now a shared copy constant rather than a header-only literal.
+- The title and subtitle no longer use text-overflow truncation. Their desktop, compact-desktop, and mobile widths were adjusted without reducing the navigation set.
+- Supplied-problem width, 1235 × 900: page `clientWidth = scrollWidth = 1224`; title `clientWidth = scrollWidth = 286`; subtitle `clientWidth = scrollWidth = 286`; brand right edge `396`, navigation left edge `414`.
+- Desktop, 1491 × 1055: page `clientWidth = scrollWidth = 1480`; title and subtitle each had `clientWidth = scrollWidth = 357`.
+- Mobile, 390 × 844: page `clientWidth = scrollWidth = 379`; title and subtitle each had `clientWidth = scrollWidth = 210`; subtitle remained visibly rendered at `9.5px`.
+
+### Nationwide return control
+
+- A dedicated `全国` button is the first control in the region selector, immediately before `北海道・東北`; the six real region names remain unchanged in the geographic data model.
+- `activeRegion === null` is the national state. The new control reuses `showNationalView()`, which clears hover and active-prefecture state, restores zoom to 1, and sets the focused region to `null`.
+- Selected state is conveyed by visible fill plus a persistent underline, `aria-pressed`, and hidden `（選択中）` text; it is not color-only.
+- Desktop labels were measured with `clientWidth === scrollWidth` for all seven controls. On mobile, `全国` spans the full 315px first row and the six region buttons use 155px two-column cells.
+- Pointer regression: `関東` produced `data-focused-region="関東"`, `aria-pressed="true"`, and the regional live-status message; selecting `全国` restored `data-focused-region="national"`, `aria-pressed="true"`, and `全国を表示中。`.
+- Keyboard regression: after focusing through the regional controls, Enter on `全国` restored the same national state and left `全国（選択中）` focused.
+
+### Visual evidence
+
+- `artifacts/design-qa/brand-national-tab-2026-08-02/01-before-home-1491x1055.png`
+- `artifacts/design-qa/brand-national-tab-2026-08-02/02-before-home-1235x900.png`
+- `artifacts/design-qa/brand-national-tab-2026-08-02/03-after-home-1235x900.png`
+- `artifacts/design-qa/brand-national-tab-2026-08-02/04-after-home-1491x1055.png`
+- `artifacts/design-qa/brand-national-tab-2026-08-02/05-after-home-top-390x844.png`
+- `artifacts/design-qa/brand-national-tab-2026-08-02/07-after-home-selector-390x844.png`
+- `artifacts/design-qa/brand-national-tab-2026-08-02/08-reference-before-after-comparison.png`
+
+### Verification
+
+- Focused guardrails: 2 files / 20 tests passed.
+- Full regression suite: 32 files / 191 tests passed.
+- Typecheck: `pnpm lint` passed.
+- Production build: 1,649 generated pages passed.
+- `git diff --check`: passed.
+- No database, Prisma schema, migration, ETL, imported financial data, calculation, navigation item, region filter, or prefecture-detail geography was removed or changed by this gate.
+
+final result: passed
+
+## Superseding yearbook fee-definition and detached-map gate — 2026-08-02
+
+This gate supersedes the preceding shorthand that treated every R5/R6 difference in the yearbook household 20m³ tariff as a confirmed rate revision, placed the business-wide realized unit price beside the household tariff, and rendered Hokkaido/Okinawa as small boxed insets.
+
+### Official definition and cross-workbook audit
+
+- Primary sources checked: the Ministry of Internal Affairs and Communications R5/R6 local-public-enterprise yearbook pages, the R5/R6 survey preparation instructions, and the R6 official individual workbooks (1)–(3) for law-applied public sewerage.
+- `一般家庭用20m³／月` is the tax-inclusive standard amount obtained from the applicable household tariff schedule. It is not a business-wide realized average and does not represent every household bill.
+- The individual table separately publishes `（一般家庭用20m³／月）の1m³平均使用料`, which is the 20m³ tariff divided by 20 and rounded to a whole yen, and `使用料単価`, which is annual sewer-fee revenue divided by annual billable volume.
+- The R5/R6 official-workbook reconciliation produced 1,533 comparable household-tariff pairs. The 20m³ tariff differed in 121 records, but 23 had neither an updated effective date nor a stated R6 real revision rate. The UI therefore calls all 121 records `20m³月額差異`, not confirmed revisions.
+- Across 1,533 comparable rows, `20m³月額 ÷ 20` agreed with the published `その1m³平均使用料` in every record. Across 1,532 usable rows, `使用料単価 × 20` equalled the household 20m³ tariff in only two records and must not be used as a conversion.
+- Fixed example: Chiba City R6 publishes a 2,140-yen household 20m³ tariff, a 107-yen `その1m³平均使用料`, and a 142.15-yen/m³ realized unit price. The realized unit price times 20 is 2,843 yen, not 2,140 yen.
+- The page now states that a yearbook monthly-amount difference is the entry point for checking a revision. The effective date, real revision-rate field, ordinance, correction status, and municipality publication must be checked before calling it a confirmed revision.
+- Source URLs:
+  - `https://www.soumu.go.jp/main_sosiki/c-zaisei/kouei_R05/index_ge.html`
+  - `https://www.soumu.go.jp/main_sosiki/c-zaisei/kouei_R06/index_ge.html`
+  - `https://www.e-stat.go.jp/stat-search/file-download?fileKind=2&statInfId=000040327165`
+  - `https://www.soumu.go.jp/main_content/001065539.xls`
+  - `https://www.soumu.go.jp/main_content/001065555.xls`
+  - `https://www.soumu.go.jp/main_content/001065566.xls`
+
+### National-map silhouette, overview scope, and interaction
+
+- The source N03 path remains authoritative. The visible flattening came from the build projection using one linear scale for longitude and latitude. The detached overview now applies latitude corrections of 1.38 to Hokkaido and 1.11 to Okinawa without altering the detailed prefecture geometry.
+- The bordered inset cards and plus decorations were removed. Hokkaido and Okinawa are enlarged and placed directly in the stable white space of the national-map canvas, matching the supplied conventional-atlas composition.
+- The national Okinawa overview now emphasizes Okinawa Island and nearby islands. Distant island groups are omitted only from this compact national overview so they do not compress the island into a horizontal dot row; the Okinawa prefecture-detail path and `/map/47` navigation retain the complete official geography.
+- The inset title and shape now share one keyboard-focusable `role="link"` target. Clicking the visible `沖縄県` title was verified to navigate to `/map/47/`.
+- Pixel regression tests now enforce natural Hokkaido and Okinawa aspect ranges at desktop and mobile sizes, an unboxed inset treatment, and the absence of exposed municipal-boundary seams.
+
+### Responsive visual comparison
+
+- The supplied reference, the pre-change implementation, and the accepted implementation were inspected together in `artifacts/design-qa/map-shape-yearbook-2026-08-02/05-reference-before-final-comparison.png`.
+- Accepted desktop home capture: `04-final-home-1491x1055.png`.
+- Accepted mobile home captures: `06-final-home-390x844.png` and the scrolled map state `07-final-mobile-map-390x844.png`.
+- Accepted yearbook-difference captures: `08-revisions-1491x1055.png` and `09-revisions-390x844.png`.
+- At 390 × 844, both checked routes measured 379px document width and 379px page scroll width, with no page-level horizontal overflow. The map, legend, controls, and detached prefecture labels remain readable without a horizontal pan.
+
+### Verification and intentional subtraction
+
+- `pnpm static:data`: passed; 1,318,745 official source-column rows across 86 workbooks were reconciled. The existing 57 explicit unmatched `18-0` warnings remain unavailable states rather than guessed matches.
+- `pnpm lint`: passed.
+- `pnpm test`: 32/32 files and 191/191 tests passed.
+- `pnpm build`: passed; 1,649 static pages generated.
+- No database, Prisma schema, migration, imported e-Stat value, official workbook, financial calculation, route, or detail-map geography was changed.
+- Intentional subtraction: the misleading household-KPI subline that placed `使用料単価` beside the 20m³ tariff was removed; the boxed Hokkaido/Okinawa frames and plus decorations were removed; distant Okinawa island groups were removed only from the compact national overview. No source value, navigation destination, or detailed-map island was removed.
+
+final result: passed
+
 ## Business switching, R2–R6 correctness, and direct operating-coverage gate — 2026-07-17
 
 This gate supersedes every earlier description that uses `営業費用100円あたりの営業収益`, an amber 50%–100% state, or a reverse-direction shortage/remainder measure. The final production UI presents `営業収益 ÷ 営業費用 × 100` directly, compares the raw value with 50%, shows values below 50% in red and values at or above 50% in green, and states that 50% is this site's display boundary rather than a national soundness standard.
@@ -193,6 +333,62 @@ This gate supersedes every earlier description that uses `営業費用100円あ�
 - `pnpm build`: passed, all 17 application routes compiled.
 - Post-build browser smoke after the required dev-server restart: direct 39.6% value, 50% disclaimer, exact business state, 1491px width, and zero runtime-error state passed.
 - Localhost diagnosis: the app is bound to `127.0.0.1`; the in-app browser needs no elevation. The approval observed in shell diagnostics belongs to Codex's restricted command-network boundary, not to the app or macOS localhost.
+
+final result: passed
+
+## Superseding national-map scope, search-layout, and R5-R6 fee-change gate — 2026-08-01
+
+This gate supersedes the nationwide map aggregation that selected one highest-attention sewer business from every non-flow category in each municipality, the overlapping search summary/table badges, and the empty official-only revision page.
+
+### National map calculation and switching
+
+- Root cause of the nearly all-red map: the previous national aggregation mixed public sewerage, special-environment public sewerage, rural community sewerage, fisheries sewerage, individual treatment, and other non-flow categories, then selected the highest-attention record for each municipality. It was a prefecture simple average, but it was not a public-sewerage average.
+- The national map now has two explicit, keyboard-operable radio choices: `公共下水道` (`17/1`) and `特定環境保全公共下水道` (`17/4`). Public sewerage is the initial state; unavailable states are disabled and text-labelled rather than color-only.
+- Each scope selects the municipality's newest available record only within that official business category. Prefecture color is the arithmetic mean of those finite municipality expense-recovery rates. It is not an official prefecture average, an operator-weighted mean, or a volume-weighted mean.
+- R6 public scope: 1,169 municipalities, simple mean 88.5%, and 69.9% below 100%. Prefecture bands are 5 at 100% or above, 14 at 90–100%, 19 at 80–90%, and 9 below 80%.
+- R6 special-environment scope: 719 municipalities, simple mean 71.6%, and 81.9% below 100%. Prefecture bands are 1 at 100% or above, 5 at 90–100%, 8 at 80–90%, and 33 below 80%.
+- The switch updates the map, prefecture counts and averages, hover content, and on-page high/low lists from the same scoped dataset. Regression coverage rejects cross-category contamination and independently recomputes every generated prefecture average.
+- The map help, national-map hero, and data-source explanation now state the scope, simple-average method, and non-official/non-weighted status explicitly.
+
+### R5-R6 yearbook comparison and evidence level
+
+- The official R5 and R6 Ministry of Internal Affairs and Communications yearbook pages are the source links. The comparison uses matching public and special-environment business records with positive R5/R6 `一般家庭用20m³／月` values.
+- 1,533 valid business records were compared. The 20m³ monthly fee changed in 121 business records across 93 operators: 114 increases and 7 decreases.
+- A changed 20m³ monthly amount is displayed as a `年鑑比較による候補`; it is not labelled as a confirmed ordinance revision or confirmed effective date. Existing municipality-official announcements remain a separate disclosure and currently contain 0 registered events.
+- `使用料単価` remains visible only as a supplementary annual indicator beside each monthly-fee candidate. It is not used as the candidate gate because annual fee revenue and billable volume can change without a tariff-table revision.
+- The home/map KPI formerly labelled `公式改定情報あり` is replaced by `R5→R6 20m³月額変化` and shows 93 operators with the explicit note `年鑑比較による候補・公式施行情報ではない`.
+- The revisions page uses a vertical comparison list, evidence-level note, business/direction/prefecture filters, and permanent R5/R6 official-source links. It avoids a wide raw table and preserves the distinction between operator records and municipality-official announcements.
+
+### Search layout correction
+
+- The KPI rail and explanatory note were previously auto-placed into the same fixed-height two-column grid, squeezing the official-information copy into a vertical strip. They are now separate rows with a full-width KPI grid and a dedicated note/toggle footer.
+- The desktop result table no longer repeats the long diagnosis badge beside the recovery value and again in the diagnosis column. Recovery remains numeric; the diagnosis column uses compact, non-overflowing ranges.
+- Column widths were rebalanced for business names, recovery, annual unit price, cost, required revenue increase, diagnosis, and official-event status. The search flow, filters, sorting, pagination, card/table toggle, and detail links remain functional.
+
+### Rendered and interaction QA
+
+- Captured before states and accepted after states at 1491 × 1055 and 390 × 844 are kept outside the publication diff under `artifacts/design-qa/home-map-search-revisions-2026-08-01/`.
+- Key accepted captures:
+  - `04-after-home-public-1491x1055.png`
+  - `05-after-home-tokkan-1491x1055.png`
+  - `08-after-search-final-1491x1055.png`
+  - `16-after-revisions-final-1491x1055.png`
+  - `17-after-home-mobile-final-390x844.png`
+  - `12-after-revisions-mobile-final-390x844.png`
+- The supplied all-red map and final public map were inspected together in `14-compare-map.png`. The supplied broken search screen and final search screen were inspected together in `15-compare-search.png`.
+- Public-to-special-environment switching was exercised through the accessible radio control, and the heading, checked state, map colors, and rankings all updated.
+- At 1491px, home, search, and revisions each measured 1,480px document width within a 1,491px viewport. At 390px, each measured 379px document width within a 390px viewport. No page-level horizontal overflow was introduced.
+- Mobile uses a 2×2 revisions KPI layout, compact map switch, vertically progressive comparison rows, and the existing mobile municipality cards below the search summary.
+
+### Regression, protected scope, and intentional subtraction
+
+- `pnpm static:data`: passed; 86 official R6 workbooks, 1,318,745 reconciled source-column rows, 1,586 municipality payloads, and 312 comparison pairs. The pre-existing 57 exact-column warnings remain confined to legal-applied `18/0` records and are not guessed.
+- `pnpm lint`: passed.
+- `pnpm test`: 32/32 files and 188/188 tests passed.
+- `pnpm build`: passed; 1,649 static pages generated.
+- `git diff --check`: passed.
+- No database, Prisma schema, migration, imported e-Stat value, financial calculation, route, navigation destination, municipality detail business switch, or prefecture-detail map calculation changed.
+- Intentional replacement: the national map's mixed-category/highest-attention representative aggregation was removed in favor of two exact official-category datasets. The misleading home `公式改定情報あり 0` KPI was replaced with the evidence-qualified R5-R6 yearbook change count. The duplicated long search diagnosis badge was removed; the diagnosis status remains in its dedicated column and on mobile cards.
 
 final result: passed
 
@@ -1262,5 +1458,94 @@ This gate supersedes the preceding responsive treatment that converted each offi
 - `git diff --check`: passed.
 - No database, Prisma schema, migration, ETL, official workbook, static financial data, source value, or accounting formula changed.
 - Intentional layout replacement: the mobile-only stacked row presentation was removed and replaced with the same item/value columns used on desktop. No user-facing data or function was removed.
+
+final result: passed
+
+## Final superseding gate index — 2026-08-01
+
+The detailed `Superseding national-map scope, search-layout, and R5-R6 fee-change gate — 2026-08-01` is the current acceptance gate and supersedes every earlier map aggregation, search summary, and official-only revision-page description regardless of document order.
+
+- National map default: 1,169 public-sewer municipalities; prefecture simple averages; public/special-environment switch passed.
+- Yearbook comparison: 1,533 valid R5/R6 business pairs; 121 changed business records across 93 operators; unit price remains supplementary.
+- Responsive QA: 1491 × 1055 and 390 × 844 passed without page-level horizontal overflow.
+- Verification: static generation, 32 test files / 188 tests, typecheck, 1,649-page production build, and diff check passed.
+
+final result: passed
+
+## Final superseding gate index — 2026-08-02
+
+The detailed `Superseding yearbook fee-definition and detached-map gate — 2026-08-02` is the current acceptance gate and supersedes the earlier R5/R6 fee-change wording and detached-map inset treatment regardless of document order.
+
+- Yearbook meaning: 121 records are R5/R6 household 20m³ monthly-amount differences, not 121 confirmed rate revisions; effective-date, real-revision-rate, ordinance, correction, and municipality evidence remain separate checks.
+- Unit distinction: household 20m³ tariff divided by 20 is the published `その1m³平均使用料`; business-wide `使用料単価 × 20` is not the household tariff.
+- National map: Hokkaido and the compact Okinawa overview now have natural, tested aspect ranges, unboxed placement, and one accessible label-plus-shape link target. The detailed Okinawa map retains the complete official island geography.
+- Responsive QA: the supplied reference, before state, and final state were reviewed in one comparison; accepted 1491 × 1055 and 390 × 844 captures have no page-level horizontal overflow.
+- Verification: official static generation, 32 test files / 191 tests, typecheck, 1,649-page production build, and interaction checks passed.
+
+final result: passed
+
+## Final superseding gate index — 2026-08-02 product name and national return
+
+The detailed `Final superseding product-name and national-return gate — 2026-08-02` is the current acceptance gate and supersedes every earlier product-name, header-subtitle, and prefecture-region-selector description regardless of document order.
+
+- Product shell: `まる見え！全国の下水道使用料` and `― あなたのまちの使用料を診断・比較 ―` display in full at 1235px, 1491px, and 390px without horizontal overflow.
+- National return: `全国` precedes `北海道・東北`, carries a non-color-only selected state, and restores the national map by pointer and keyboard after a regional focus.
+- Verification: supplied-reference comparison, 32 test files / 191 tests, typecheck, 1,649-page production build, and diff check passed.
+
+final result: passed
+
+## Final current gate index — 2026-08-02 desktop vertical flow and map sharpness
+
+The detailed `Superseding desktop vertical-flow and national-map sharpness gate — 2026-08-02` is the current acceptance gate for the homepage desktop composition, national-return control, and national-map edge rendering. It supersedes the earlier requirement that placed `全国` inside the prefecture selector.
+
+- Desktop flow: only the four KPI cards remain horizontal; map, selector, ranking, and guide are vertically ordered at full content width.
+- National return: the duplicate selector-side `全国` tab is removed; the accessible map-side `全国を表示` button remains the single dedicated return control.
+- Map rendering: the vector source remains unchanged; the perceptually soft 0.65px boundary is corrected to a tested 0.9px boundary without jagged edge rendering or exposed municipal seams.
+- Responsive and validation: 1491 × 1055 and 390 × 844 passed, with 32 test files / 193 tests, typecheck, 1,649-page production build, console inspection, and diff check all passing.
+
+final result: passed
+
+## Final superseding Table 33 fee-revision evidence gate — 2026-08-02
+
+This gate is the current acceptance gate for R5-R6 sewer-fee revision detection and supersedes every earlier description that treated a change in the household 20m³ monthly amount as a confirmed rate revision.
+
+### Official meaning and classification
+
+- The primary comparison is the official yearbook Table 33 item `現行使用料施行年月日`; matching is performed by item position and meaning rather than relying on the table number alone.
+- A changed effective date is checked against `前回使用料改定年月日`, the current-year `実質使用料改定率` fields, the household 20m³ amount, business-use amounts, and tariff-structure fields.
+- Consumption-tax-only changes are not treated as tariff revisions, in accordance with the official survey instructions.
+- The official `実質使用料改定率` and the site's simple R5-R6 household 20m³ change rate remain separate values. The former is the current-year weighted-average survey value; the latter is shown only as household impact evidence.
+- `当年度改定の記載`, `改定候補`, and `20m³額のみ差` are distinct non-color-only states. The page explicitly notes that ordinances and municipality announcements remain the final confirmation source.
+- Tariff-system evidence now preserves the official units: usage-system code, water-volume rank count, minimum and maximum excess-unit prices in yen/m³, and progressivity in multiples.
+
+### Official-data result and regression fixtures
+
+- R5 and R6 official e-Stat Table 33 workbooks were parsed for both law-applied and law-non-applied sewer businesses, covering public sewerage and special-environment public sewerage.
+- Common comparison scope: 1,926 business records / 1,450 municipalities.
+- Date-comparable scope: 1,887 business records / 1,424 municipalities.
+- Effective-date changes: 138 business records / 109 municipalities; 101 records / 77 municipalities have an R6 fiscal-year effective date.
+- `当年度改定の記載`: 100 business records / 77 municipalities; `改定候補`: 38 / 33; `20m³額のみ差`: 179 / 161.
+- Chiba City is fixed as a regression case: effective date 2014-04-01 → 2024-04-01, official household rate 5.2%, official average 5.4%, and household 20m³ amount 2,035円 → 2,140円.
+- Shiriuchi Town special-environment public sewerage is fixed as the distinction case: official rate 26.0% while the simple household 20m³ change is approximately 22.9%.
+
+### UI, accessibility, and responsive evidence
+
+- The page title and explanation lead with Table 33 dates; the household 20m³ amount is visually and semantically secondary.
+- Four summary figures, prefecture/business/status filters, and an initial 40-record progressive list replace the former all-at-once presentation. `さらに40事業を表示` exposes the remainder without changing the evidence order.
+- Each record reads vertically: effective-date evidence, official revision rates, household impact, then expandable business-use and tariff-system evidence. Neutral one-pixel borders are used throughout; there is no emphasized one-sided box edge.
+- Both nested disclosures open by pointer and by Enter/Space. The focus state and open/closed text do not rely on color alone.
+- Desktop 1491 × 1055 and mobile 390 × 844 were verified from the production export with no page-level horizontal overflow and no browser warning or error.
+- Accepted captures are kept outside the repository as `sewer-fee-revision-qa-desktop.png` and `sewer-fee-revision-qa-mobile.png`.
+
+### Verification and protected scope
+
+- `pnpm static:data`: passed; 86 official workbooks, 1,318,745 source rows, 1,586 municipality details, and 312 comparison pairs.
+- `pnpm lint`: passed.
+- `pnpm test`: 33/33 files and 205/205 tests passed.
+- The parser's mock-workbook tests always run. The official-XLS regression runs when the ignored R5/R6 source cache is present and is skipped in a clean clone rather than requiring uncommitted downloads.
+- `pnpm build`: passed; 1,649 static pages generated.
+- `git diff --check`: passed before this documentation-only append and is rerun below as the final whitespace gate.
+- No database, Prisma schema, migration, official workbook, accounting value, route, business switch, map interaction, ranking formula, or search behavior was changed.
+- Intentional subtraction: the household 20m³ difference is no longer the primary KPI or the definition of a revision; the increment/decrement filter and the misleading unit-price comparison were removed. The household amount and all supporting Table 33 fields remain available in a progressive evidence view.
 
 final result: passed

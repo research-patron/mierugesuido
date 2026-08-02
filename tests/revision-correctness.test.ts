@@ -84,4 +84,20 @@ describe("revision schedule correctness", () => {
     expect(source).toContain("formatOfficialRevisionRate");
     expect(source).not.toContain("formatRevisionRate(");
   });
+
+  it("keeps the effective date primary and separates official rates from simple household differences", () => {
+    const source = readFileSync(path.join(process.cwd(), "app/revisions/page.tsx"), "utf8");
+    expect(source).toContain("主判定項目");
+    expect(source).toContain("現行使用料施行年月日");
+    expect(source).toContain("第33表の公式記載");
+    expect(source).toContain("20m³料金の単純変化率");
+    expect(source).toContain("公式の実質使用料改定率とは異なる単純計算です。");
+    expect(source).toContain("業務用料金・料金体系・判定根拠を見る");
+    expect(source).toContain("自治体による公式発表は別の情報です");
+    expect(source).toContain("const revisionPageSize = 40");
+    expect(source).toContain("さらに{Math.min(revisionPageSize");
+    expect(source.match(/onKeyDown=\{toggleDetailsOnKeyboard\}/g)).toHaveLength(2);
+    expect(source).not.toContain("feeUnitPrice");
+    expect(source).not.toContain("増減方向");
+  });
 });

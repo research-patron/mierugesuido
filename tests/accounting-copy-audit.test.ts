@@ -38,6 +38,19 @@ describe("public-enterprise accounting copy audit", () => {
     expect(dataSourcesSource).toContain("同一都道府県内の市町村マップでは");
   });
 
+  it("separates the household tariff average from the business-wide realized unit price", () => {
+    expect(copySource).toContain("その1m³平均使用料");
+    expect(dataSourcesSource).toContain("整数に丸めた表示");
+    expect(dataSourcesSource).toContain("使用料単価に20を掛けても家庭用20m³月額にはなりません");
+  });
+
+  it("documents the table 33 evidence hierarchy for fee revisions", () => {
+    expect(dataSourcesSource).toContain("現行使用料施行年月日");
+    expect(dataSourcesSource).toContain("前回使用料改定年月日");
+    expect(dataSourcesSource).toContain("実質使用料改定率");
+    expect(dataSourcesSource).toContain("20m³月額の差だけでは料金改定と断定しません");
+  });
+
   it("defines operating income-statement fields without conflating them with fee recovery", () => {
     expect(fieldDefinitionsSource).toContain("正当な公費負担である雨水処理負担金等も含み");
     expect(fieldDefinitionsSource).toContain("使用料で賄うべき汚水処理費とは範囲が異なります");

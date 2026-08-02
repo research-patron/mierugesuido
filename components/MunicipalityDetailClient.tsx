@@ -250,7 +250,7 @@ export function MunicipalityDetailClient({ municipalityCode }: { municipalityCod
               ? "料金表データ未取得"
               : latest.householdFee20m3Yen === 0
                 ? "原表の0は無料・対象外・未取得を判別できないため原資料要確認"
-              : `税込・使用料単価 ${formatYenPerM3(diagnosis?.feeUnitPriceYenPerM3)}`}
+              : "税込・料金表上の標準額（使用料単価×20ではありません）"}
             tone="blue"
           />
           <DetailKpiCard

@@ -68,6 +68,15 @@
 - After pushing, confirm that the remote SHA equals the intended local commit and report the repository, branch, commit link, validation results, and anything intentionally excluded.
 - Never use force-push or rewrite published history without describing the exact impact and receiving separate explicit approval.
 
+## Cloudflare Pages Production Publication
+
+- This repository's Cloudflare Pages production branch is `main`. A push to any other branch creates a preview deployment only and does not update `https://mierugesuido.pages.dev/`.
+- Before requesting publication approval, state explicitly whether the proposed target is a preview branch or the production `main` branch. If the user expects the public Pages URL to change and has not requested preview-only publication, do not propose a feature-branch push as the completed release path.
+- If only a non-`main` branch is approved and pushed, report the Cloudflare branch-preview URL and state plainly that production remains unchanged. Never describe that state as a completed production deployment.
+- Updating production requires separate, explicit approval for the exact commit range and for `main` as the target. Use a normal fast-forward or reviewed merge; do not force-push, rewrite history, or change the Cloudflare production-branch setting as a shortcut.
+- After pushing `main`, wait for the Cloudflare Pages check associated with the new `main` SHA to complete successfully. Then verify that the production URL serves an expected marker from that commit and that the deployed result is not merely a preview URL before reporting completion.
+- If the intended publication destination is ambiguous, stop after development and ask the user to choose between preview publication and production publication.
+
 ## Information That Must Never Be Committed or Pushed
 
 - Never commit actual API keys, access tokens, refresh tokens, passwords, private keys, certificates, signing material, cookies, session data, OAuth credentials, webhook secrets, database credentials, GitHub credentials, Cloudflare credentials, or secret-manager exports.

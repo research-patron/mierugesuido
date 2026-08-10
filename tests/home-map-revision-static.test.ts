@@ -32,7 +32,7 @@ describe("R6 national map scopes and R5-R6 fee revision evidence", () => {
     expect(averages.filter((value: number) => value < 80).length).toBeLessThan(20);
   });
 
-  it("publishes the fixed Table 33 evidence stages without treating the 20m³ difference as the revision test", () => {
+  it("publishes only businesses whose official effective date changed", () => {
     const comparison = revisions.yearbookFeeComparison;
     expect(comparison.counts).toEqual({
       common: { businessCount: 1926, municipalityCount: 1450 },
@@ -43,11 +43,16 @@ describe("R6 national map scopes and R5-R6 fee revision evidence", () => {
       candidate: { businessCount: 38, municipalityCount: 33 },
       amountOnly: { businessCount: 179, municipalityCount: 161 }
     });
-    expect(comparison.items).toHaveLength(317);
-    expect(home.yearbookFeeChangeSummary.counts.supported).toEqual(comparison.counts.supported);
-    expect(comparison.items.filter((item: any) => item.status === "reported_revision")).toHaveLength(100);
-    expect(comparison.items.filter((item: any) => item.status === "revision_candidate")).toHaveLength(38);
-    expect(comparison.items.filter((item: any) => item.status === "amount_difference_only")).toHaveLength(179);
+    expect(comparison.items).toHaveLength(138);
+    expect(comparison.changedBusinessCount).toBe(138);
+    expect(comparison.changedMunicipalityCount).toBe(109);
+    expect(home.yearbookFeeChangeSummary.changedBusinessCount).toBe(138);
+    expect(home.yearbookFeeChangeSummary.changedMunicipalityCount).toBe(109);
+    expect(comparison.items.every((item: any) => (
+      item.currentUsageFeeEffectiveDate.changed === true
+      && item.currentUsageFeeEffectiveDate.r5.iso !== item.currentUsageFeeEffectiveDate.r6.iso
+      && !("status" in item)
+    ))).toBe(true);
     expect(comparison.items.every((item: any) => !("feeUnitPrice" in item))).toBe(true);
     expect(comparison.sourceLabel).toContain("第33表");
     expect(comparison.sourcePageUrls.r5).toContain("e-stat.go.jp/stat-search/files");
@@ -57,7 +62,6 @@ describe("R6 national map scopes and R5-R6 fee revision evidence", () => {
       item.operatorName === "千葉市" && item.categoryCode === "17/1"
     ));
     expect(chiba).toMatchObject({
-      status: "reported_revision",
       currentUsageFeeEffectiveDate: {
         r5: { iso: "2014-04-01", raw: "4260401" },
         r6: { iso: "2024-04-01", raw: "5060401" }
@@ -72,7 +76,6 @@ describe("R6 national map scopes and R5-R6 fee revision evidence", () => {
       item.operatorName === "知内町" && item.categoryCode === "17/4"
     ));
     expect(shiriuchi).toMatchObject({
-      status: "reported_revision",
       officialRevisionRate: { household20m3Percent: 26, averagePercent: 26 },
       householdFee20m3: { r5: 2685, r6: 3300, delta: 615 }
     });

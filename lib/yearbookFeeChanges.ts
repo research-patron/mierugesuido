@@ -3,11 +3,6 @@ import { displayBusinessName } from "@/lib/businessDisplay";
 export const YEARBOOK_R5_PAGE_URL = "https://www.e-stat.go.jp/stat-search/files?cycle=7&layout=datalist&month=0&page=1&result_back=1&tclass1=000001125336&tclass2=000001125337&tclass3val=0&toukei=00200251&tstat=000001125335&year=20240";
 export const YEARBOOK_R6_PAGE_URL = "https://www.e-stat.go.jp/stat-search/files?cycle=7&layout=datalist&month=0&page=1&result_back=1&tclass1=000001125336&tclass2=000001125337&tclass3val=0&toukei=00200251&tstat=000001125335&year=20250";
 
-export type YearbookFeeChangeStatus =
-  | "reported_revision"
-  | "revision_candidate"
-  | "amount_difference_only";
-
 export type YearbookFeeChangeDirection = "increase" | "decrease" | "unchanged";
 
 export type TariffSystemSignalValue = string | number | boolean | null;
@@ -75,7 +70,6 @@ export type YearbookFeeChange = {
   businessKey: string;
   businessName: string;
   categoryCode: string;
-  status: YearbookFeeChangeStatus;
   direction: YearbookFeeChangeDirection;
   accountingType: string;
   accountingTypes: { r5: string; r6: string };
@@ -166,8 +160,10 @@ export function buildYearbookFeeComparison(snapshots: YearbookFeeSnapshot[]): Ye
     r6.surveyYear
   ));
 
-  const items = comparablePairs.flatMap((pair): YearbookFeeChange[] => {
-    const dateChanged = hasEffectiveDateChange(pair);
+  // The public revision list is defined only by an official effective-date
+  // change. Tariff amounts and support fields remain evidence on each row, but
+  // they never add an unchanged-date business to the list.
+  const items = dateChangedPairs.map((pair): YearbookFeeChange => {
     const tariffChanges = compareTariffs(pair.r5, pair.r6);
     const tariffSystemChanges = compareTariffSystemSignals(pair.r5.tariffSystemSignals, pair.r6.tariffSystemSignals);
     const previousDateMatches = validIsoDate(pair.r6.previousUsageFeeRevisionDate.iso) != null
@@ -180,20 +176,8 @@ export function buildYearbookFeeComparison(snapshots: YearbookFeeSnapshot[]): Ye
       tariffChanged: tariffChanges.length > 0,
       tariffSystemChanged: tariffSystemChanges.length > 0
     });
-    const hasAmountOrSystemDifference = tariffChanges.length > 0 || tariffSystemChanges.length > 0;
-
-    let status: YearbookFeeChangeStatus | null = null;
-    if (dateChanged) {
-      status = currentFiscalYear && supportReasons.length > 0
-        ? "reported_revision"
-        : "revision_candidate";
-    } else if (hasAmountOrSystemDifference) {
-      status = "amount_difference_only";
-    }
-    if (!status) return [];
-
     const householdFee20m3 = compareHouseholdFee(pair.r5.householdFee20m3Yen, pair.r6.householdFee20m3Yen);
-    return [{
+    return {
       id: snapshotIdentity(pair.r6),
       municipalityCode: pair.r6.municipalityCode,
       prefectureName: pair.r6.prefectureName,
@@ -201,14 +185,13 @@ export function buildYearbookFeeComparison(snapshots: YearbookFeeSnapshot[]): Ye
       businessKey: pair.r6.businessKey,
       businessName: displayBusinessName(pair.r6),
       categoryCode: pair.r6.categoryCode,
-      status,
       direction: householdFeeDirection(householdFee20m3.delta),
       accountingType: pair.r6.accountingType,
       accountingTypes: { r5: pair.r5.accountingType, r6: pair.r6.accountingType },
       currentUsageFeeEffectiveDate: {
         r5: { iso: pair.r5.currentUsageFeeEffectiveDate.iso!, raw: pair.r5.currentUsageFeeEffectiveDate.raw },
         r6: { iso: pair.r6.currentUsageFeeEffectiveDate.iso!, raw: pair.r6.currentUsageFeeEffectiveDate.raw },
-        changed: dateChanged,
+        changed: true,
         r6WithinCurrentFiscalYear: currentFiscalYear
       },
       previousUsageFeeRevisionDate: {
@@ -225,7 +208,7 @@ export function buildYearbookFeeComparison(snapshots: YearbookFeeSnapshot[]): Ye
       tariffChanges,
       tariffSystemChanges,
       supportReasons
-    }];
+    };
   });
 
   items.sort(compareItems);
@@ -248,10 +231,6 @@ export function buildYearbookFeeComparison(snapshots: YearbookFeeSnapshot[]): Ye
     candidate: countPairs(candidatePairs),
     amountOnly: countPairs(amountOnlyPairs)
   };
-  const changedMunicipalities = new Set(items.map((item) => (
-    `${item.prefectureName}:${item.municipalityCode ?? item.operatorName}`
-  )));
-
   return {
     previousSurveyYear: 2023,
     currentSurveyYear: 2024,
@@ -260,8 +239,8 @@ export function buildYearbookFeeComparison(snapshots: YearbookFeeSnapshot[]): Ye
     counts,
     comparedBusinessCount: counts.comparable.businessCount,
     comparedMunicipalityCount: counts.comparable.municipalityCount,
-    changedBusinessCount: items.length,
-    changedMunicipalityCount: changedMunicipalities.size,
+    changedBusinessCount: counts.dateChanged.businessCount,
+    changedMunicipalityCount: counts.dateChanged.municipalityCount,
     increaseCount: items.filter((item) => item.direction === "increase").length,
     decreaseCount: items.filter((item) => item.direction === "decrease").length,
     items
@@ -375,13 +354,7 @@ function countPairs(pairs: SnapshotPair[]): YearbookFeeComparisonCount {
 }
 
 function compareItems(a: YearbookFeeChange, b: YearbookFeeChange) {
-  const statusOrder: Record<YearbookFeeChangeStatus, number> = {
-    reported_revision: 0,
-    revision_candidate: 1,
-    amount_difference_only: 2
-  };
-  return statusOrder[a.status] - statusOrder[b.status]
-    || a.prefectureName.localeCompare(b.prefectureName, "ja")
+  return a.prefectureName.localeCompare(b.prefectureName, "ja")
     || a.operatorName.localeCompare(b.operatorName, "ja")
     || a.businessName.localeCompare(b.businessName, "ja");
 }

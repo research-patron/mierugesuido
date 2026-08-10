@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Bell, CalendarDays, PieChart, Users } from "lucide-react";
 import { JapanMapSelector } from "@/components/JapanMapSelector";
 import { StatCard } from "@/components/StatCard";
@@ -27,7 +28,20 @@ export default async function HomePage() {
             <StatCard icon={Users} label="公共下水道の収録自治体数" value={data.municipalityCount.toLocaleString("ja-JP")} unit="自治体" sub={latestFiscalWesternYear ? `${latestFiscalWesternYear}年度決算を収録` : `${latestFiscal}決算を収録`} tone="teal" />
             <StatCard icon={CalendarDays} label="最新年度" value={latestFiscalWesternYear ? String(latestFiscalWesternYear) : latestFiscalLong} unit={latestFiscalWesternYear ? "年度" : undefined} sub="総務省決算状況調査" tone="blue" />
             <StatCard icon={PieChart} label="公共下水道：100%未満の割合" value={formatPercent(data.below100Rate).replace("%", "")} unit={data.below100Rate == null ? undefined : "%"} sub={data.averageExpenseRecoveryRate == null ? "平均値なし" : `自治体値の単純集計・平均 ${formatPercent(data.averageExpenseRecoveryRate)}`} tone="violet" />
-            <StatCard icon={Bell} label="R6 当年度改定の記載" value={(yearbookFeeChangeSummary?.counts?.supported?.municipalityCount ?? 0).toLocaleString("ja-JP")} unit="団体" sub="第33表の施行日と関連項目を照合" tone="amber" />
+            <Link
+              href="/revisions"
+              className="home-revision-kpi-link"
+              aria-label={`施行年月日の変更一覧を見る（R5からR6で現行使用料施行年月日が変わった${yearbookFeeChangeSummary?.changedMunicipalityCount ?? 0}団体）`}
+            >
+              <StatCard
+                icon={Bell}
+                label="施行年月日が変わった団体"
+                value={(yearbookFeeChangeSummary?.changedMunicipalityCount ?? 0).toLocaleString("ja-JP")}
+                unit="団体"
+                sub={`R5→R6の変更一覧・${(yearbookFeeChangeSummary?.changedBusinessCount ?? 0).toLocaleString("ja-JP")}事業 →`}
+                tone="amber"
+              />
+            </Link>
           </div>
         </div>
       </section>

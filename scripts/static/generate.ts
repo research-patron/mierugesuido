@@ -70,6 +70,12 @@ async function main() {
     loadYearbookFeeSnapshots({ rootDir: revisionSourceRoot, surveyYear: 2024 })
   ])).flat();
   const yearbookFeeComparison = buildYearbookFeeComparison(yearbookFeeSnapshots);
+  if (yearbookFeeComparison.items.some((item) => (
+    !item.currentUsageFeeEffectiveDate.changed
+    || item.currentUsageFeeEffectiveDate.r5.iso === item.currentUsageFeeEffectiveDate.r6.iso
+  ))) {
+    throw new Error("料金改定一覧に現行使用料施行年月日が変わっていない事業が含まれています");
+  }
   const { items: _yearbookFeeChangeItems, ...yearbookFeeChangeSummary } = yearbookFeeComparison;
   const [prefectureNames, municipalityList, searchOverview] = await Promise.all([
     getPrefectures(),

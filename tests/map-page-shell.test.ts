@@ -8,7 +8,7 @@ const prefecturePageSource = readFileSync(path.join(root, "app/map/[prefectureCo
 
 describe("map page shell guardrails", () => {
   it("keeps the national page aligned with the home KPI language and year display", () => {
-    for (const label of ["公共下水道の収録自治体数", "最新年度", "公共下水道：100%未満の割合", "R6 当年度改定の記載"]) {
+    for (const label of ["公共下水道の収録自治体数", "最新年度", "公共下水道：100%未満の割合", "R5→R6 施行年月日が変わった団体"]) {
       expect(nationalPageSource).toContain(`label="${label}"`);
     }
 
@@ -18,6 +18,8 @@ describe("map page shell guardrails", () => {
     expect(nationalPageSource).toContain('className="map-page-kpi-grid');
     expect(nationalPageSource).not.toContain('label="対象自治体数"');
     expect(nationalPageSource).not.toContain('label="最新決算"');
+    expect(nationalPageSource).toContain("counts?.dateChanged?.municipalityCount");
+    expect(nationalPageSource).not.toContain("counts?.supported?.municipalityCount");
   });
 
   it("derives prefecture KPIs only from the municipalities shown on the page", () => {
@@ -28,7 +30,7 @@ describe("map page shell guardrails", () => {
     expect(prefecturePageSource).toMatch(/recoveryRates\.filter\(\(value(?:: number)?\) => value < 100\)\.length/);
     expect(prefecturePageSource).toMatch(/targetMunicipalities\.filter\(\(item(?:: any)?\) => item\.hasRevisionEvent\)\.length/);
 
-    for (const label of ["対象市区町村数", "平均経費回収率", "経費回収率100%未満の割合", "公式改定情報あり"]) {
+    for (const label of ["対象自治体数", "平均経費回収率", "経費回収率100%未満の割合", "公式改定情報あり"]) {
       expect(prefecturePageSource).toContain(`label="${label}"`);
     }
   });

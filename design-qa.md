@@ -1549,3 +1549,88 @@ This gate is the current acceptance gate for R5-R6 sewer-fee revision detection 
 - Intentional subtraction: the household 20m³ difference is no longer the primary KPI or the definition of a revision; the increment/decrement filter and the misleading unit-price comparison were removed. The household amount and all supporting Table 33 fields remain available in a progressive evidence view.
 
 final result: passed
+
+## Final superseding strict effective-date and municipality-geometry gate — 2026-08-02
+
+This gate supersedes the preceding Table 33 three-state public-list description and every earlier municipality-map geometry, label, legend, and responsive gate regardless of document order.
+
+### Strict R5-R6 effective-date list
+
+- The public list now contains only records whose official Table 33 `現行使用料施行年月日` differs between R5 and R6: 138 businesses across 109 municipalities.
+- Generated-data audit found 0 unchanged-date rows and 0 public `status` fields. The 179 amount-only differences remain internal comparison counts and are not published as revision-list rows.
+- Household 20m³ amounts, official revision rates, business tariffs, and tariff-system fields remain secondary evidence inside each date-changed row; none is used as the inclusion condition.
+- The page now has exactly two summary concepts: affected municipalities and affected businesses. The former four-state summary and public status filter were intentionally removed because they mixed official date changes with amount-only and verification states.
+- The prefecture control is a searchable combobox. At 390 × 844, typing `新潟`, ArrowDown, and Enter selected `新潟県`; submission produced the four matching businesses, retained 379px content/scroll widths, and introduced no page-level horizontal overflow.
+- The home KPI is a full-card link that exposes 109 municipalities and 138 businesses. At 1491 × 1055 the four KPI cards remain equal in width and height; at 390 × 844 the two-column cards remain non-overlapping and the revision destination is explicit in text and accessible naming.
+
+### Municipality identity and geometry preservation
+
+- The N03 generator now groups each municipality into one semantic feature. Designated-city wards use their correct parent municipality codes, so Yokohama, Kawasaki, Sagamihara, Osaka, and the other designated cities no longer collide or render as separate ward records.
+- Exterior-edge dissolve is limited to designated cities. Ordinary coastal municipalities retain their official rings, preventing the former loss of the principal geometry in Ofunato, Oda, Miyako, Kamaishi, Minamisanriku, Nobeoka, Minamiizu, and Minamiise.
+- Every designated city passed the dissolve preservation gate. Unsafe designated-city dissolve results now stop static generation instead of restoring raw ward rings, so ward seams cannot silently return. The gate checks disconnected components, geographic bounds, and net signed area; the signed-area check preserves Hiroshima City's legitimate Fuchu Town enclave hole without treating it as added land.
+- Simplification is adaptive per ring and falls back only for that ring when its bounds or area would collapse. SVG path generation retains every resulting official subpath at three-decimal viewBox precision.
+- Full generated-data audit: 47 prefectures, 1,741 municipality features, 21 neutral geography features, 0 empty municipality paths, 0 duplicate municipality codes, and 0 duplicate municipality names within a prefecture.
+- GIS delivery is split into a 395,807-byte national file and 47 prefecture files. The largest prefecture file is 1,322,132 bytes, so opening a prefecture map no longer downloads the 13.3MB aggregate municipality geometry.
+- Regression locks include 19 dissolved New Niigata City subpaths, 25 Yokohama City subpaths, 32 Hiroshima City exterior/enclave subpaths, and preserved disconnected island parts for Sado and the current/neutral Tomari geometries.
+
+### Map presentation and interaction
+
+- The user-facing title is `市町村別マップ`. New Niigata at 1491 × 1055 displays all 30 municipality names directly. At 390 × 844, 19 collision-free names remain on the map and the remaining 11 are shown in the always-visible wrapped fallback list, for a total of 30.
+- The visual treatment uses a quiet solid blue-gray surface, restrained fills, consistent thin boundaries, lighter labels, and a compact light information card. Internal ward seams are absent while official disconnected parts remain in the municipality path.
+- The six-item legend is readable as 3 × 2 on desktop and 2 × 3 on mobile, with no ellipsis, clipped threshold text, or horizontal overflow.
+- Pointer navigation, one roving keyboard tab stop, Arrow-key movement, Escape dismissal, zoom, full-area reset, and municipality-name visibility were exercised. Keyboard navigation exposed the same municipality information card; zoom changed and reset the SVG viewBox; hiding labels also hid the fallback list and restoring labels restored both.
+
+### Combined visual evidence
+
+- Accepted captures are kept in the ignored QA directory `artifacts/design-qa/revision-municipality-map-2026-08-02/`:
+  - `01-home-desktop-1491x1055.png`
+  - `02-home-mobile-390x844.png`
+  - `03-revisions-desktop-1491x1055.png`
+  - `04-revisions-mobile-390x844.png`
+  - `05-map-desktop-1491x1055.png`
+  - `06-map-mobile-390x844.png`
+  - `07-map-mobile-label-fallback.png`
+  - `08-revisions-before-after-comparison.png`
+  - `09-map-reference-final-comparison.png`
+- The revision before/final pair and the supplied map-style reference/final implementation were inspected together in the two comparison images. The accepted result has a clear date-first reading order, two summary values, restrained borders, legible labels, aligned legends, and no emphasized one-sided card edge.
+
+### Verification and protected scope
+
+- `pnpm static:data`: passed against 86 official workbooks; 1,318,745 source rows, 1,586 municipality detail payloads, and 312 R5/R6 comparison pairs.
+- `pnpm gis:build`: passed for all 47 prefectures and 1,762 total municipality/geography features with the preservation assertions enabled.
+- `pnpm lint`: passed.
+- `pnpm test`: 33/33 files and 210/210 tests passed.
+- `pnpm build`: passed; 1,649 static pages generated.
+- `git diff --check`: passed.
+- No database, Prisma schema, migration, official workbook, accounting value, ranking formula, or municipality financial allocation changed.
+- Intentional subtraction: the public amount-only rows, three-state status presentation, status filter, decorative map grid/radial treatment, dark oversized map tooltip, silently discarded labels, and ward-level interactive seams were removed. Official supporting values and all existing navigation, business switching, map links, downloads, zoom, reset, and label controls remain available.
+
+final result: passed
+
+## Final superseding pre-publication interaction gate — 2026-08-10
+
+This gate supersedes the preceding test-count and municipality-lookup evidence. It was added after the staged-diff review found and blocked two interaction defects before commit.
+
+### Municipality-code reconciliation
+
+- Static comparison records retain their exact six-digit municipality codes for detail routes and are additionally indexed by the first five digits used by the N03 municipality GIS.
+- Fixed regressions cover all six known orthography differences: 鰺ヶ沢町／鰺ケ沢町, 六ヶ所村／六ケ所村, 七ヶ宿町／七ケ宿町, 七ヶ浜町／七ケ浜町, 駒ヶ根市／駒ケ根市, and 檮原町／梼原町.
+- A 47-prefecture invariant verifies every available six-digit static municipality record against the corresponding five-digit GIS feature code.
+- Browser keyboard navigation opened `02321` at the exact six-digit detail route `023213` and `39405` at `394050`. All six regressions exposed real recovery-rate data and a diagnosis instead of `データなし・対象外`.
+
+### Empty-combobox keyboard and ARIA behavior
+
+- A prefecture query with no matches keeps `activeIndex` at `-1`, exposes zero options inside the prefecture listbox, omits `aria-activedescendant`, and does not call the selection handler with an undefined value.
+- Pressing Enter in that state produced no application error. Replacing the query with `新潟` restored one selectable option and Enter selected `新潟県`; clearing restored all 38 prefectures represented in the strict date-change dataset.
+- ArrowUp, ArrowDown, Enter, Escape, clear, reopen, and out-of-range index paths all retain a valid active option or no active option.
+
+### Verification and publication safety
+
+- `pnpm lint`: passed.
+- `pnpm test`: 33/33 files and 213/213 tests passed.
+- `pnpm build`: passed; 1,649 static pages generated.
+- Browser console warnings/errors across the corrected interaction checks: 0.
+- `git diff --check`: passed after the fixes.
+- Commit and push remained stopped after the first publication approval because the reviewed diff changed; publication requires a renewed approval for the corrected scope.
+
+final result: passed

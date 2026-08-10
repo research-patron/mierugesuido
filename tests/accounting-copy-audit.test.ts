@@ -48,7 +48,8 @@ describe("public-enterprise accounting copy audit", () => {
     expect(dataSourcesSource).toContain("現行使用料施行年月日");
     expect(dataSourcesSource).toContain("前回使用料改定年月日");
     expect(dataSourcesSource).toContain("実質使用料改定率");
-    expect(dataSourcesSource).toContain("20m³月額の差だけでは料金改定と断定しません");
+    expect(dataSourcesSource).toContain("『現行使用料施行年月日』が年度間で変わった事業だけを掲載します");
+    expect(dataSourcesSource).toContain("20m³月額などの金額差だけでは一覧に含めません");
   });
 
   it("defines operating income-statement fields without conflating them with fee recovery", () => {

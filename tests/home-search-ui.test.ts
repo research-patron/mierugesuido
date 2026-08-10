@@ -108,9 +108,12 @@ describe("UI fidelity rebuild v2 guardrails", () => {
     expect(homeSource).toContain("home-kpi-cards");
     expect(homeSource).toContain("収録自治体数");
     expect(homeSource).toContain("公共下水道：100%未満の割合");
-    expect(homeSource).toContain("R6 当年度改定の記載");
-    expect(homeSource).toContain("counts?.supported?.municipalityCount");
-    expect(homeSource).toContain("第33表の施行日と関連項目を照合");
+    expect(homeSource).toContain('label="施行年月日が変わった団体"');
+    expect(homeSource).toContain("R5→R6の変更一覧");
+    expect(homeSource).toContain("changedMunicipalityCount");
+    expect(homeSource).toContain("changedBusinessCount");
+    expect(homeSource).toContain("施行年月日の変更一覧を見る");
+    expect(homeSource).toContain('href="/revisions"');
     expect(mapComponentSource).toContain("<RankingPair items={municipalities} />");
     expect(mapComponentSource).toContain("<HowToCards />");
     expect(mapComponentSource).toContain('href="/municipalities" className="prefecture-all-link"');

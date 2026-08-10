@@ -33,6 +33,7 @@ import styles from "./PrefectureMapExplorer.module.css";
 type GisFeature = {
   code: string;
   name: string;
+  kind?: "municipality" | "geography";
   prefectureCode?: string;
   prefectureName?: string;
   path: string;
@@ -47,11 +48,17 @@ type GisFeature = {
 
 type GisData = {
   viewBox: { width: number; height: number };
-  municipalitiesByPrefecture: Record<string, GisFeature[]>;
+  prefectureCode: string;
+  features: GisFeature[];
 };
 
 type MapPan = { x: number; y: number };
 type SurfaceSize = { width: number; height: number };
+type LabelPlacement = {
+  point: [number, number];
+  anchor: "middle" | "start" | "end";
+  callout?: { from: [number, number]; to: [number, number] };
+};
 
 type HoverState = {
   href: string;
@@ -65,16 +72,18 @@ type HoverState = {
 };
 
 const statusLegend = [
-  { key: "適正水準", label: "100%以上", note: "", color: "#3db5a4" },
-  { key: "やや不足", label: "90%以上100%未満", note: "", color: "#a9d66f" },
-  { key: "要注意", label: "80%以上90%未満", note: "", color: "#f5c65e" },
-  { key: "改定圧力高", label: "80%未満", note: "単価150円/m³以上・不明", color: "#f39a43" },
-  { key: "重点監視", label: "80%未満", note: "単価150円/m³未満", color: "#e95b5d" },
-  { key: "データなし・対象外", label: "データなし・対象外", note: "", color: "#d8e0e6" }
+  { key: "適正水準", label: "100%以上", note: "", color: "#55b9ad" },
+  { key: "やや不足", label: "90%以上100%未満", note: "", color: "#a8cd76" },
+  { key: "要注意", label: "80%以上90%未満", note: "", color: "#edc66c" },
+  { key: "改定圧力高", label: "80%未満", note: "単価150円/m³以上・不明", color: "#e9a057" },
+  { key: "重点監視", label: "80%未満", note: "単価150円/m³未満", color: "#dc7371" },
+  { key: "データなし・対象外", label: "データなし・対象外", note: "", color: "#dce3e8" }
 ];
 
 const statusColors = Object.fromEntries(statusLegend.map((item) => [item.key, item.color])) as Record<string, string>;
 const zoomSteps = [1, 1.35, 1.75, 2.25];
+const nonMunicipalityGeographyCodes = new Set(["01695", "01696", "01697", "01698", "01699", "01700"]);
+const nonMunicipalityGeographyNamePatterns = ["所属未定地", "境界地先の土地", "境界部地先の埋立地"];
 
 export function PrefectureMapExplorer({
   prefectureCode,
@@ -104,7 +113,9 @@ export function PrefectureMapExplorer({
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/gis/mlit-n03-simplified.json")
+    setData(null);
+    setError(false);
+    fetch(`/gis/municipalities/${prefectureCode}.json`)
       .then((response) => {
         if (!response.ok) throw new Error("GIS data unavailable");
         return response.json() as Promise<GisData>;
@@ -118,7 +129,7 @@ export function PrefectureMapExplorer({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [prefectureCode]);
 
   useEffect(() => {
     const surface = surfaceRef.current;
@@ -139,13 +150,14 @@ export function PrefectureMapExplorer({
 
   const summary = summaries.find((item) => item.prefectureName === prefectureName);
   const municipalityLookup = useMemo(
-    () => new Map(municipalities.map((item) => [item.municipalityName, item])),
+    () => buildMunicipalityLookup(municipalities),
     [municipalities]
   );
-  const features = data?.municipalitiesByPrefecture[prefectureCode] ?? [];
+  const features = data?.prefectureCode === prefectureCode ? data.features : [];
+  const municipalityFeatures = useMemo(() => features.filter(isMunicipalityFeature), [features]);
   const displayFeatureMap = useMemo(() => new Map(features.map((feature) => {
     const paths = municipalityDisplayPaths(feature);
-    return [feature.code, {
+    return [featureIdentity(feature), {
       paths,
       feature: paths.excludedPath
         ? { ...feature, path: paths.interactivePath, labelPoint: undefined, callout: undefined }
@@ -159,8 +171,8 @@ export function PrefectureMapExplorer({
   );
 
   useEffect(() => {
-    if (!focusedFeatureCode && features[0]) setFocusedFeatureCode(features[0].code);
-  }, [features, focusedFeatureCode]);
+    if (!focusedFeatureCode && municipalityFeatures[0]) setFocusedFeatureCode(municipalityFeatures[0].code);
+  }, [focusedFeatureCode, municipalityFeatures]);
 
   const rows = useMemo(
     () => [...municipalities].sort((a, b) => nullsLast(a.expenseRecoveryRate, b.expenseRecoveryRate, "desc")),
@@ -183,7 +195,7 @@ export function PrefectureMapExplorer({
 
   function openMunicipality(feature: GisFeature) {
     if (suppressClickRef.current) return;
-    const match = municipalityLookup.get(feature.name);
+    const match = lookupMunicipality(municipalityLookup, feature);
     if (match?.municipalityCode) {
       router.push(municipalityHref(match));
       return;
@@ -251,7 +263,7 @@ export function PrefectureMapExplorer({
     const surface = surfaceRef.current;
     if (!surface) return;
     const rect = surface.getBoundingClientRect();
-    const width = 252;
+    const width = 232;
     const height = 154;
     const margin = 12;
     const offset = 16;
@@ -261,10 +273,45 @@ export function PrefectureMapExplorer({
     const preferredX = openRight ? cursorX + offset : cursorX - offset - width;
     const x = clampNumber(preferredX, margin, Math.max(rect.width - width - margin, margin));
     const y = clampNumber(cursorY - height / 2, margin, Math.max(rect.height - height - margin, margin));
+    setHover(createHoverState({
+      feature,
+      match,
+      prefectureName,
+      x,
+      y
+    }));
+  }
+
+  function showKeyboardHover(feature: GisFeature, match?: MapMunicipality) {
+    const surface = surfaceRef.current;
+    if (!surface) return;
+    const rect = surface.getBoundingClientRect();
+    setHover(createHoverState({
+      feature,
+      match,
+      prefectureName,
+      x: Math.max(rect.width - 232 - 12, 12),
+      y: 12
+    }));
+  }
+
+  function createHoverState({
+    feature,
+    match,
+    prefectureName: hoverPrefectureName,
+    x,
+    y
+  }: {
+    feature: GisFeature;
+    match?: MapMunicipality;
+    prefectureName: string;
+    x: number;
+    y: number;
+  }): HoverState {
     const href = match?.municipalityCode
       ? municipalityHref(match)
-      : `/municipalities?prefecture=${encodeURIComponent(prefectureName)}&q=${encodeURIComponent(feature.name)}`;
-    setHover({
+      : `/municipalities?prefecture=${encodeURIComponent(hoverPrefectureName)}&q=${encodeURIComponent(feature.name)}`;
+    return {
       href,
       title: feature.name,
       label: displayFeeRecoveryBandLabel(match?.feeAdequacyLabel ?? labelFromMetrics(
@@ -276,10 +323,15 @@ export function PrefectureMapExplorer({
       revision: match?.hasRevisionEvent ? "登録あり" : "未登録",
       x,
       y
-    });
+    };
   }
 
   function handleRegionKey(event: KeyboardEvent<SVGGElement>, feature: GisFeature) {
+    if (event.key === "Escape") {
+      setHover(null);
+      setSelectedFeatureCode(null);
+      return;
+    }
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
       openMunicipality(feature);
@@ -293,7 +345,15 @@ export function PrefectureMapExplorer({
     event.preventDefault();
     const currentIndex = regionNodes.indexOf(event.currentTarget);
     const direction = event.key === "ArrowRight" || event.key === "ArrowDown" ? 1 : -1;
-    regionNodes[(currentIndex + direction + regionNodes.length) % regionNodes.length]?.focus();
+    const nextNode = regionNodes[(currentIndex + direction + regionNodes.length) % regionNodes.length];
+    nextNode?.focus();
+    const nextCode = nextNode?.dataset.municipalityRegion;
+    const nextFeature = municipalityFeatures.find((item) => item.code === nextCode);
+    if (nextFeature) {
+      setFocusedFeatureCode(nextFeature.code);
+      setSelectedFeatureCode(nextFeature.code);
+      showKeyboardHover(nextFeature, lookupMunicipality(municipalityLookup, nextFeature));
+    }
   }
 
   return (
@@ -301,8 +361,8 @@ export function PrefectureMapExplorer({
       <section className={styles.mapPanel} aria-labelledby="prefecture-map-title">
           <header className={styles.panelHeader}>
             <div>
-              <p className={styles.eyebrow}>{prefectureName} / {summary?.municipalityCount ?? municipalities.length}市区町村</p>
-              <h2 id="prefecture-map-title">市区町村別マップ</h2>
+              <p className={styles.eyebrow}>{prefectureName} / {summary?.municipalityCount ?? municipalities.length}市町村</p>
+              <h2 id="prefecture-map-title">市町村別マップ</h2>
             </div>
             <div className={styles.mapControls} role="group" aria-label="地図操作">
               <button type="button" onClick={() => changeZoom(-1)} disabled={zoomIndex === 0} aria-label="縮小">
@@ -362,20 +422,33 @@ export function PrefectureMapExplorer({
               <svg
                 viewBox={visibleViewBox ?? `0 0 ${data.viewBox.width} ${data.viewBox.height}`}
                 role="group"
-                aria-label={`${prefectureName}の市区町村別経費回収率区分マップ`}
+                aria-label={`${prefectureName}の市町村別経費回収率区分マップ`}
                 preserveAspectRatio="xMidYMid meet"
               >
-                {features.map((feature, index) => {
-                  const display = displayFeatureMap.get(feature.code) ?? {
+                {features.map((feature) => {
+                  const display = displayFeatureMap.get(featureIdentity(feature)) ?? {
                     feature,
                     paths: { interactivePath: feature.path, excludedPath: "" }
                   };
-                  const match = municipalityLookup.get(feature.name);
+                  const match = lookupMunicipality(municipalityLookup, feature);
                   const status = match?.feeAdequacyLabel ?? labelFromMetrics(
                     match?.expenseRecoveryRate,
                     match?.feeUnitPriceYenPerM3
                   );
                   const active = selectedFeatureCode === feature.code;
+                  if (!isMunicipalityFeature(feature)) {
+                    return (
+                      <path
+                        key={`geography-${feature.code}-${feature.name}`}
+                        className={styles.excludedShape}
+                        d={feature.path}
+                        fill={statusColors["データなし・対象外"]}
+                        fillRule="evenodd"
+                        vectorEffect="non-scaling-stroke"
+                        aria-hidden="true"
+                      />
+                    );
+                  }
                   return (
                     <g key={`${feature.code}-${feature.name}`}>
                       {display.paths.excludedPath ? (
@@ -393,13 +466,17 @@ export function PrefectureMapExplorer({
                         className={clsx(styles.mapRegion, active && styles.active)}
                         role="link"
                         aria-label={`${feature.name}、経費回収率 ${formatPercent(match?.expenseRecoveryRate)}、区分 ${displayFeeRecoveryBandLabel(status)}。詳細を開く`}
-                        tabIndex={focusedFeatureCode ? (focusedFeatureCode === feature.code ? 0 : -1) : index === 0 ? 0 : -1}
+                        tabIndex={focusedFeatureCode ? (focusedFeatureCode === feature.code ? 0 : -1) : municipalityFeatures[0]?.code === feature.code ? 0 : -1}
                         onClick={() => openMunicipality(feature)}
                         onKeyDown={(event) => handleRegionKey(event, feature)}
-                        onBlur={() => setSelectedFeatureCode(null)}
+                        onBlur={() => {
+                          setSelectedFeatureCode(null);
+                          setHover(null);
+                        }}
                         onFocus={() => {
                           setFocusedFeatureCode(feature.code);
                           setSelectedFeatureCode(feature.code);
+                          showKeyboardHover(feature, match);
                         }}
                         onMouseEnter={(event) => {
                           setSelectedFeatureCode(feature.code);
@@ -424,17 +501,19 @@ export function PrefectureMapExplorer({
                   className={styles.mapLabelLayer}
                   data-map-label-layer="true"
                   data-label-count={labelLayout.codes.size}
+                  data-fallback-label-count={labelLayout.fallbackFeatures.length}
                   aria-hidden="true"
                 >
                   {features.map((feature) => {
                     if (!labelLayout.codes.has(feature.code)) return null;
-                    const display = displayFeatureMap.get(feature.code)?.feature ?? feature;
+                    const display = displayFeatureMap.get(featureIdentity(feature))?.feature ?? feature;
                     return (
                       <FeatureLabel
                         key={`label-${feature.code}-${feature.name}`}
                         feature={display}
                         mapScale={labelLayout.scale}
                         compact={surfaceSize.width > 0 && surfaceSize.width < 700}
+                        placement={labelLayout.placements.get(feature.code)}
                       />
                     );
                   })}
@@ -443,8 +522,14 @@ export function PrefectureMapExplorer({
             ) : null}
             {hover ? <MapHoverCard hover={hover} /> : null}
           </div>
+          {labelsVisible && labelLayout.fallbackFeatures.length > 0 ? (
+            <div className={styles.labelFallback} aria-label={`地図上で重なりを避けた市町村名 ${labelLayout.fallbackFeatures.length}件`}>
+              <p><strong>地図上で重なりを避けた市町村名</strong><b>{labelLayout.fallbackFeatures.length}件</b><span>拡大すると地図上の表示数が増えます。</span></p>
+              <div>{labelLayout.fallbackFeatures.map((feature) => <span key={`fallback-${feature.code}`}>{feature.name}</span>)}</div>
+            </div>
+          ) : null}
           <p className={styles.mapNote}>
-            色は各市区町村の最新年度の表示事業による経費回収率です。複数事業がある場合は診断上の注意度が最も高い1事業を表示し、自治体全体の合算値ではありません。詳細画面で事業を切り替えられます。{zoom > 1 ? "地図をドラッグして移動できます。" : ""}
+            色は各市町村の最新年度の表示事業による経費回収率です。複数事業がある場合は診断上の注意度が最も高い1事業を表示し、自治体全体の合算値ではありません。詳細画面で事業を切り替えられます。{zoom > 1 ? "地図をドラッグして移動できます。" : ""}
           </p>
       </section>
 
@@ -462,7 +547,7 @@ export function PrefectureMapExplorer({
           <table>
             <thead>
               <tr>
-                <th scope="col">市区町村名（事業種別）</th>
+                <th scope="col">市町村名（事業種別）</th>
                 <th scope="col">年度</th>
                 <th scope="col">経費回収率</th>
                 <th scope="col">使用料単価</th>
@@ -492,22 +577,33 @@ export function PrefectureMapExplorer({
   );
 }
 
-function FeatureLabel({ feature, mapScale, compact }: { feature: GisFeature; mapScale: number; compact: boolean }) {
-  const point = feature.labelPoint ?? centerOfFeature(feature);
+function FeatureLabel({
+  feature,
+  mapScale,
+  compact,
+  placement
+}: {
+  feature: GisFeature;
+  mapScale: number;
+  compact: boolean;
+  placement?: LabelPlacement;
+}) {
+  const point = placement?.point ?? feature.labelPoint ?? centerOfFeature(feature);
   if (!point) return null;
+  const callout = placement?.callout ?? feature.callout;
   const lines = feature.labelLines?.length ? feature.labelLines : splitLabel(feature.name);
   const fontSize = labelTargetPixels(feature, compact) / Math.max(mapScale, 0.001);
   const lineHeight = fontSize * 1.1;
   const startY = point[1] - ((lines.length - 1) * lineHeight) / 2;
   return (
     <>
-      {feature.callout ? (
+      {callout ? (
         <line
           className={styles.mapLabelCallout}
-          x1={feature.callout.from[0]}
-          y1={feature.callout.from[1]}
-          x2={feature.callout.to[0]}
-          y2={feature.callout.to[1]}
+          x1={callout.from[0]}
+          y1={callout.from[1]}
+          x2={callout.to[0]}
+          y2={callout.to[1]}
           vectorEffect="non-scaling-stroke"
           aria-hidden="true"
         />
@@ -516,7 +612,7 @@ function FeatureLabel({ feature, mapScale, compact }: { feature: GisFeature; map
         className={styles.mapLabel}
         x={point[0]}
         y={startY}
-        textAnchor={feature.labelAnchor ?? "middle"}
+        textAnchor={placement?.anchor ?? feature.labelAnchor ?? "middle"}
         fontSize={fontSize}
         aria-hidden="true"
       >
@@ -585,6 +681,20 @@ function municipalityHref(item: MapMunicipality) {
   return `/municipalities?prefecture=${encodeURIComponent(item.prefectureName)}&q=${encodeURIComponent(item.municipalityName)}`;
 }
 
+export function buildMunicipalityLookup(municipalities: MapMunicipality[]) {
+  const lookup = new Map<string, MapMunicipality>();
+  for (const item of municipalities) {
+    if (item.municipalityCode) {
+      lookup.set(item.municipalityCode, item);
+      if (/^\d{6}$/.test(item.municipalityCode)) {
+        lookup.set(item.municipalityCode.slice(0, 5), item);
+      }
+    }
+    lookup.set(`name:${item.municipalityName}`, item);
+  }
+  return lookup;
+}
+
 function labelFromMetrics(
   recoveryRate: number | null | undefined,
   feeUnitPrice: number | null | undefined
@@ -627,9 +737,11 @@ function buildLabelLayout({
   activeFeatureCode: string | null;
 }) {
   const codes = new Set<string>();
+  const placements = new Map<string, LabelPlacement>();
+  const fallbackFeatures: GisFeature[] = [];
   const parsed = viewBox ? parseViewBox(viewBox) : null;
   if (!labelsVisible || !parsed || surfaceSize.width <= 0 || surfaceSize.height <= 0) {
-    return { codes, scale: 1 };
+    return { codes, placements, fallbackFeatures, scale: 1 };
   }
 
   const scale = Math.min(surfaceSize.width / parsed.width, surfaceSize.height / parsed.height);
@@ -638,14 +750,6 @@ function buildLabelLayout({
   const compact = surfaceSize.width < 700;
   const dense = features.length > 100;
   const collisionGap = compact ? 5 : dense ? 7 : 4;
-  const baseDensityBudget = Math.floor((surfaceSize.width * surfaceSize.height) / (compact ? 14500 : 15000));
-  const densityBudget = dense
-    ? clampNumber(
-        Math.round(baseDensityBudget * Math.pow(Math.max(zoom, 1), 1.25)),
-        compact ? 9 : 48,
-        compact ? 28 : 96
-      )
-    : features.length;
   const accepted: Array<{
     rect: { x: number; y: number; width: number; height: number };
     leader: { from: [number, number]; to: [number, number] } | null;
@@ -654,47 +758,89 @@ function buildLabelLayout({
     offsetX + (point[0] - parsed.x) * scale,
     offsetY + (point[1] - parsed.y) * scale
   ];
+  const toMap = (point: [number, number]): [number, number] => [
+    parsed.x + (point[0] - offsetX) / Math.max(scale, 0.001),
+    parsed.y + (point[1] - offsetY) / Math.max(scale, 0.001)
+  ];
+  const offsetCandidates = collisionAwareOffsets(compact, zoom);
   const candidates = features
-    .filter((feature) => !overviewLabelExcludedNames.has(feature.name))
-    .map((feature) => displayFeatureMap.get(feature.code)?.feature ?? feature)
+    .filter(isMunicipalityFeature)
+    .map((feature) => displayFeatureMap.get(featureIdentity(feature))?.feature ?? feature)
     .sort((a, b) => labelPriority(b, municipalityLookup, activeFeatureCode) - labelPriority(a, municipalityLookup, activeFeatureCode)
       || a.code.localeCompare(b.code, "ja"));
 
   for (const feature of candidates) {
-    if (codes.size >= densityBudget && feature.code !== activeFeatureCode) break;
-    const point = feature.labelPoint ?? centerOfFeature(feature);
-    if (!point) continue;
+    const preferredPoint = feature.labelPoint ?? centerOfFeature(feature);
+    const shapeAnchor = feature.callout?.from ?? centerOfFeature(feature) ?? preferredPoint;
+    if (!preferredPoint || !shapeAnchor) continue;
     const lines = feature.labelLines?.length ? feature.labelLines : splitLabel(feature.name);
     const targetPixels = labelTargetPixels(feature, compact);
     const longestLine = Math.max(...lines.map((line) => line.length), 1);
     const width = longestLine * targetPixels + 9;
     const height = lines.length * targetPixels * 1.1 + 7;
-    const screenX = offsetX + (point[0] - parsed.x) * scale;
-    const screenY = offsetY + (point[1] - parsed.y) * scale;
-    const anchor = feature.labelAnchor ?? "middle";
-    const x = anchor === "start" ? screenX - 3 : anchor === "end" ? screenX - width + 3 : screenX - width / 2;
-    const rect = { x, y: screenY - height / 2, width, height };
-    const withinSurface = rect.x >= 7
-      && rect.y >= 7
-      && rect.x + rect.width <= surfaceSize.width - 7
-      && rect.y + rect.height <= surfaceSize.height - 7;
-    const leader = feature.callout
-      ? { from: toScreen(feature.callout.from), to: toScreen(feature.callout.to) }
-      : null;
-    const overlapsLabel = accepted.some((placed) => screenRectsOverlap(placed.rect, rect, collisionGap));
-    const leaderHitsLabel = leader != null && accepted.some((placed) => lineIntersectsRect(leader.from, leader.to, placed.rect));
-    const labelHitsLeader = accepted.some((placed) => placed.leader && lineIntersectsRect(placed.leader.from, placed.leader.to, rect));
-    const leaderCrossesLeader = leader != null && accepted.some((placed) => placed.leader
-      && lineSegmentsIntersect(leader.from, leader.to, placed.leader.from, placed.leader.to));
-    if (!withinSurface || overlapsLabel || leaderHitsLabel || labelHitsLeader || leaderCrossesLeader) continue;
-    accepted.push({ rect, leader });
-    codes.add(feature.code);
+    const preferredScreen = toScreen(preferredPoint);
+    const shapeAnchorScreen = toScreen(shapeAnchor);
+    const shapeIsOnScreen = shapeAnchorScreen[0] >= 0
+      && shapeAnchorScreen[1] >= 0
+      && shapeAnchorScreen[0] <= surfaceSize.width
+      && shapeAnchorScreen[1] <= surfaceSize.height;
+    if (!shapeIsOnScreen) continue;
+
+    let placed = false;
+    for (const [deltaX, deltaY] of offsetCandidates) {
+      const labelPoint: [number, number] = [preferredScreen[0] + deltaX, preferredScreen[1] + deltaY];
+      const moved = deltaX !== 0 || deltaY !== 0;
+      const anchor = moved ? "middle" : feature.labelAnchor ?? "middle";
+      const x = anchor === "start" ? labelPoint[0] - 3 : anchor === "end" ? labelPoint[0] - width + 3 : labelPoint[0] - width / 2;
+      const rect = { x, y: labelPoint[1] - height / 2, width, height };
+      const withinSurface = rect.x >= 7
+        && rect.y >= 7
+        && rect.x + rect.width <= surfaceSize.width - 7
+        && rect.y + rect.height <= surfaceSize.height - 7;
+      if (!withinSurface) continue;
+
+      const needsLeader = moved || Boolean(feature.callout);
+      const leader = needsLeader ? { from: shapeAnchorScreen, to: labelPoint } : null;
+      const overlapsLabel = accepted.some((item) => screenRectsOverlap(item.rect, rect, collisionGap));
+      const leaderHitsLabel = leader != null && accepted.some((item) => lineIntersectsRect(leader.from, leader.to, item.rect));
+      const labelHitsLeader = accepted.some((item) => item.leader && lineIntersectsRect(item.leader.from, item.leader.to, rect));
+      const leaderCrossesLeader = leader != null && accepted.some((item) => item.leader
+        && lineSegmentsIntersect(leader.from, leader.to, item.leader.from, item.leader.to));
+      if (overlapsLabel || leaderHitsLabel || labelHitsLeader || leaderCrossesLeader) continue;
+
+      const mapPoint = toMap(labelPoint);
+      accepted.push({ rect, leader });
+      codes.add(feature.code);
+      placements.set(feature.code, {
+        point: mapPoint,
+        anchor,
+        ...(needsLeader ? { callout: { from: shapeAnchor, to: mapPoint } } : {})
+      });
+      placed = true;
+      break;
+    }
+
+    if (!placed) fallbackFeatures.push(feature);
   }
 
-  return { codes, scale };
+  return { codes, placements, fallbackFeatures, scale };
 }
 
-const overviewLabelExcludedNames = new Set(["色丹村", "留夜別村", "留別村", "紗那村", "蘂取村"]);
+function collisionAwareOffsets(compact: boolean, zoom: number): Array<[number, number]> {
+  const offsets: Array<[number, number]> = [[0, 0]];
+  const step = compact ? 13 : 15;
+  const maxRadius = compact
+    ? Math.round(46 * Math.max(zoom, 1))
+    : Math.round(82 * Math.max(zoom, 1));
+  for (let radius = step; radius <= maxRadius; radius += step) {
+    const slots = Math.max(8, Math.round((Math.PI * 2 * radius) / (compact ? 25 : 30)));
+    for (let index = 0; index < slots; index += 1) {
+      const angle = (Math.PI * 2 * index) / slots;
+      offsets.push([Math.cos(angle) * radius, Math.sin(angle) * radius]);
+    }
+  }
+  return offsets;
+}
 
 function labelPriority(
   feature: GisFeature,
@@ -702,10 +848,25 @@ function labelPriority(
   activeFeatureCode: string | null
 ) {
   const active = feature.code === activeFeatureCode ? 1_000_000_000 : 0;
-  const comparable = municipalityLookup.has(feature.name) ? 1_000_000 : 0;
+  const comparable = lookupMunicipality(municipalityLookup, feature) ? 1_000_000 : 0;
   const city = feature.name.endsWith("市") ? 180_000 : 0;
   const callout = feature.callout ? 120_000 : 0;
   return active + comparable + city + callout + featureArea(feature);
+}
+
+function lookupMunicipality(lookup: Map<string, MapMunicipality>, feature: GisFeature) {
+  return lookup.get(feature.code) ?? lookup.get(`name:${feature.name}`);
+}
+
+function isMunicipalityFeature(feature: GisFeature) {
+  if (feature.kind) return feature.kind === "municipality";
+  if (nonMunicipalityGeographyCodes.has(feature.code)) return false;
+  if (/^\d{2}8\d{2}$/.test(feature.code)) return false;
+  return !nonMunicipalityGeographyNamePatterns.some((pattern) => feature.name.includes(pattern));
+}
+
+function featureIdentity(feature: GisFeature) {
+  return `${feature.kind ?? "municipality"}:${feature.code}:${feature.name}`;
 }
 
 function screenRectsOverlap(

@@ -1,18 +1,20 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
   ArrowRight,
+  Building2,
   CalendarDays,
   CheckCircle2,
   ChevronDown,
-  CircleAlert,
-  CircleDollarSign,
+  ChevronsUpDown,
   ExternalLink,
   Info,
-  ListFilter
+  MapPinned,
+  Search,
+  X
 } from "lucide-react";
 import { StatCard } from "@/components/StatCard";
 import { accountingTypeLabel, displayBusinessName } from "@/lib/businessDisplay";
@@ -20,9 +22,7 @@ import { formatOfficialRevisionRate } from "@/lib/format";
 import { municipalityDetailHref } from "@/lib/municipalityLinks";
 import type {
   YearbookFeeChange,
-  YearbookFeeChangeStatus,
   YearbookFeeChangeSupportReason,
-  YearbookFeeComparisonCount,
   YearbookFeeComparisonDataset
 } from "@/lib/yearbookFeeChanges";
 
@@ -37,31 +37,6 @@ type FilterOption = { value: string; label: string };
 
 const emptySummary = { total: 0, averageRevisionRate: null, byStatus: [], byPeriod: [] };
 const revisionPageSize = 40;
-const emptyCount: YearbookFeeComparisonCount = { businessCount: 0, municipalityCount: 0 };
-const emptyCounts = {
-  common: emptyCount,
-  comparable: emptyCount,
-  dateChanged: emptyCount,
-  currentYear: emptyCount,
-  supported: emptyCount,
-  candidate: emptyCount,
-  amountOnly: emptyCount
-};
-
-const statusCopy: Record<YearbookFeeChangeStatus, { label: string; description: string }> = {
-  reported_revision: {
-    label: "当年度改定の記載",
-    description: "R6年度内の施行日更新に加え、第33表内の関連項目による裏付けを確認しました。"
-  },
-  revision_candidate: {
-    label: "要確認",
-    description: "施行日は変わっていますが、対象年度または関連項目との整合を追加確認する必要があります。"
-  },
-  amount_difference_only: {
-    label: "金額差のみ",
-    description: "施行日の更新は確認できず、料金額または料金体系の差異だけが記録されています。"
-  }
-};
 
 const supportReasonLabels: Record<YearbookFeeChangeSupportReason, string> = {
   previous_date_matches: "R6の前回使用料改定年月日が、R5の現行使用料施行年月日と一致",
@@ -109,23 +84,20 @@ function RevisionsContent() {
 
   const prefecture = searchParams.get("prefecture") ?? "";
   const businessType = searchParams.get("businessType") ?? "";
-  const status = searchParams.get("status") ?? "";
   const comparison = dataset.yearbookFeeComparison;
-  const counts = comparison?.counts ?? emptyCounts;
   const comparisonItems = useMemo(
-    () => (comparison?.items ?? []).filter(hasCurrentComparisonShape),
+    () => (comparison?.items ?? []).filter(hasChangedEffectiveDateShape),
     [comparison?.items]
   );
   const matchingItems = useMemo(() => comparisonItems
-    .filter((item) => !prefecture || item.prefectureName === prefecture)
-    .filter((item) => !businessType || item.categoryCode === businessType)
-    .filter((item) => !status || item.status === status),
-  [businessType, comparisonItems, prefecture, status]);
+    .filter((item) => !prefecture || item.prefectureName.includes(prefecture))
+    .filter((item) => !businessType || item.categoryCode === businessType),
+  [businessType, comparisonItems, prefecture]);
   const visibleItems = matchingItems.slice(0, visibleCount);
 
   useEffect(() => {
     setVisibleCount(revisionPageSize);
-  }, [businessType, prefecture, status]);
+  }, [businessType, prefecture]);
   const availablePrefectures = useMemo(
     () => [...new Set(comparisonItems.map((item) => item.prefectureName))]
       .sort((a, b) => a.localeCompare(b, "ja")),
@@ -144,26 +116,24 @@ function RevisionsContent() {
       <section className="water-band border-b border-line">
         <div className="revision-hero mx-auto max-w-[1500px] px-4 py-6 sm:px-6 lg:px-8">
           <div className="text-xs font-black text-teal">地方公営企業決算状況調査 R5 → R6</div>
-          <h1 className="mt-1 text-3xl font-black text-ink sm:text-4xl">第33表で確認する料金改定</h1>
+          <h1 className="mt-1 text-3xl font-black text-ink sm:text-4xl">使用料施行年月日の変更一覧</h1>
           <p className="revision-lead">
-            同一事業の「現行使用料施行年月日」を年度間で比較し、前回使用料改定年月日、実質使用料改定率、家庭用・業務用料金、料金体系の記載を順に確認します。調査上、消費税・地方消費税の転嫁だけによる変更は改定に含まれません。
+            同一事業の「現行使用料施行年月日」がR5からR6で変わった記録だけを表示します。まず施行日を比較し、料金額や改定率は各行の参考情報として確認できます。
           </p>
 
           <div className="revision-evidence-note" role="note">
             <Info className="mt-0.5 shrink-0 text-teal" size={20} aria-hidden="true" />
             <div>
-              <strong>第33表の記載と、自治体による公式発表は別の情報です</strong>
+              <strong>金額差だけでは一覧に含めません</strong>
               <p>
-                下の判定は総務省・e-Statの第33表をR5・R6で比較した結果です。条例、議会資料、広報などを自治体ごとに確認した公式公表一覧ではありません。施行日の差異だけで断定せず、最終的な改定内容は各自治体の公式資料で確認してください。
+                抽出条件は第33表の施行年月日の変化だけです。料金改定の内容や理由は、条例、議会資料、広報など各自治体の公式資料で最終確認してください。
               </p>
             </div>
           </div>
 
-          <div className="revision-kpi-grid grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <StatCard icon={CheckCircle2} label="当年度改定の記載" value={counts.supported.businessCount.toLocaleString("ja-JP")} unit="事業" sub={`${counts.supported.municipalityCount.toLocaleString("ja-JP")}団体・関連項目の裏付けあり`} tone="teal" />
-            <StatCard icon={CircleAlert} label="要確認" value={counts.candidate.businessCount.toLocaleString("ja-JP")} unit="事業" sub={`${counts.candidate.municipalityCount.toLocaleString("ja-JP")}団体・施行日等を追加確認`} tone="amber" />
-            <StatCard icon={CircleDollarSign} label="金額差のみ" value={counts.amountOnly.businessCount.toLocaleString("ja-JP")} unit="事業" sub={`${counts.amountOnly.municipalityCount.toLocaleString("ja-JP")}団体・施行日の更新なし`} tone="violet" />
-            <StatCard icon={ListFilter} label="比較可能" value={counts.comparable.businessCount.toLocaleString("ja-JP")} unit="事業" sub={`${counts.comparable.municipalityCount.toLocaleString("ja-JP")}団体・R5/R6の施行日あり`} tone="blue" />
+          <div className="revision-kpi-grid grid gap-3 sm:grid-cols-2">
+            <StatCard icon={MapPinned} label="施行年月日が変わった団体" value={(comparison?.changedMunicipalityCount ?? 0).toLocaleString("ja-JP")} unit="団体" sub="同一団体は1件として集計" tone="teal" />
+            <StatCard icon={Building2} label="施行年月日が変わった事業" value={(comparison?.changedBusinessCount ?? 0).toLocaleString("ja-JP")} unit="事業" sub="R5・R6の同一事業を比較" tone="blue" />
           </div>
         </div>
       </section>
@@ -174,13 +144,12 @@ function RevisionsContent() {
             <div className="revision-filter-heading">
               <div>
                 <h2 id="revision-filter-heading">表示を絞り込む</h2>
-                <p>都道府県、事業、判定区分を組み合わせられます。</p>
+                <p>都道府県名を入力するか候補から選び、必要に応じて事業を指定します。</p>
               </div>
               <Link href="/revisions">条件をクリア</Link>
             </div>
-            <FilterSelect label="都道府県" name="prefecture" value={prefecture} options={availablePrefectures.map((value) => ({ value, label: value }))} />
+            <PrefectureCombobox value={prefecture} options={availablePrefectures} />
             <FilterSelect label="事業" name="businessType" value={businessType} options={availableBusinesses} />
-            <FilterSelect label="判定区分" name="status" value={status} options={(Object.entries(statusCopy) as Array<[YearbookFeeChangeStatus, (typeof statusCopy)[YearbookFeeChangeStatus]]>).map(([value, copy]) => ({ value, label: copy.label }))} />
             <button type="submit" className="button-primary">この条件で表示</button>
           </form>
           <div className="revision-source-links">
@@ -194,14 +163,10 @@ function RevisionsContent() {
         <section className="panel revision-results-panel">
           <div className="revision-list-heading">
             <div>
-              <h2>判定結果</h2>
+              <h2>施行年月日が変わった事業</h2>
               <p>{matchingItems.length.toLocaleString("ja-JP")}事業中、{visibleItems.length.toLocaleString("ja-JP")}事業を表示</p>
             </div>
-            <div className="revision-list-legend" aria-label="判定区分">
-              <span className="revision-status revision-status--reported">当年度改定の記載</span>
-              <span className="revision-status revision-status--candidate">要確認</span>
-              <span className="revision-status revision-status--amount">金額差のみ</span>
-            </div>
+            <p className="revision-list-rule"><CalendarDays size={16} aria-hidden="true" /> 抽出条件：R5とR6の施行年月日が異なる事業</p>
           </div>
 
           <div className="revision-comparison-list">
@@ -232,7 +197,7 @@ function RevisionsContent() {
           <summary onKeyDown={toggleDetailsOnKeyboard}>
             <span>
               <strong>自治体が公式に公表した改定情報</strong>
-              <small>{dataset.summary.total.toLocaleString("ja-JP")}件登録・第33表の判定結果とは別枠</small>
+              <small>{dataset.summary.total.toLocaleString("ja-JP")}件登録・第33表の年月日比較とは別枠</small>
             </span>
             <span>詳細を見る <ChevronDown size={15} aria-hidden="true" /></span>
           </summary>
@@ -262,7 +227,6 @@ function YearbookChangeRow({ item }: { item: YearbookFeeChange }) {
   const detailHref = item.municipalityCode
     ? municipalityDetailHref(item.municipalityCode, item.businessKey, "fees")
     : null;
-  const status = statusCopy[item.status];
   const businessTariffChanges = item.tariffChanges.filter((change) => change.key !== "householdFee20m3Yen");
   const accountingChanged = item.accountingTypes.r5 !== item.accountingTypes.r6;
 
@@ -274,7 +238,7 @@ function YearbookChangeRow({ item }: { item: YearbookFeeChange }) {
           {detailHref ? <Link href={detailHref}>{item.operatorName}</Link> : <strong>{item.operatorName}</strong>}
           <span>{item.businessName}・{accountingTypeLabel(item.accountingType)}</span>
         </div>
-        <span className={`revision-status revision-status--${statusClassName(item.status)}`}>{status.label}</span>
+        <span className="revision-date-change-badge"><CalendarDays size={14} aria-hidden="true" />施行年月日が変化</span>
       </header>
 
       <div className="revision-date-section">
@@ -287,7 +251,7 @@ function YearbookChangeRow({ item }: { item: YearbookFeeChange }) {
           <ArrowRight size={18} aria-hidden="true" />
           <div><span>R6</span><strong>{formatIsoDate(item.currentUsageFeeEffectiveDate.r6.iso)}</strong></div>
         </div>
-        <p>{status.description}</p>
+        <p>この施行年月日の変化だけを条件に、この一覧へ掲載しています。</p>
       </div>
 
       <div className="revision-rate-section">
@@ -321,7 +285,7 @@ function YearbookChangeRow({ item }: { item: YearbookFeeChange }) {
 
       <details className="revision-detail-disclosure">
         <summary onKeyDown={toggleDetailsOnKeyboard}>
-          <span>業務用料金・料金体系・判定根拠を見る</span>
+          <span>業務用料金・料金体系・関連項目を見る</span>
           <ChevronDown className="revision-disclosure-chevron" size={16} aria-hidden="true" />
         </summary>
         <div className="revision-detail-body">
@@ -354,12 +318,12 @@ function YearbookChangeRow({ item }: { item: YearbookFeeChange }) {
           </section>
 
           <section>
-            <h3>判定根拠</h3>
+            <h3>関連する第33表の記載</h3>
             {item.supportReasons.length ? (
               <ul className="revision-reason-list">
                 {item.supportReasons.map((reason) => <li key={reason}><CheckCircle2 size={14} aria-hidden="true" />{supportReasonLabels[reason]}</li>)}
               </ul>
-            ) : <p>第33表内で追加の裏付け項目を確認できませんでした。</p>}
+            ) : <p>第33表内で関連する記載を確認できませんでした。</p>}
             <dl className="revision-context-list">
               <div><dt>R6の前回使用料改定年月日</dt><dd>{formatOptionalIsoDate(item.previousUsageFeeRevisionDate.r6.iso)}</dd></div>
               <div><dt>R5現行施行日との一致</dt><dd>{item.previousUsageFeeRevisionDate.r6MatchesR5Current ? "一致" : "一致を確認できず"}</dd></div>
@@ -370,6 +334,175 @@ function YearbookChangeRow({ item }: { item: YearbookFeeChange }) {
       </details>
     </article>
   );
+}
+
+function PrefectureCombobox({ value, options }: { value: string; options: string[] }) {
+  const inputId = useId();
+  const listboxId = `${inputId}-options`;
+  const fieldRef = useRef<HTMLDivElement>(null);
+  const [query, setQuery] = useState(value);
+  const [open, setOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
+
+  useEffect(() => setQuery(value), [value]);
+
+  const filteredOptions = useMemo(
+    () => filterPrefectureOptions(options, query),
+    [options, query]
+  );
+  const activeOption = activePrefectureOption(filteredOptions, activeIndex);
+
+  useEffect(() => {
+    setActiveIndex((current) => {
+      if (!open || filteredOptions.length === 0) return -1;
+      return activePrefectureOption(filteredOptions, current) === undefined ? 0 : current;
+    });
+  }, [filteredOptions, open]);
+
+  const choose = (option: string) => {
+    setQuery(option);
+    setOpen(false);
+    setActiveIndex(-1);
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setOpen(true);
+      setActiveIndex((current) => movePrefectureOptionIndex(filteredOptions, current, 1));
+      return;
+    }
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setOpen(true);
+      setActiveIndex((current) => movePrefectureOptionIndex(filteredOptions, current, -1));
+      return;
+    }
+    if (event.key === "Enter" && open && activeOption !== undefined) {
+      event.preventDefault();
+      choose(activeOption);
+      return;
+    }
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setOpen(false);
+      setActiveIndex(-1);
+    }
+  };
+
+  return (
+    <div
+      ref={fieldRef}
+      className="revision-filter-field revision-prefecture-combobox"
+      onBlur={(event) => {
+        if (!fieldRef.current?.contains(event.relatedTarget as Node | null)) {
+          setOpen(false);
+          setActiveIndex(-1);
+        }
+      }}
+    >
+      <label htmlFor={inputId}>都道府県</label>
+      <div className="revision-combobox-input-wrap">
+        <Search size={16} aria-hidden="true" />
+        <input
+          id={inputId}
+          name="prefecture"
+          type="text"
+          role="combobox"
+          value={query}
+          className="input-control"
+          placeholder="例：新潟県"
+          autoComplete="off"
+          aria-autocomplete="list"
+          aria-controls={listboxId}
+          aria-expanded={open}
+          aria-activedescendant={open && activeOption !== undefined ? `${listboxId}-${activeIndex}` : undefined}
+          onFocus={() => {
+            setOpen(true);
+            setActiveIndex(firstPrefectureOptionIndex(filteredOptions));
+          }}
+          onChange={(event) => {
+            const nextQuery = event.target.value;
+            const nextFilteredOptions = filterPrefectureOptions(options, nextQuery);
+            setQuery(nextQuery);
+            setOpen(true);
+            setActiveIndex(firstPrefectureOptionIndex(nextFilteredOptions));
+          }}
+          onKeyDown={handleKeyDown}
+        />
+        {query ? (
+          <button
+            type="button"
+            className="revision-combobox-clear"
+            aria-label="都道府県の入力を消去"
+            onClick={() => {
+              setQuery("");
+              setOpen(true);
+              setActiveIndex(firstPrefectureOptionIndex(options));
+            }}
+          >
+            <X size={15} aria-hidden="true" />
+          </button>
+        ) : null}
+        <button
+          type="button"
+          className="revision-combobox-toggle"
+          aria-label={open ? "都道府県候補を閉じる" : "都道府県候補を開く"}
+          aria-expanded={open}
+          aria-controls={listboxId}
+          onClick={() => {
+            const nextOpen = !open;
+            setOpen(nextOpen);
+            setActiveIndex(nextOpen ? firstPrefectureOptionIndex(filteredOptions) : -1);
+          }}
+        >
+          <ChevronsUpDown size={16} aria-hidden="true" />
+        </button>
+      </div>
+      {open ? (
+        <div id={listboxId} role="listbox" aria-label="都道府県の候補" className="revision-combobox-options">
+          {filteredOptions.length ? filteredOptions.map((option, index) => (
+            <div
+              key={option}
+              id={`${listboxId}-${index}`}
+              role="option"
+              aria-selected={option === query}
+              className={index === activeIndex ? "is-active" : undefined}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => choose(option)}
+            >
+              {option}
+            </div>
+          )) : <p>一致する都道府県がありません</p>}
+        </div>
+      ) : null}
+      <small>文字入力でも、候補の選択でも絞り込めます。</small>
+    </div>
+  );
+}
+
+function filterPrefectureOptions(options: string[], query: string) {
+  const normalizedQuery = query.trim().toLocaleLowerCase("ja");
+  if (!normalizedQuery) return options;
+  return options.filter((option) => option.toLocaleLowerCase("ja").includes(normalizedQuery));
+}
+
+function firstPrefectureOptionIndex(options: string[]) {
+  return options.length > 0 ? 0 : -1;
+}
+
+function activePrefectureOption(options: string[], activeIndex: number) {
+  if (activeIndex < 0 || activeIndex >= options.length) return undefined;
+  return options[activeIndex];
+}
+
+function movePrefectureOptionIndex(options: string[], activeIndex: number, direction: 1 | -1) {
+  if (options.length === 0) return -1;
+  if (activeIndex < 0 || activeIndex >= options.length) {
+    return direction === 1 ? 0 : options.length - 1;
+  }
+  if (direction === 1) return Math.min(activeIndex + 1, options.length - 1);
+  return activeIndex === 0 ? options.length - 1 : activeIndex - 1;
 }
 
 function FilterSelect({ label, name, value, options }: {
@@ -394,14 +527,15 @@ function SourceLink({ href, children }: { href: string; children: React.ReactNod
   return <a href={href} target="_blank" rel="noreferrer">{children}<ExternalLink size={12} aria-hidden="true" /></a>;
 }
 
-function hasCurrentComparisonShape(item: YearbookFeeChange) {
-  return Boolean(item?.status && item?.currentUsageFeeEffectiveDate && item?.officialRevisionRate);
-}
-
-function statusClassName(status: YearbookFeeChangeStatus) {
-  if (status === "reported_revision") return "reported";
-  if (status === "revision_candidate") return "candidate";
-  return "amount";
+function hasChangedEffectiveDateShape(item: YearbookFeeChange) {
+  const dates = item?.currentUsageFeeEffectiveDate;
+  return Boolean(
+    dates?.changed
+    && dates.r5?.iso
+    && dates.r6?.iso
+    && dates.r5.iso !== dates.r6.iso
+    && item?.officialRevisionRate
+  );
 }
 
 function toggleDetailsOnKeyboard(event: React.KeyboardEvent<HTMLElement>) {

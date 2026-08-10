@@ -30,9 +30,10 @@ describe("R5-R6 yearbook fee comparison", () => {
       })
     ]);
 
-    expect(result.counts.supported).toEqual({ businessCount: 1, municipalityCount: 1 });
+    expect(result.counts.dateChanged).toEqual({ businessCount: 1, municipalityCount: 1 });
+    expect(result.changedBusinessCount).toBe(1);
+    expect(result.changedMunicipalityCount).toBe(1);
     expect(result.items[0]).toMatchObject({
-      status: "reported_revision",
       accountingTypes: { r5: "legal_applied", r6: "legal_applied" },
       previousUsageFeeRevisionDate: { r6MatchesR5Current: true },
       officialRevisionRate: {
@@ -46,7 +47,7 @@ describe("R5-R6 yearbook fee comparison", () => {
     expect(result.items[0].householdFee20m3.changeRate! * 100).not.toBe(26);
   });
 
-  it("keeps a backwards effective-date change as a candidate", () => {
+  it("includes every effective-date change without assigning a public status", () => {
     const result = buildYearbookFeeComparison([
       snapshot({ surveyYear: 2023, currentUsageFeeEffectiveDate: date("2020-04-01") }),
       snapshot({ surveyYear: 2024, currentUsageFeeEffectiveDate: date("2019-04-01") })
@@ -54,17 +55,16 @@ describe("R5-R6 yearbook fee comparison", () => {
 
     expect(result.items).toHaveLength(1);
     expect(result.items[0]).toMatchObject({
-      status: "revision_candidate",
       currentUsageFeeEffectiveDate: { changed: true, r6WithinCurrentFiscalYear: false }
     });
+    expect(result.items[0]).not.toHaveProperty("status");
     expect(result.counts).toMatchObject({
       dateChanged: { businessCount: 1 },
-      currentYear: { businessCount: 0 },
-      candidate: { businessCount: 1 }
+      currentYear: { businessCount: 0 }
     });
   });
 
-  it("keeps a business-only tariff change separate from a dated revision", () => {
+  it("excludes a business-only tariff change when the effective date is unchanged", () => {
     const result = buildYearbookFeeComparison([
       snapshot({
         surveyYear: 2023,
@@ -80,18 +80,9 @@ describe("R5-R6 yearbook fee comparison", () => {
       })
     ]);
 
-    expect(result.items[0]).toMatchObject({
-      status: "amount_difference_only",
-      direction: "unchanged",
-      householdFee20m3: { delta: 0, changeRate: 0 }
-    });
-    expect(result.items[0].tariffChanges).toEqual([{
-      key: "businessFee100m3Yen",
-      label: "業務用100m³／月",
-      r5: 20_000,
-      r6: 21_000,
-      delta: 1_000
-    }]);
+    expect(result.items).toEqual([]);
+    expect(result.changedBusinessCount).toBe(0);
+    expect(result.changedMunicipalityCount).toBe(0);
     expect(result.counts.amountOnly).toEqual({ businessCount: 1, municipalityCount: 1 });
   });
 
@@ -112,7 +103,6 @@ describe("R5-R6 yearbook fee comparison", () => {
 
     expect(result.counts.common.businessCount).toBe(1);
     expect(result.items[0]).toMatchObject({
-      status: "reported_revision",
       accountingType: "legal_applied",
       accountingTypes: { r5: "non_legal_applied", r6: "legal_applied" }
     });
@@ -151,6 +141,14 @@ describe("R5-R6 yearbook fee comparison", () => {
       candidate: { businessCount: 1, municipalityCount: 1 },
       amountOnly: { businessCount: 1, municipalityCount: 1 }
     });
+    expect(result.items).toHaveLength(2);
+    expect(result.changedBusinessCount).toBe(2);
+    expect(result.changedMunicipalityCount).toBe(2);
+    expect(result.items.every((item) => (
+      item.currentUsageFeeEffectiveDate.changed
+      && item.currentUsageFeeEffectiveDate.r5.iso !== item.currentUsageFeeEffectiveDate.r6.iso
+      && !("status" in item)
+    ))).toBe(true);
   });
 
   it("rejects duplicate snapshots for the same business and year", () => {

@@ -1,13 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { municipalityDisplayPaths, pathScreenBounds, splitSubpaths } from "@/lib/gisMapLayout";
+import { buildMunicipalityLookup } from "@/components/PrefectureMapExplorer";
+import { municipalityDisplayPaths, splitSubpaths } from "@/lib/gisMapLayout";
 
 const root = process.cwd();
 const pageSource = readFileSync(path.join(root, "app/map/[prefectureCode]/page.tsx"), "utf8");
 const componentSource = readFileSync(path.join(root, "components/PrefectureMapExplorer.tsx"), "utf8");
 const cssSource = readFileSync(path.join(root, "components/PrefectureMapExplorer.module.css"), "utf8");
-const gisData = JSON.parse(readFileSync(path.join(root, "public/gis/mlit-n03-simplified.json"), "utf8"));
+const hokkaidoGisData = JSON.parse(readFileSync(path.join(root, "public/gis/municipalities/01.json"), "utf8"));
 
 describe("prefecture municipality map UI guardrails", () => {
   it("routes the prefecture page through the refined explorer", () => {
@@ -32,26 +33,82 @@ describe("prefecture municipality map UI guardrails", () => {
     expect(componentSource).toContain("data-municipality-region={feature.code}");
     expect(componentSource).toContain("focusedFeatureCode === feature.code ? 0 : -1");
     expect(componentSource).toContain('["ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp"]');
+    expect(componentSource).toContain('event.key === "Escape"');
+    expect(componentSource).toContain("showKeyboardHover(feature, match)");
+    expect(componentSource).toContain("showKeyboardHover(nextFeature, lookupMunicipality(municipalityLookup, nextFeature))");
+    expect(componentSource).toContain("setHover(null);");
     expect(componentSource).toContain('role="group"');
     expect(componentSource).not.toContain('role="img"');
   });
 
-  it("separates the known Hokkaido Tomari name collision before interaction", () => {
-    const tomari = gisData.municipalitiesByPrefecture["01"].find((item: any) => item.code === "01403");
-    expect(tomari?.name).toBe("泊村");
-    expect(splitSubpaths(tomari.path)).toHaveLength(2);
-
-    const paths = municipalityDisplayPaths(tomari);
-    const interactiveBounds = pathScreenBounds(paths.interactivePath);
-    const excludedBounds = pathScreenBounds(paths.excludedPath);
-
-    expect(splitSubpaths(paths.interactivePath)).toHaveLength(1);
-    expect(splitSubpaths(paths.excludedPath)).toHaveLength(1);
-    expect(interactiveBounds?.[2]).toBeLessThan(200);
-    expect(excludedBounds?.[0]).toBeGreaterThan(600);
+  it("keeps current Tomari separate from neutral Northern Territories geography", () => {
+    const tomariFeatures = hokkaidoGisData.features.filter((item: any) => item.name === "泊村");
+    expect(tomariFeatures.map((item: any) => item.code)).toEqual(["01403", "01696"]);
+    expect(tomariFeatures.every((item: any) => splitSubpaths(item.path).length > 1)).toBe(true);
+    const tomariDisplay = municipalityDisplayPaths(tomariFeatures[0]);
+    expect(splitSubpaths(tomariDisplay.interactivePath)).toHaveLength(1);
+    expect(splitSubpaths(tomariDisplay.excludedPath)).toHaveLength(57);
+    expect(componentSource).toContain('const nonMunicipalityGeographyCodes = new Set(["01695", "01696"');
+    expect(componentSource).toContain("if (!isMunicipalityFeature(feature))");
     expect(componentSource).toContain("const paths = municipalityDisplayPaths(feature);");
     expect(componentSource).toContain("d={display.paths.interactivePath}");
     expect(componentSource).toContain("d={display.paths.excludedPath}");
+  });
+
+  it("resolves GIS municipalities by the five-digit prefix of exact six-digit detail codes", () => {
+    const orthographyRegressions = [
+      { prefectureCode: "02", gisCode: "02321", gisName: "鰺ヶ沢町", staticCode: "023213", staticName: "鰺ケ沢町" },
+      { prefectureCode: "02", gisCode: "02411", gisName: "六ヶ所村", staticCode: "024112", staticName: "六ケ所村" },
+      { prefectureCode: "04", gisCode: "04302", gisName: "七ヶ宿町", staticCode: "043028", staticName: "七ケ宿町" },
+      { prefectureCode: "04", gisCode: "04404", gisName: "七ヶ浜町", staticCode: "044041", staticName: "七ケ浜町" },
+      { prefectureCode: "20", gisCode: "20210", gisName: "駒ヶ根市", staticCode: "202100", staticName: "駒ケ根市" },
+      { prefectureCode: "39", gisCode: "39405", gisName: "檮原町", staticCode: "394050", staticName: "梼原町" }
+    ];
+
+    for (const expected of orthographyRegressions) {
+      const prefectureData = JSON.parse(readFileSync(
+        path.join(root, "data/static/prefectures", `${expected.prefectureCode}.json`),
+        "utf8"
+      ));
+      const gisData = JSON.parse(readFileSync(
+        path.join(root, "public/gis/municipalities", `${expected.prefectureCode}.json`),
+        "utf8"
+      ));
+      const feature = gisData.features.find((item: any) => item.code === expected.gisCode);
+      const match = buildMunicipalityLookup(prefectureData.municipalities).get(expected.gisCode);
+
+      expect(feature?.name).toBe(expected.gisName);
+      expect(match?.municipalityName).toBe(expected.staticName);
+      expect(match?.municipalityCode).toBe(expected.staticCode);
+    }
+  });
+
+  it("indexes every available static municipality under its matching official GIS code", () => {
+    for (let index = 1; index <= 47; index += 1) {
+      const prefectureCode = String(index).padStart(2, "0");
+      const prefectureData = JSON.parse(readFileSync(
+        path.join(root, "data/static/prefectures", `${prefectureCode}.json`),
+        "utf8"
+      ));
+      const gisData = JSON.parse(readFileSync(
+        path.join(root, "public/gis/municipalities", `${prefectureCode}.json`),
+        "utf8"
+      ));
+      const lookup = buildMunicipalityLookup(prefectureData.municipalities);
+      const gisCodes = new Set(
+        gisData.features
+          .filter((item: any) => item.kind !== "geography")
+          .map((item: any) => item.code)
+      );
+
+      for (const municipality of prefectureData.municipalities) {
+        if (!/^\d{6}$/.test(municipality.municipalityCode ?? "")) continue;
+        const gisCode = municipality.municipalityCode.slice(0, 5);
+        if (!gisCodes.has(gisCode)) continue;
+        expect(lookup.get(gisCode)?.municipalityCode, `${prefectureCode} ${gisCode}`)
+          .toBe(municipality.municipalityCode);
+      }
+    }
   });
 
   it("uses the same rate-and-unit-price diagnosis across map, hover card, and table", () => {
@@ -70,11 +127,13 @@ describe("prefecture municipality map UI guardrails", () => {
     expect(componentSource).not.toContain("const showLabel = active || labelLayout.codes.has(feature.code);");
     expect(componentSource).toContain('data-map-label-layer="true"');
     expect(componentSource).toContain("if (!labelLayout.codes.has(feature.code)) return null;");
-    expect(componentSource).toContain("screenRectsOverlap(placed.rect, rect, collisionGap)");
+    expect(componentSource).toContain("screenRectsOverlap(item.rect, rect, collisionGap)");
     expect(componentSource).toContain("lineIntersectsRect");
-    expect(componentSource).toContain("const densityBudget = dense");
-    expect(componentSource).toContain("baseDensityBudget * Math.pow(Math.max(zoom, 1), 1.25)");
-    expect(componentSource).toContain("compact ? 28 : 96");
+    expect(componentSource).not.toContain("const densityBudget = dense");
+    expect(componentSource).toContain("collisionAwareOffsets(compact, zoom)");
+    expect(componentSource).toContain("fallbackFeatures.push(feature)");
+    expect(componentSource).toContain("labelLayout.fallbackFeatures.map");
+    expect(componentSource).toContain("placements.set(feature.code");
     expect(componentSource).toContain("activeFeatureCode: selectedFeatureCode");
     expect(componentSource).toContain("className={styles.mapLabelCallout}");
     expect(componentSource).not.toContain("className={styles.resultList}");
@@ -87,7 +146,11 @@ describe("prefecture municipality map UI guardrails", () => {
     expect(cssSource).not.toContain(".resultList {");
     expect(cssSource).toContain("height: clamp(600px, 44vw, 640px);");
     expect(cssSource).toContain("shape-rendering: geometricPrecision;");
-    expect(cssSource).toContain("stroke-width: 0.78;");
+    expect(cssSource).toContain("stroke-width: 0.58;");
+    expect(cssSource).toContain("grid-template-columns: repeat(3, minmax(0, 1fr));");
+    const legendCss = cssSource.slice(cssSource.indexOf(".legend {"), cssSource.indexOf(".mapSurface {"));
+    expect(legendCss).not.toContain("text-overflow: ellipsis;");
+    expect(legendCss).not.toContain("white-space: nowrap;");
   });
 
   it("keeps the full map and its controls readable on mobile without a redundant mode switch", () => {

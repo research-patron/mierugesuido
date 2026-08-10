@@ -114,7 +114,7 @@ type GisData = {
     to: [number, number];
   }[];
   prefectures: GisFeature[];
-  municipalitiesByPrefecture: Record<string, GisFeature[]>;
+  municipalitiesByPrefecture?: Record<string, GisFeature[]>;
 };
 
 type OverviewStats = {
@@ -963,7 +963,7 @@ export function PrefectureMapExplorer({
     () => new Map(municipalities.map((item) => [`${item.prefectureName}::${item.municipalityName}`, item])),
     [municipalities]
   );
-  const selectedGisMunicipalities = data?.municipalitiesByPrefecture[prefectureCode] ?? [];
+  const selectedGisMunicipalities = data?.municipalitiesByPrefecture?.[prefectureCode] ?? [];
   const localScreenViewBox = useMemo(
     () => (selectedGisMunicipalities.length > 0 ? screenViewBox(selectedGisMunicipalities, 24) : null),
     [selectedGisMunicipalities]
@@ -1455,7 +1455,7 @@ function HowToCards() {
     { title: "全国の状況を把握する", text: "全国マップで、都道府県ごとの経費回収率区分をひと目で確認できます。", href: "/map", icon: MapIcon },
     { title: "自治体を探す", text: "キーワードや条件で自治体を検索し、指標や年度別推移を比較できます。", href: "/municipalities", icon: Search },
     { title: "ランキングで比較する", text: "経費回収率や使用料単価から、他自治体との位置づけを比較できます。", href: "/rankings", icon: ChartNoAxesColumnIncreasing },
-    { title: "料金改定を確認する", text: "第33表の施行年月日と公式改定率を主に、家庭・業務料金への影響と自治体公表を分けて確認できます。", href: "/revisions", icon: CalendarDays }
+    { title: "施行年月日の変更を確認する", text: "R5とR6の「現行使用料施行年月日」が変わった事業だけを一覧で比較できます。", href: "/revisions", icon: CalendarDays }
   ];
   return (
     <section className="panel p-4">

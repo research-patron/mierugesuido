@@ -36,7 +36,7 @@ export default async function MapPage() {
             <StatCard icon={Users} label="公共下水道の収録自治体数" value={overview.municipalityCount.toLocaleString("ja-JP")} unit="自治体" sub={latestFiscalWesternYear ? `${latestFiscalWesternYear}年度決算を収録` : `${latestFiscalLong}決算を収録`} tone="teal" />
             <StatCard icon={CalendarDays} label="最新年度" value={latestFiscalWesternYear ? String(latestFiscalWesternYear) : latestFiscalLong} unit={latestFiscalWesternYear ? "年度" : undefined} sub="総務省決算状況調査" tone="blue" />
             <StatCard icon={PieChart} label="公共下水道：100%未満の割合" value={formatPercent(overview.below100Rate).replace("%", "")} unit={overview.below100Rate == null ? undefined : "%"} sub={overview.averageExpenseRecoveryRate == null ? "平均値なし" : `自治体値の単純平均 ${formatPercent(overview.averageExpenseRecoveryRate)}`} tone="violet" />
-            <StatCard icon={Bell} label="R6 当年度改定の記載" value={(yearbookFeeChangeSummary?.counts?.supported?.municipalityCount ?? 0).toLocaleString("ja-JP")} unit="団体" sub="第33表の施行日と関連項目を照合" tone="amber" />
+            <StatCard icon={Bell} label="R5→R6 施行年月日が変わった団体" value={(yearbookFeeChangeSummary?.counts?.dateChanged?.municipalityCount ?? 0).toLocaleString("ja-JP")} unit="団体" sub="第33表の施行年月日の変化のみ" tone="amber" />
           </div>
         </div>
       </section>

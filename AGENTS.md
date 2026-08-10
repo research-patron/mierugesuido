@@ -1,5 +1,16 @@
 # Current Goal: R2-R6 Accounting Eligibility, Data Completion, and Financial Storytelling
 
+## Goal Extension (2026-08-02 — revision-list clarity and municipality-map usability)
+
+- Limit the public R5-R6 revision list strictly to business records whose official `現行使用料施行年月日` changed. Do not include unchanged-date records because of household amounts, business tariffs, tariff systems, support evidence, or other monetary differences.
+- This strict public-list rule supersedes the earlier three-state public presentation: do not publish amount-only rows or label date-changed rows as generic candidates. Supporting Table 33 fields may remain visible as evidence, while municipality ordinances and announcements remain the final authority.
+- Reduce the revision-page summary to the number of affected businesses and unique municipalities. Make the homepage revision entry prominent and explicit about what users should compare, and provide a clear route into that comparison.
+- Replace the prefecture filter with a searchable combobox-style control so users can type or choose without scanning a long native option list. Preserve keyboard access, clear labels, reset behavior, and mobile usability.
+- Present prefecture maps as municipality maps. Dissolve multiple GIS polygons and disconnected administrative pieces into one municipality-level interactive and semantic record, while retaining every official geographic part in that municipality's rendered shape.
+- Ensure municipality names remain visible and legible, using collision-aware placement or a predictable fallback rather than silently dropping labels. Use calm fills, thin consistent municipality boundaries, and a restrained map treatment informed by the supplied reference.
+- Repair the municipality-map legend so every swatch, threshold label, and note remains aligned and readable at desktop and mobile widths. Preserve zoom, reset, visibility, hover, keyboard navigation, municipality links, and business switching.
+- Capture the supplied/current state and final 1491 × 1055 and 390 × 844 states, inspect combined comparisons, and keep `design-qa.md` ending in `final result: passed` only after revision accuracy, map grouping, labels, legend, responsive layout, keyboard behavior, tests, and production build all pass.
+
 ## Goal Extension (2026-08-02 — Table 33 fee-revision evidence)
 
 - Use the sewer-business individual-table item `現行使用料施行年月日` as the primary R5-R6 fee-revision signal. Treat a changed date as a candidate until `前回使用料改定年月日`, official `実質使用料改定率`, household and business-use tariffs, and tariff-system fields are checked.

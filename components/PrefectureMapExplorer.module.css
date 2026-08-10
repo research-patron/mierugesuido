@@ -100,9 +100,9 @@
 .legend {
   display: grid;
   min-width: 0;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 7px 10px;
-  padding: 9px 11px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px 18px;
+  padding: 10px 12px;
   border: 1px solid #e1eaf0;
   border-radius: 6px;
   background: #f8fbfc;
@@ -111,8 +111,12 @@
 .legend span {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 1px 6px;
+  grid-template-rows: auto auto;
+  align-content: center;
+  align-items: start;
+  gap: 2px 7px;
+  min-width: 0;
+  min-height: 28px;
   color: #52647a;
   font-size: 10px;
   font-weight: 800;
@@ -120,28 +124,28 @@
 
 .legend i {
   grid-row: 1 / span 2;
-  width: 9px;
-  height: 9px;
+  width: 10px;
+  height: 10px;
+  margin-top: 1px;
   flex: 0 0 auto;
   border: 1px solid rgba(11, 31, 77, 0.16);
   border-radius: 2px;
 }
 
 .legend b {
-  overflow: hidden;
   color: #344a63;
   font-size: 10px;
   font-weight: 900;
-  line-height: 1.2;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .legend small {
   color: #7b8b9d;
   font-size: 9px;
   font-weight: 700;
-  line-height: 1.2;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .mapSurface {
@@ -151,22 +155,8 @@
   overflow: hidden;
   border: 1px solid #dce7ed;
   border-radius: 7px;
-  background:
-    radial-gradient(circle at 50% 44%, rgba(221, 248, 248, 0.56), transparent 55%),
-    linear-gradient(180deg, #fbfefe 0%, #f4fbfc 100%);
+  background: #eef5f8;
   isolation: isolate;
-}
-
-.mapSurface::before {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background-image:
-    linear-gradient(rgba(16, 92, 111, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(16, 92, 111, 0.035) 1px, transparent 1px);
-  background-size: 44px 44px;
-  content: "";
-  pointer-events: none;
 }
 
 .mapSurface > svg {
@@ -193,10 +183,10 @@
 
 .shape,
 .excludedShape {
-  stroke: rgba(255, 255, 255, 0.84);
+  stroke: rgba(15, 54, 72, 0.58);
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-width: 0.78;
+  stroke-width: 0.58;
   shape-rendering: geometricPrecision;
   transition: filter 150ms ease, stroke 150ms ease, stroke-width 150ms ease;
 }
@@ -222,21 +212,74 @@
 }
 
 .mapLabel {
-  fill: #0a2447;
-  font-weight: 900;
+  fill: #244457;
+  font-weight: 700;
   paint-order: stroke;
   pointer-events: none;
   stroke: rgba(255, 255, 255, 0.95);
   stroke-linejoin: round;
-  stroke-width: 2.8px;
+  stroke-width: 1.6px;
   vector-effect: non-scaling-stroke;
 }
 
 .mapLabelCallout {
-  stroke: rgba(10, 36, 71, 0.46);
+  stroke: rgba(36, 68, 87, 0.58);
   stroke-linecap: round;
   stroke-width: 0.8px;
   pointer-events: none;
+}
+
+.labelFallback {
+  min-width: 0;
+  border: 1px solid #dce7ed;
+  border-radius: 6px;
+  background: #f8fbfc;
+  color: #52647a;
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.labelFallback p {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 3px 8px;
+  margin: 0;
+  padding: 8px 10px 6px;
+}
+
+.labelFallback p strong {
+  color: #344a63;
+}
+
+.labelFallback p b {
+  color: #0b1f4d;
+  font-variant-numeric: tabular-nums;
+}
+
+.labelFallback p span {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: #6b7d90;
+  font-weight: 700;
+}
+
+.labelFallback div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 0 10px 9px;
+}
+
+.labelFallback div span {
+  flex: 0 1 auto;
+  border: 1px solid #d2e1e8;
+  border-radius: 999px;
+  background: #fff;
+  padding: 3px 7px;
+  color: #203755;
+  font-weight: 800;
 }
 
 .mapNote {
@@ -272,13 +315,13 @@
 .tooltip {
   position: absolute;
   z-index: 5;
-  width: 252px;
-  padding: 14px;
-  border: 1px solid rgba(208, 250, 254, 0.15);
+  width: 232px;
+  padding: 12px;
+  border: 1px solid #cbdbe4;
   border-radius: 7px;
-  background: #071d3f;
-  color: #fff;
-  box-shadow: 0 18px 36px rgba(7, 29, 63, 0.25);
+  background: rgba(255, 255, 255, 0.98);
+  color: #0b1f4d;
+  box-shadow: 0 12px 28px rgba(15, 46, 77, 0.16);
   pointer-events: auto;
 }
 
@@ -321,7 +364,7 @@
 }
 
 .tooltip dt {
-  color: #b9cbe0;
+  color: #617488;
 }
 
 .tooltip dd {
@@ -336,8 +379,8 @@
   justify-content: space-between;
   gap: 4px;
   margin-top: 9px;
-  border-top: 1px solid rgba(207, 250, 254, 0.2);
-  color: #d7fcfd;
+  border-top: 1px solid #dce7ed;
+  color: #067c85;
   font-size: 10px;
   font-weight: 900;
   white-space: nowrap;
@@ -504,6 +547,10 @@
     padding: 8px 9px;
   }
 
+  .legend span {
+    min-height: 34px;
+  }
+
   .mapSurface {
     min-height: 380px;
     height: min(64vh, 470px);
@@ -533,6 +580,12 @@
   .comparisonPanel > header > a {
     max-width: none;
     justify-content: flex-start;
+  }
+}
+
+@media (max-width: 340px) {
+  .legend {
+    grid-template-columns: 1fr;
   }
 }
 

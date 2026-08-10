@@ -85,19 +85,44 @@ describe("revision schedule correctness", () => {
     expect(source).not.toContain("formatRevisionRate(");
   });
 
-  it("keeps the effective date primary and separates official rates from simple household differences", () => {
+  it("lists only effective-date changes and keeps monetary fields as reference details", () => {
     const source = readFileSync(path.join(process.cwd(), "app/revisions/page.tsx"), "utf8");
     expect(source).toContain("主判定項目");
     expect(source).toContain("現行使用料施行年月日");
+    expect(source).toContain("金額差だけでは一覧に含めません");
+    expect(source).toContain("hasChangedEffectiveDateShape");
     expect(source).toContain("第33表の公式記載");
     expect(source).toContain("20m³料金の単純変化率");
     expect(source).toContain("公式の実質使用料改定率とは異なる単純計算です。");
-    expect(source).toContain("業務用料金・料金体系・判定根拠を見る");
-    expect(source).toContain("自治体による公式発表は別の情報です");
+    expect(source).toContain("業務用料金・料金体系・関連項目を見る");
+    expect(source).toContain("自治体が公式に公表した改定情報");
+    expect(source.match(/<StatCard\b/g)).toHaveLength(2);
+    expect(source).toContain("changedMunicipalityCount");
+    expect(source).toContain("changedBusinessCount");
+    expect(source).not.toContain("判定区分");
+    expect(source).not.toContain("金額差のみ");
+    expect(source).not.toContain("revision_candidate");
+    expect(source).toContain('role="combobox"');
+    expect(source).toContain('aria-autocomplete="list"');
+    expect(source).toContain('role="listbox"');
+    expect(source).toContain("文字入力でも、候補の選択でも絞り込めます。");
     expect(source).toContain("const revisionPageSize = 40");
     expect(source).toContain("さらに{Math.min(revisionPageSize");
     expect(source.match(/onKeyDown=\{toggleDetailsOnKeyboard\}/g)).toHaveLength(2);
     expect(source).not.toContain("feeUnitPrice");
     expect(source).not.toContain("増減方向");
+  });
+
+  it("keeps an empty prefecture suggestion list unselected and recoverable", () => {
+    const source = readFileSync(path.join(process.cwd(), "app/revisions/page.tsx"), "utf8");
+
+    expect(source).toContain("if (options.length === 0) return -1;");
+    expect(source).toContain("activeOption !== undefined");
+    expect(source).toContain("choose(activeOption)");
+    expect(source).not.toContain("choose(filteredOptions[activeIndex])");
+    expect(source).toContain("aria-activedescendant={open && activeOption !== undefined");
+    expect(source).toContain("const nextFilteredOptions = filterPrefectureOptions(options, nextQuery);");
+    expect(source).toContain("setActiveIndex(firstPrefectureOptionIndex(nextFilteredOptions));");
+    expect(source).toContain("setActiveIndex(firstPrefectureOptionIndex(options));");
   });
 });

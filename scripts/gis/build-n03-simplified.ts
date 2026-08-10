@@ -3,6 +3,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 
 type Point = [number, number];
 type Ring = Point[];
@@ -17,12 +18,15 @@ type FeatureGroup = {
   prefectureName: string;
   rings: Ring[];
   bounds: Bounds;
+  sourceCodes: Set<string>;
+  designatedCity: boolean;
 };
 
 const DATA_YEAR = "2023";
 const DATA_DATE = "20230101";
 const GEOJSON_DATE = "230101";
 const OUTPUT = "public/gis/mlit-n03-simplified.json";
+const MUNICIPALITY_OUTPUT_DIR = "public/gis/municipalities";
 const WIDTH = 1000;
 const HEIGHT = 760;
 const DEFAULT_TOLERANCE = 0.008;
@@ -37,6 +41,8 @@ const NATIONAL_LABEL_POINT_OVERRIDES: Record<string, Point> = {
   "01": [230, 172],
   "47": [785, 678]
 };
+const NON_MUNICIPALITY_GEOGRAPHY_CODES = new Set(["01695", "01696", "01697", "01698", "01699", "01700"]);
+const NON_MUNICIPALITY_GEOGRAPHY_NAME_PATTERNS = ["所属未定地", "境界地先の土地", "境界部地先の埋立地"];
 
 const PREFECTURES = [
   ["01", "北海道"],
@@ -130,19 +136,27 @@ async function main() {
 
       const rawRings = geometryToRings(feature.geometry)
         .filter(isRenderableGeoRing);
-      const rings = rawRings
-        .map((ring) => simplifyClosedRing(ring, municipalityTolerance))
-        .filter(isRenderableGeoRing);
 
-      if (rings.length === 0) continue;
+      if (rawRings.length === 0) continue;
 
       const prefGroup = getGroup(prefectureGroups, prefectureCode, prefectureName, prefectureCode, prefectureName);
       addRings(prefGroup, rawRings);
 
-      const municipalityCode = normalizeMunicipalityCode(n03Code, properties);
-      const key = `${prefectureCode}:${municipalityName}`;
-      const municipalityGroup = getGroup(municipalityGroups, key, municipalityName, prefectureCode, prefectureName, municipalityCode);
-      addRings(municipalityGroup, rings);
+      const designatedCityWard = isDesignatedCityWard(properties);
+      const key = designatedCityWard
+        ? `${prefectureCode}:city:${municipalityName}`
+        : `${prefectureCode}:${n03Code || municipalityName}`;
+      const municipalityGroup = getGroup(
+        municipalityGroups,
+        key,
+        municipalityName,
+        prefectureCode,
+        prefectureName,
+        designatedCityWard ? "" : n03Code,
+        designatedCityWard
+      );
+      if (n03Code) municipalityGroup.sourceCodes.add(n03Code);
+      addRings(municipalityGroup, rawRings);
     }
     console.error(`processed ${prefectureCode} ${expectedPrefectureName}`);
   }
@@ -151,6 +165,28 @@ async function main() {
     group.rings = group.rings
       .map((ring) => simplifyFastRing(ring, tolerance * 1.8))
       .filter(isRenderableGeoRing);
+  }
+
+  for (const group of municipalityGroups.values()) {
+    if (group.designatedCity) group.code = parentMunicipalityCode(group.sourceCodes);
+    const sourceRings = group.rings;
+    let displayRings = sourceRings;
+
+    // Only designated cities need a geometric dissolve: their wards are stored
+    // as separate N03 polygons even though the UI exposes one city. Ordinary
+    // coastal municipalities can contain many official rings that merely touch
+    // at a point; trying to stitch those rings as a graph can drop their outer
+    // coast or islands. Keep those source rings intact.
+    if (group.designatedCity) {
+      const exteriorRings = buildExteriorBoundaryRings(sourceRings);
+      displayRings = requireSafeDesignatedCityDissolve(group, sourceRings, exteriorRings);
+    }
+
+    group.rings = displayRings.map((ring) => simplifyRingPreservingGeometry(ring, municipalityTolerance));
+
+    if (isMunicipalityGroup(group)) {
+      assertMunicipalityRingsPreserved(group, sourceRings, displayRings);
+    }
   }
 
   const nationalRingsByPrefecture = new Map<string, Ring[]>();
@@ -187,7 +223,7 @@ async function main() {
         labelSize: label.labelSize,
         labelAnchor: label.labelAnchor,
         layoutGroup,
-        municipalityCount: [...municipalityGroups.values()].filter((item) => item.prefectureCode === code).length
+        municipalityCount: [...municipalityGroups.values()].filter((item) => item.prefectureCode === code && isMunicipalityGroup(item)).length
       };
     });
 
@@ -202,14 +238,25 @@ async function main() {
         return [
           code,
           localGroups.map((group) => {
-            const screenRings = projectRings(group.rings, localBounds, FULL_SLOT);
+            const screenRings = projectRings(group.rings, localBounds, FULL_SLOT, true);
+            if (isMunicipalityGroup(group) && screenRings.length !== group.rings.length) {
+              throw new Error(`Municipality projected parts changed: ${group.code} ${group.name}`);
+            }
+            const featurePath = pathFromScreenRings(screenRings);
+            if (isMunicipalityGroup(group) && !featurePath) {
+              throw new Error(`Municipality path is empty: ${group.code} ${group.name}`);
+            }
+            if (isMunicipalityGroup(group) && pathSubpathCount(featurePath) !== group.rings.length) {
+              throw new Error(`Municipality rendered parts changed: ${group.code} ${group.name}`);
+            }
             const label = labelSpecForFeature(group.name, screenRings, "municipality");
             return {
               code: group.code,
               name: group.name,
+              kind: isMunicipalityGroup(group) ? "municipality" : "geography",
               prefectureCode: group.prefectureCode,
               prefectureName: group.prefectureName,
-              path: pathFromScreenRings(screenRings),
+              path: featurePath,
               bounds: roundBounds(group.bounds),
               centroid: centroid(group.bounds),
               labelPoint: label.labelPoint,
@@ -223,31 +270,46 @@ async function main() {
       })
   );
 
-  const output = {
-    source: {
+  const source = {
       name: "国土交通省 国土数値情報 行政区域データ N03",
       url: "https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N03-v3_1.html",
       dataYear: DATA_YEAR,
       dataDate: "2023-01-01",
       format: "県別ZIP内GeoJSONをWeb表示用SVGパスへ軽量化",
       note: "国土数値情報の行政区域データを簡略化して表示しています。境界未確定地域等の注意事項は国土数値情報の原典を確認してください。"
-    },
+  };
+  const output = {
+    source,
     viewBox: { width: WIDTH, height: HEIGHT },
     guideLines: [
       { from: [325, 284], to: [470, 157] },
       { from: [692, 612], to: [640, 552] }
     ],
     prefectures,
-    municipalitiesByPrefecture
+    municipalityFiles: Object.fromEntries(PREFECTURES
+      .filter(([code]) => municipalitiesByPrefecture[code])
+      .map(([code]) => [code, `/gis/municipalities/${code}.json`]))
   };
 
   await mkdir(path.dirname(OUTPUT), { recursive: true });
+  await mkdir(MUNICIPALITY_OUTPUT_DIR, { recursive: true });
+  await Promise.all(Object.entries(municipalitiesByPrefecture).map(([prefectureCode, features]) => (
+    writeFile(path.join(MUNICIPALITY_OUTPUT_DIR, `${prefectureCode}.json`), JSON.stringify({
+      source,
+      viewBox: { width: WIDTH, height: HEIGHT },
+      prefectureCode,
+      features
+    }))
+  )));
   await writeFile(OUTPUT, JSON.stringify(output));
   console.log(JSON.stringify({
     output: OUTPUT,
+    municipalityOutputDirectory: MUNICIPALITY_OUTPUT_DIR,
     prefectures: prefectures.length,
     municipalities: Object.values(municipalitiesByPrefecture).reduce((sum, items) => sum + items.length, 0),
-    bytes: JSON.stringify(output).length
+    nationalBytes: JSON.stringify(output).length,
+    municipalityBytes: Object.entries(municipalitiesByPrefecture)
+      .reduce((sum, [prefectureCode, features]) => sum + JSON.stringify({ source, viewBox: { width: WIDTH, height: HEIGHT }, prefectureCode, features }).length, 0)
   }, null, 2));
 }
 
@@ -289,17 +351,28 @@ async function readGeoJson(zipPath: string, prefectureCode: string) {
 function normalizeMunicipalityName(properties: Record<string, unknown>) {
   const cityOrCounty = stringOrNull(properties.N03_003);
   const cityTown = stringOrNull(properties.N03_004);
-  if (cityOrCounty && cityTown && cityTown.startsWith(cityOrCounty) && cityTown.endsWith("区")) return cityOrCounty;
+  if (isDesignatedCityWard(properties)) return cityOrCounty!;
   return cityTown ?? cityOrCounty;
 }
 
-function normalizeMunicipalityCode(n03Code: string, properties: Record<string, unknown>) {
+function isDesignatedCityWard(properties: Record<string, unknown>) {
   const cityOrCounty = stringOrNull(properties.N03_003);
   const cityTown = stringOrNull(properties.N03_004);
-  if (cityOrCounty && cityTown && cityTown.startsWith(cityOrCounty) && cityTown.endsWith("区") && n03Code.length >= 3) {
-    return `${n03Code.slice(0, 3)}00`;
-  }
-  return n03Code;
+  return Boolean(cityOrCounty && cityTown && cityTown.startsWith(cityOrCounty) && cityTown.endsWith("区"));
+}
+
+function parentMunicipalityCode(sourceCodes: Set<string>) {
+  const codes = [...sourceCodes].filter((code) => /^\d{5}$/.test(code)).sort();
+  if (codes.length === 0) return "";
+  let prefix = codes[0];
+  while (prefix && !codes.every((code) => code.startsWith(prefix))) prefix = prefix.slice(0, -1);
+  return prefix.padEnd(5, "0").slice(0, 5);
+}
+
+function isMunicipalityGroup(group: Pick<FeatureGroup, "code" | "name">) {
+  if (NON_MUNICIPALITY_GEOGRAPHY_CODES.has(group.code)) return false;
+  if (/^\d{2}8\d{2}$/.test(group.code)) return false;
+  return !NON_MUNICIPALITY_GEOGRAPHY_NAME_PATTERNS.some((pattern) => group.name.includes(pattern));
 }
 
 function stringOrNull(value: unknown) {
@@ -312,7 +385,8 @@ function getGroup(
   name: string,
   prefectureCode: string,
   prefectureName: string,
-  code = key
+  code = key,
+  designatedCity = false
 ) {
   const existing = map.get(key);
   if (existing) return existing;
@@ -322,7 +396,9 @@ function getGroup(
     prefectureCode,
     prefectureName,
     rings: [],
-    bounds: [Infinity, Infinity, -Infinity, -Infinity] as Bounds
+    bounds: [Infinity, Infinity, -Infinity, -Infinity] as Bounds,
+    sourceCodes: new Set<string>(),
+    designatedCity
   };
   map.set(key, group);
   return group;
@@ -375,7 +451,7 @@ function ringBounds(ring: Ring): Bounds {
   ], [Infinity, Infinity, -Infinity, -Infinity]);
 }
 
-function projectRings(rings: Ring[], bounds: Bounds, slot: MapSlot): ScreenRing[] {
+function projectRings(rings: Ring[], bounds: Bounds, slot: MapSlot, preserveAllParts = false): ScreenRing[] {
   const [minLon, minLat, maxLon, maxLat] = bounds;
   const pad = slot.pad ?? 16;
   const lonSpan = Math.max(maxLon - minLon, 0.001);
@@ -384,22 +460,29 @@ function projectRings(rings: Ring[], bounds: Bounds, slot: MapSlot): ScreenRing[
   const offsetX = slot.x + (slot.width - lonSpan * scale) / 2;
   const offsetY = slot.y + (slot.height - latSpan * scale) / 2;
 
-  return rings
-    .map((ring) => ring.map(([lon, lat]) => [
+  const projected = rings.map((ring) => ring.map(([lon, lat]) => [
       offsetX + (lon - minLon) * scale,
       offsetY + (maxLat - lat) * scale
-    ] as Point))
-    .filter(isRenderableScreenRing);
+    ] as Point));
+  return projected.filter(preserveAllParts ? isRenderablePathRing : isRenderableScreenRing);
 }
 
 function pathFromScreenRings(rings: ScreenRing[]) {
   return rings
     .map((ring) => {
-      const commands = ring.map(([x, y], index) => `${index === 0 ? "M" : "L"}${round(x)} ${round(y)}`).join("");
+      const commands = ring.map(([x, y], index) => `${index === 0 ? "M" : "L"}${roundPathCoordinate(x)} ${roundPathCoordinate(y)}`).join("");
       return `${commands}Z`;
     })
     .filter(Boolean)
     .join("");
+}
+
+function roundPathCoordinate(value: number) {
+  return Math.round(value * 1000) / 1000;
+}
+
+function pathSubpathCount(pathValue: string) {
+  return pathValue.match(/M/g)?.length ?? 0;
 }
 
 type LabelSpec = {
@@ -635,6 +718,127 @@ function buildExteriorBoundaryRings(rings: Ring[]): Ring[] {
   return result;
 }
 
+function dissolvePreservesSourceGeometry(sourceRings: Ring[], exteriorRings: Ring[]) {
+  const componentCount = sharedEdgeComponentCount(sourceRings);
+  const sourceBounds = combineBounds(sourceRings.map(ringBounds));
+  const exteriorBounds = exteriorRings.length > 0
+    ? combineBounds(exteriorRings.map(ringBounds))
+    : [Infinity, Infinity, -Infinity, -Infinity] as Bounds;
+  const coordinateTolerance = 0.000002;
+  // A dissolved designated city can legitimately contain an enclave as an
+  // oppositely wound hole (Hiroshima City surrounds Fuchu Town). Compare the
+  // net signed area so that a preserved hole is not mistaken for added land.
+  const sourceArea = netRingArea(sourceRings);
+  const exteriorArea = netRingArea(exteriorRings);
+  const areaRatio = sourceArea > 0 ? exteriorArea / sourceArea : 0;
+  const valid = exteriorRings.length >= componentCount
+    && boundsCover(exteriorBounds, sourceBounds, coordinateTolerance)
+    && areaRatio >= 0.995
+    && areaRatio <= 1.005;
+
+  if (!valid && process.env.N03_DEBUG === "1") {
+    console.error(JSON.stringify({
+      sourceRings: sourceRings.length,
+      exteriorRings: exteriorRings.length,
+      componentCount,
+      sourceBounds,
+      exteriorBounds,
+      sourceArea,
+      exteriorArea,
+      areaRatio,
+      signedSourceArea: sourceRings.reduce((sum, ring) => sum + ringArea(ring), 0),
+      signedExteriorArea: exteriorRings.reduce((sum, ring) => sum + ringArea(ring), 0)
+    }, null, 2));
+  }
+  return valid;
+}
+
+export function requireSafeDesignatedCityDissolve(
+  group: Pick<FeatureGroup, "code" | "name">,
+  sourceRings: Ring[],
+  exteriorRings: Ring[]
+) {
+  if (!dissolvePreservesSourceGeometry(sourceRings, exteriorRings)) {
+    throw new Error(`Unsafe designated-city ward dissolve: ${group.code} ${group.name}`);
+  }
+  return exteriorRings;
+}
+
+function assertMunicipalityRingsPreserved(group: FeatureGroup, sourceRings: Ring[], displayRings: Ring[]) {
+  if (group.rings.length === 0) {
+    throw new Error(`Municipality geometry is empty: ${group.code} ${group.name}`);
+  }
+
+  // Before display simplification, an ordinary municipality is exactly its
+  // official source-ring collection. A designated city may use fewer rings
+  // only after the dissolve gate has proved bounds, area and disconnected
+  // component preservation against those source rings.
+  if (!group.designatedCity && displayRings.length !== sourceRings.length) {
+    throw new Error(`Municipality source subpaths changed: ${group.code} ${group.name}`);
+  }
+
+  if (group.rings.length !== displayRings.length) {
+    throw new Error(`Municipality simplified subpaths changed: ${group.code} ${group.name}`);
+  }
+
+  const displayArea = netRingArea(displayRings);
+  const simplifiedArea = netRingArea(group.rings);
+  const areaRatio = displayArea > 0 ? simplifiedArea / displayArea : 0;
+  if (areaRatio < 0.8 || areaRatio > 1.2) {
+    throw new Error(`Municipality area changed unexpectedly: ${group.code} ${group.name} (${areaRatio})`);
+  }
+
+  const sourceBounds = combineBounds(displayRings.map(ringBounds));
+  const simplifiedBounds = combineBounds(group.rings.map(ringBounds));
+  const sourceWidth = sourceBounds[2] - sourceBounds[0];
+  const sourceHeight = sourceBounds[3] - sourceBounds[1];
+  const simplifiedWidth = simplifiedBounds[2] - simplifiedBounds[0];
+  const simplifiedHeight = simplifiedBounds[3] - simplifiedBounds[1];
+  if (simplifiedWidth < sourceWidth * 0.95 || simplifiedHeight < sourceHeight * 0.95) {
+    throw new Error(`Municipality bounds collapsed unexpectedly: ${group.code} ${group.name}`);
+  }
+}
+
+function sharedEdgeComponentCount(rings: Ring[]) {
+  const parents = rings.map((_, index) => index);
+  const edgeOwner = new Map<string, number>();
+
+  const find = (index: number): number => {
+    if (parents[index] !== index) parents[index] = find(parents[index]);
+    return parents[index];
+  };
+  const union = (a: number, b: number) => {
+    const rootA = find(a);
+    const rootB = find(b);
+    if (rootA !== rootB) parents[rootB] = rootA;
+  };
+
+  rings.forEach((ring, ringIndex) => {
+    for (let pointIndex = 0; pointIndex < ring.length - 1; pointIndex += 1) {
+      const a = normalizePoint(ring[pointIndex]);
+      const b = normalizePoint(ring[pointIndex + 1]);
+      if (samePoint(a, b)) continue;
+      const key = edgeKey(a, b);
+      const owner = edgeOwner.get(key);
+      if (owner === undefined) edgeOwner.set(key, ringIndex);
+      else union(owner, ringIndex);
+    }
+  });
+
+  return new Set(rings.map((_, index) => find(index))).size;
+}
+
+function boundsCover(actual: Bounds, expected: Bounds, tolerance: number) {
+  return actual[0] <= expected[0] + tolerance
+    && actual[1] <= expected[1] + tolerance
+    && actual[2] >= expected[2] - tolerance
+    && actual[3] >= expected[3] - tolerance;
+}
+
+function netRingArea(rings: Ring[]) {
+  return Math.abs(rings.reduce((sum, ring) => sum + ringArea(ring), 0));
+}
+
 function addNeighbor(adjacency: Map<string, Set<string>>, a: string, b: string) {
   const neighbors = adjacency.get(a) ?? new Set<string>();
   neighbors.add(b);
@@ -738,6 +942,31 @@ function simplifyClosedRing(points: Ring, epsilon: number): Ring {
   return simplified.length >= 4 ? simplified : minimumClosedRing(source, splitIndex);
 }
 
+function simplifyRingPreservingGeometry(ring: Ring, epsilon: number): Ring {
+  const sourceBounds = ringBounds(ring);
+  const sourceWidth = sourceBounds[2] - sourceBounds[0];
+  const sourceHeight = sourceBounds[3] - sourceBounds[1];
+  const sourceArea = Math.abs(ringArea(ring));
+
+  for (let attempt = 0; attempt < 7; attempt += 1) {
+    const simplified = simplifyClosedRing(ring, epsilon / (2 ** attempt));
+    if (!isRenderableGeoRing(simplified)) continue;
+    const simplifiedBounds = ringBounds(simplified);
+    const simplifiedWidth = simplifiedBounds[2] - simplifiedBounds[0];
+    const simplifiedHeight = simplifiedBounds[3] - simplifiedBounds[1];
+    const simplifiedArea = Math.abs(ringArea(simplified));
+    const areaRatio = sourceArea > 0 ? simplifiedArea / sourceArea : 0;
+
+    if (simplifiedWidth >= sourceWidth * 0.95
+      && simplifiedHeight >= sourceHeight * 0.95
+      && areaRatio >= 0.8
+      && areaRatio <= 1.2) {
+      return simplified;
+    }
+  }
+  return ring;
+}
+
 function farthestPointIndex(points: Ring, origin: Point) {
   let maxDistance = -1;
   let index = 0;
@@ -787,6 +1016,12 @@ function isRenderableGeoRing(ring: Ring) {
 
 function isRenderableScreenRing(points: number[][]) {
   return points.length >= 4 && uniqueScreenPointCount(points) >= 3 && Math.abs(screenRingArea(points)) >= MIN_SCREEN_RING_AREA;
+}
+
+function isRenderablePathRing(points: number[][]) {
+  return points.length >= 4
+    && new Set(points.map(([x, y]) => `${roundPathCoordinate(x)},${roundPathCoordinate(y)}`)).size >= 3
+    && Math.abs(screenRingArea(points)) > 0;
 }
 
 function uniquePointCount(ring: Ring) {
@@ -855,7 +1090,9 @@ function samePoint(a: Point, b: Point) {
   return a[0] === b[0] && a[1] === b[1];
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
+}

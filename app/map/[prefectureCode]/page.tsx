@@ -53,10 +53,10 @@ export default async function PrefectureMapPage({
             </Link>
           </div>
           <div className="map-page-kpi-grid grid grid-cols-2 gap-3 xl:grid-cols-4">
-            <StatCard icon={Users} label="対象市区町村数" value={targetCount.toLocaleString("ja-JP")} unit="市区町村" sub="表示対象の市区町村" tone="teal" />
-            <StatCard icon={Gauge} label="平均経費回収率" value={formatPercent(averageExpenseRecoveryRate).replace("%", "")} unit={averageExpenseRecoveryRate == null ? undefined : "%"} sub={recoveryRates.length > 0 ? `${recoveryRates.length.toLocaleString("ja-JP")}市区町村の有効値` : "データ未取込"} tone="violet" />
-            <StatCard icon={PieChart} label="経費回収率100%未満の割合" value={formatPercent(below100Rate).replace("%", "")} unit={below100Rate == null ? undefined : "%"} sub={recoveryRates.length > 0 ? `${below100Count.toLocaleString("ja-JP")} / ${recoveryRates.length.toLocaleString("ja-JP")}市区町村` : "データ未取込"} tone="red" />
-            <StatCard icon={Bell} label="公式改定情報あり" value={revisionCount.toLocaleString("ja-JP")} unit="市区町村" sub={targetCount ? `全体の${formatPercent((revisionCount / targetCount) * 100)}` : "データ未取込"} tone="amber" />
+            <StatCard icon={Users} label="対象自治体数" value={targetCount.toLocaleString("ja-JP")} unit="自治体" sub="地図の表示対象" tone="teal" />
+            <StatCard icon={Gauge} label="平均経費回収率" value={formatPercent(averageExpenseRecoveryRate).replace("%", "")} unit={averageExpenseRecoveryRate == null ? undefined : "%"} sub={recoveryRates.length > 0 ? `${recoveryRates.length.toLocaleString("ja-JP")}自治体の有効値` : "データ未取込"} tone="violet" />
+            <StatCard icon={PieChart} label="経費回収率100%未満の割合" value={formatPercent(below100Rate).replace("%", "")} unit={below100Rate == null ? undefined : "%"} sub={recoveryRates.length > 0 ? `${below100Count.toLocaleString("ja-JP")} / ${recoveryRates.length.toLocaleString("ja-JP")}自治体` : "データ未取込"} tone="red" />
+            <StatCard icon={Bell} label="公式改定情報あり" value={revisionCount.toLocaleString("ja-JP")} unit="自治体" sub={targetCount ? `全体の${formatPercent((revisionCount / targetCount) * 100)}` : "データ未取込"} tone="amber" />
           </div>
         </div>
       </section>

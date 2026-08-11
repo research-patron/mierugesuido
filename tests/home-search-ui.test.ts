@@ -6,6 +6,7 @@ const root = process.cwd();
 const homeSource = readFileSync(path.join(root, "app/page.tsx"), "utf8");
 const searchSource = readFileSync(path.join(root, "app/municipalities/page.tsx"), "utf8");
 const searchFilterSource = readFileSync(path.join(root, "components/MunicipalitySearchFilters.tsx"), "utf8");
+const municipalityTableSource = readFileSync(path.join(root, "components/MunicipalityTable.tsx"), "utf8");
 const mapPageSource = readFileSync(path.join(root, "app/map/page.tsx"), "utf8");
 const mapComponentSource = readFileSync(path.join(root, "components/JapanMapSelector.tsx"), "utf8");
 const headerSource = readFileSync(path.join(root, "components/SiteHeader.tsx"), "utf8");
@@ -141,6 +142,34 @@ describe("UI fidelity rebuild v2 guardrails", () => {
     expect(searchSource).toContain("search-summary-footer");
     expect(cssSource).toContain("filter-advanced-grid");
     expect(cssBlock(".municipality-search-page .data-table td")).toContain("height: 40px");
+  });
+
+  it("uses the strict R5-R6 effective-date comparison as municipality revision information", () => {
+    expect(searchSource).toContain('searchParams.get("hasFeeRevisionChange")');
+    expect(searchSource).toContain('searchParams.get("hasRevisionEvent")');
+    expect(searchSource).toContain('params.set("hasFeeRevisionChange", hasFeeRevisionChange)');
+    expect(searchSource).not.toContain('params.set("hasRevisionEvent"');
+    expect(searchSource).toContain("municipalityFeeRevisionStatus(item.feeRevisionComparison)");
+    expect(searchSource).not.toContain("item.hasRevisionEvent");
+    expect(searchSource).toContain('label="改定情報の掲載"');
+    expect(searchFilterSource).toContain('label="改定情報"');
+    expect(searchFilterSource).toContain('name="hasFeeRevisionChange"');
+    expect(searchFilterSource).toContain("施行年月日が変化");
+    expect(searchFilterSource).toContain("改定情報なし（比較済み）");
+    expect(searchFilterSource).toContain('label="比較指標・並び順"');
+    expect(searchFilterSource).toContain("経費回収率｜高い順");
+    expect(searchFilterSource).toContain("経費回収率｜低い順");
+    expect(searchFilterSource).toContain("使用料単価｜高い順");
+    expect(searchFilterSource).toContain("使用料単価｜低い順");
+    expect(searchFilterSource).not.toContain("required-revision-high");
+    expect(municipalityTableSource).toContain("施行年月日が変化");
+    expect(municipalityTableSource).toContain("改定情報なし");
+    expect(municipalityTableSource).toContain("比較対象外");
+    expect(municipalityTableSource).toContain("change.businessName");
+    expect(municipalityTableSource).toContain("change.r5EffectiveDate");
+    expect(municipalityTableSource).toContain("change.r6EffectiveDate");
+    expect(municipalityTableSource).not.toContain("公式改定情報");
+    expect(municipalityTableSource).not.toContain("item.hasRevisionEvent");
   });
 
   it("uses real links for card/table toggles and preserves query-state navigation", () => {

@@ -1,0 +1,358 @@
+.selector {
+  display: grid;
+  gap: 13px;
+  overflow: hidden;
+  padding: 16px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.heading {
+  min-width: 0;
+}
+
+.kicker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 5px;
+  color: #007f8f;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.kicker svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2.2;
+}
+
+.heading h2 {
+  margin: 0;
+  color: #062653;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
+.heading > p:last-child {
+  margin: 4px 0 0;
+  color: #61718d;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+.currentView {
+  display: flex;
+  min-height: 36px;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  border: 1px solid #d4e1e8;
+  border-radius: 999px;
+  background: #f7fafc;
+  padding: 7px 12px;
+  color: #52647c;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.currentView > span:first-child {
+  color: #52647c;
+  font-size: 10.5px;
+}
+
+.currentView strong {
+  color: #062653;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.currentView b {
+  color: #007f8f;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.currentDivider {
+  color: #9aabba;
+}
+
+.controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(264px, 0.28fr);
+  align-items: end;
+  gap: 16px;
+}
+
+.metricGroup,
+.directionGroup {
+  min-width: 0;
+}
+
+.controlLabel {
+  margin: 0 0 7px;
+  color: #425571;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.4;
+}
+
+.metricOptions,
+.directionOptions {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid #cbd8e3;
+  border-radius: 8px;
+  background: #eef4f7;
+  gap: 4px;
+  padding: 4px;
+}
+
+.metricOptions {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.directionOptions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.metricOption,
+.directionOption {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 56px;
+  align-items: center;
+  gap: 10px;
+  border-radius: 6px;
+  background: transparent;
+  color: #10264c;
+  transition: background-color 140ms ease, color 140ms ease, box-shadow 140ms ease;
+}
+
+.metricOption {
+  padding: 10px 12px;
+}
+
+.metricOption:hover,
+.directionOption:hover {
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.metricOption:focus-visible,
+.directionOption:focus-visible {
+  z-index: 2;
+  outline-offset: -3px;
+}
+
+.metricOption.selected,
+.directionOption.selected {
+  z-index: 1;
+  background: #fff;
+  color: #062653;
+  box-shadow: inset 0 0 0 1px #7dbfc6, 0 1px 4px rgba(6, 38, 83, 0.12);
+}
+
+.metricIcon {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  place-items: center;
+  border-radius: 7px;
+  background: #edf3f7;
+  color: #536981;
+}
+
+.metricIcon svg {
+  width: 17px;
+  height: 17px;
+  stroke-width: 2;
+}
+
+.selected .metricIcon {
+  background: #d6f0f3;
+  color: #007f8f;
+}
+
+.optionCopy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.optionCopy strong,
+.directionOption strong {
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
+.optionCopy small,
+.directionOption small {
+  color: #52647c;
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.selectedMark {
+  position: absolute;
+  top: 5px;
+  right: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: #007f8f;
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.selectedMark svg {
+  width: 12px;
+  height: 12px;
+  stroke-width: 3;
+}
+
+.directionOption {
+  justify-content: center;
+  padding: 10px;
+  text-align: left;
+}
+
+.directionOption > svg:first-child {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  color: #60758c;
+}
+
+.directionOption > span {
+  display: grid;
+  gap: 2px;
+}
+
+.directionOption.selected > svg:first-child {
+  color: #007f8f;
+}
+
+.directionCheck {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  color: #007f8f;
+  stroke-width: 3;
+}
+
+@media (max-width: 1100px) {
+  .controls {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .directionGroup {
+    max-width: 420px;
+  }
+}
+
+@media (max-width: 700px) {
+  .selector {
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 10px;
+  }
+
+  .heading h2 {
+    font-size: 17px;
+  }
+
+  .heading > p:last-child {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .currentView {
+    min-height: 32px;
+    width: auto;
+    max-width: 100%;
+    gap: 5px;
+    border-radius: 7px;
+    padding: 5px 8px;
+    white-space: nowrap;
+  }
+
+  .currentView > span:first-child {
+    display: none;
+  }
+
+  .currentView strong,
+  .currentView b {
+    font-size: 10.5px;
+  }
+
+  .metricOptions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .metricOption {
+    min-height: 52px;
+    padding: 10px;
+  }
+
+  .optionCopy small,
+  .directionOption small {
+    display: none;
+  }
+
+  .directionGroup {
+    max-width: none;
+  }
+
+  .directionOption {
+    min-height: 48px;
+  }
+}
+
+@media (max-width: 390px) {
+  .metricIcon {
+    width: 29px;
+    height: 29px;
+    flex-basis: 29px;
+  }
+
+  .selectedMark span {
+    display: none;
+  }
+}
+
+@media (max-width: 350px) {
+  .header {
+    grid-template-columns: 1fr;
+  }
+
+  .currentView {
+    width: fit-content;
+  }
+}

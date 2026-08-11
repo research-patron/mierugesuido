@@ -21,7 +21,6 @@ import { getFeeAdequacyLabel } from "@/lib/calculations";
 import { displayFeeRecoveryBandLabel } from "@/lib/feeRecoveryCopy";
 import { formatPercent, formatRevisionRate, formatYenPerM3 } from "@/lib/format";
 import {
-  municipalityDisplayPaths,
   pathScreenBounds,
   primaryFeatureScreenBounds,
   screenViewBox,
@@ -82,6 +81,8 @@ const statusLegend = [
 
 const statusColors = Object.fromEntries(statusLegend.map((item) => [item.key, item.color])) as Record<string, string>;
 const zoomSteps = [1, 1.35, 1.75, 2.25];
+const municipalityTooltipWidth = 232;
+const municipalityTooltipHeight = 196;
 const nonMunicipalityGeographyCodes = new Set(["01695", "01696", "01697", "01698", "01699", "01700"]);
 const nonMunicipalityGeographyNamePatterns = ["所属未定地", "境界地先の土地", "境界部地先の埋立地"];
 
@@ -153,17 +154,13 @@ export function PrefectureMapExplorer({
     () => buildMunicipalityLookup(municipalities),
     [municipalities]
   );
-  const features = data?.prefectureCode === prefectureCode ? data.features : [];
+  const features = useMemo(
+    () => data?.prefectureCode === prefectureCode
+      ? filterPrefectureMapFeatures(prefectureCode, data.features)
+      : [],
+    [data, prefectureCode]
+  );
   const municipalityFeatures = useMemo(() => features.filter(isMunicipalityFeature), [features]);
-  const displayFeatureMap = useMemo(() => new Map(features.map((feature) => {
-    const paths = municipalityDisplayPaths(feature);
-    return [featureIdentity(feature), {
-      paths,
-      feature: paths.excludedPath
-        ? { ...feature, path: paths.interactivePath, labelPoint: undefined, callout: undefined }
-        : feature
-    }];
-  })), [features]);
   const baseViewBox = useMemo(() => screenViewBox(features, 22), [features]);
   const visibleViewBox = useMemo(
     () => baseViewBox ? pannedZoomViewBox(baseViewBox, zoom, pan) : null,
@@ -181,7 +178,6 @@ export function PrefectureMapExplorer({
   const labelLayout = useMemo(
     () => buildLabelLayout({
       features,
-      displayFeatureMap,
       municipalityLookup,
       surfaceSize,
       viewBox: visibleViewBox ?? baseViewBox,
@@ -189,7 +185,7 @@ export function PrefectureMapExplorer({
       labelsVisible,
       activeFeatureCode: selectedFeatureCode
     }),
-    [baseViewBox, displayFeatureMap, features, labelsVisible, municipalityLookup, selectedFeatureCode, surfaceSize, visibleViewBox, zoom]
+    [baseViewBox, features, labelsVisible, municipalityLookup, selectedFeatureCode, surfaceSize, visibleViewBox, zoom]
   );
   const exportHref = `/data/static/csv/prefectures/${prefectureCode}.csv`;
 
@@ -263,8 +259,8 @@ export function PrefectureMapExplorer({
     const surface = surfaceRef.current;
     if (!surface) return;
     const rect = surface.getBoundingClientRect();
-    const width = 232;
-    const height = 154;
+    const width = municipalityTooltipWidth;
+    const height = municipalityTooltipHeight;
     const margin = 12;
     const offset = 16;
     const cursorX = event.clientX - rect.left;
@@ -290,7 +286,7 @@ export function PrefectureMapExplorer({
       feature,
       match,
       prefectureName,
-      x: Math.max(rect.width - 232 - 12, 12),
+      x: Math.max(rect.width - municipalityTooltipWidth - 12, 12),
       y: 12
     }));
   }
@@ -426,10 +422,6 @@ export function PrefectureMapExplorer({
                 preserveAspectRatio="xMidYMid meet"
               >
                 {features.map((feature) => {
-                  const display = displayFeatureMap.get(featureIdentity(feature)) ?? {
-                    feature,
-                    paths: { interactivePath: feature.path, excludedPath: "" }
-                  };
                   const match = lookupMunicipality(municipalityLookup, feature);
                   const status = match?.feeAdequacyLabel ?? labelFromMetrics(
                     match?.expenseRecoveryRate,
@@ -451,16 +443,6 @@ export function PrefectureMapExplorer({
                   }
                   return (
                     <g key={`${feature.code}-${feature.name}`}>
-                      {display.paths.excludedPath ? (
-                        <path
-                          className={styles.excludedShape}
-                          d={display.paths.excludedPath}
-                          fill={statusColors["データなし・対象外"]}
-                          fillRule="evenodd"
-                          vectorEffect="non-scaling-stroke"
-                          aria-hidden="true"
-                        />
-                      ) : null}
                       <g
                         data-municipality-region={feature.code}
                         className={clsx(styles.mapRegion, active && styles.active)}
@@ -488,7 +470,7 @@ export function PrefectureMapExplorer({
                       >
                         <path
                           className={styles.shape}
-                          d={display.paths.interactivePath}
+                          d={feature.path}
                           fill={statusColors[status]}
                           fillRule="evenodd"
                           vectorEffect="non-scaling-stroke"
@@ -506,11 +488,10 @@ export function PrefectureMapExplorer({
                 >
                   {features.map((feature) => {
                     if (!labelLayout.codes.has(feature.code)) return null;
-                    const display = displayFeatureMap.get(featureIdentity(feature))?.feature ?? feature;
                     return (
                       <FeatureLabel
                         key={`label-${feature.code}-${feature.name}`}
-                        feature={display}
+                        feature={feature}
                         mapScale={labelLayout.scale}
                         compact={surfaceSize.width > 0 && surfaceSize.width < 700}
                         placement={labelLayout.placements.get(feature.code)}
@@ -522,12 +503,6 @@ export function PrefectureMapExplorer({
             ) : null}
             {hover ? <MapHoverCard hover={hover} /> : null}
           </div>
-          {labelsVisible && labelLayout.fallbackFeatures.length > 0 ? (
-            <div className={styles.labelFallback} aria-label={`地図上で重なりを避けた市町村名 ${labelLayout.fallbackFeatures.length}件`}>
-              <p><strong>地図上で重なりを避けた市町村名</strong><b>{labelLayout.fallbackFeatures.length}件</b><span>拡大すると地図上の表示数が増えます。</span></p>
-              <div>{labelLayout.fallbackFeatures.map((feature) => <span key={`fallback-${feature.code}`}>{feature.name}</span>)}</div>
-            </div>
-          ) : null}
           <p className={styles.mapNote}>
             色は各市町村の最新年度の表示事業による経費回収率です。複数事業がある場合は診断上の注意度が最も高い1事業を表示し、自治体全体の合算値ではありません。詳細画面で事業を切り替えられます。{zoom > 1 ? "地図をドラッグして移動できます。" : ""}
           </p>
@@ -695,6 +670,13 @@ export function buildMunicipalityLookup(municipalities: MapMunicipality[]) {
   return lookup;
 }
 
+export function filterPrefectureMapFeatures(prefectureCode: string, features: GisFeature[]) {
+  if (prefectureCode !== "01") return features;
+  return features.filter((feature) => !(
+    feature.kind === "geography" && nonMunicipalityGeographyCodes.has(feature.code)
+  ));
+}
+
 function labelFromMetrics(
   recoveryRate: number | null | undefined,
   feeUnitPrice: number | null | undefined
@@ -719,7 +701,6 @@ function featureArea(feature: GisFeature) {
 
 function buildLabelLayout({
   features,
-  displayFeatureMap,
   municipalityLookup,
   surfaceSize,
   viewBox,
@@ -728,7 +709,6 @@ function buildLabelLayout({
   activeFeatureCode
 }: {
   features: GisFeature[];
-  displayFeatureMap: Map<string, { paths: { interactivePath: string; excludedPath: string }; feature: GisFeature }>;
   municipalityLookup: Map<string, MapMunicipality>;
   surfaceSize: SurfaceSize;
   viewBox: string | null;
@@ -765,7 +745,6 @@ function buildLabelLayout({
   const offsetCandidates = collisionAwareOffsets(compact, zoom);
   const candidates = features
     .filter(isMunicipalityFeature)
-    .map((feature) => displayFeatureMap.get(featureIdentity(feature))?.feature ?? feature)
     .sort((a, b) => labelPriority(b, municipalityLookup, activeFeatureCode) - labelPriority(a, municipalityLookup, activeFeatureCode)
       || a.code.localeCompare(b.code, "ja"));
 
@@ -863,10 +842,6 @@ function isMunicipalityFeature(feature: GisFeature) {
   if (nonMunicipalityGeographyCodes.has(feature.code)) return false;
   if (/^\d{2}8\d{2}$/.test(feature.code)) return false;
   return !nonMunicipalityGeographyNamePatterns.some((pattern) => feature.name.includes(pattern));
-}
-
-function featureIdentity(feature: GisFeature) {
-  return `${feature.kind ?? "municipality"}:${feature.code}:${feature.name}`;
 }
 
 function screenRectsOverlap(

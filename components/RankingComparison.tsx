@@ -9,14 +9,14 @@ export function RankingComparison({ items, type }: { items: any[]; type: Ranking
   if (rows.length === 0) {
     return (
       <section className="panel p-4">
-        <h2 className="text-lg font-black text-ink">ランキング上位3件の比較</h2>
+        <h2 className="text-lg font-black text-ink">選択条件の先頭3件</h2>
         <p className="mt-3 rounded-md bg-panel p-4 text-sm font-bold text-muted">比較できるランキングデータは未登録です。</p>
       </section>
     );
   }
   return (
     <section className="panel p-4">
-      <h2 className="text-lg font-black text-ink">ランキング上位3件の比較</h2>
+      <h2 className="text-lg font-black text-ink">選択条件の先頭3件</h2>
       <div className="mt-3 grid gap-3 lg:grid-cols-3">
         {rows.map((item, index) => (
           <article key={`${item.municipalityCode}-${index}-summary`} className="rounded-md border border-line bg-white p-3">

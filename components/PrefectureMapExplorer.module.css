@@ -229,59 +229,6 @@
   pointer-events: none;
 }
 
-.labelFallback {
-  min-width: 0;
-  border: 1px solid #dce7ed;
-  border-radius: 6px;
-  background: #f8fbfc;
-  color: #52647a;
-  font-size: 10px;
-  line-height: 1.6;
-}
-
-.labelFallback p {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 3px 8px;
-  margin: 0;
-  padding: 8px 10px 6px;
-}
-
-.labelFallback p strong {
-  color: #344a63;
-}
-
-.labelFallback p b {
-  color: #0b1f4d;
-  font-variant-numeric: tabular-nums;
-}
-
-.labelFallback p span {
-  border: 0;
-  background: transparent;
-  padding: 0;
-  color: #6b7d90;
-  font-weight: 700;
-}
-
-.labelFallback div {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  padding: 0 10px 9px;
-}
-
-.labelFallback div span {
-  flex: 0 1 auto;
-  border: 1px solid #d2e1e8;
-  border-radius: 999px;
-  background: #fff;
-  padding: 3px 7px;
-  color: #203755;
-  font-weight: 800;
-}
-
 .mapNote {
   margin: 0;
   color: #6b7d90;
@@ -326,13 +273,14 @@
 }
 
 .tooltipTitle {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: start;
+  gap: 6px;
 }
 
 .tooltipTitle strong {
+  width: 100%;
   overflow: hidden;
   font-size: 15px;
   text-overflow: ellipsis;
@@ -340,13 +288,16 @@
 }
 
 .tooltipTitle span {
-  flex: 0 0 auto;
+  max-width: 100%;
   border-radius: 3px;
   background: #dcf5ef;
   padding: 3px 6px;
   color: #075f64;
   font-size: 9px;
   font-weight: 900;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .tooltip dl {

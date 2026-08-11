@@ -7,10 +7,7 @@
 /municipalities
 /municipalities/[municipalityCode]
 /rankings
-/rankings/expense-recovery-low
-/rankings/required-revision-high
-/rankings/fee-unit-low
-/rankings/treatment-cost-high
+/rankings/[type]
 /data-sources
 /about
 /disclaimer
@@ -157,11 +154,10 @@ Responseに含めるもの：
 
 Types:
 
-- `expense-recovery-low`
-- `required-revision-high`
-- `fee-unit-low`
-- `treatment-cost-high`
-- `transfer-dependency-high`
+- `expense-recovery-high` / `expense-recovery-low`
+- `fee-unit-high` / `fee-unit-low`
+- `treatment-cost-high` / `treatment-cost-low`
+- `transfer-dependency-high` / `transfer-dependency-low`
 
 ### 6.5 `GET /api/data-sources`
 

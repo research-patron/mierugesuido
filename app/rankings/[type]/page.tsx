@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { RankingNav } from "@/components/RankingNav";
 import { RankingComparison } from "@/components/RankingComparison";
 import { RankingTable } from "@/components/RankingTable";
-import { rankingLabels, type RankingType } from "@/lib/rankings";
+import { isRankingType, rankingLabels, rankingSelection } from "@/lib/rankings";
 import { getStaticManifest, getStaticRankings } from "@/lib/staticData";
 
 export async function generateStaticParams() {
@@ -16,8 +16,9 @@ export default async function RankingTypePage({
   params: Promise<{ type: string }>;
 }) {
   const { type } = await params;
-  if (!(type in rankingLabels)) notFound();
-  const rankingType = type as RankingType;
+  if (!isRankingType(type)) notFound();
+  const rankingType = type;
+  const { metric } = rankingSelection(rankingType);
   const items = await getStaticRankings(rankingType);
 
   return (
@@ -27,12 +28,12 @@ export default async function RankingTypePage({
           <div>
             <h1 className="text-3xl font-black text-ink sm:text-4xl">{rankingLabels[rankingType]}</h1>
             <p className="mt-2 max-w-4xl text-sm font-medium leading-7 text-slate-700">
-              異常値フラグがあるデータは注記対象です。分母欠損により算定できないデータはランキングから除外します。
+              {metric.description} 異常値フラグがあるデータは注記対象とし、算定できないデータはランキングから除外します。
             </p>
             <p className="mt-1 max-w-4xl text-xs font-bold leading-6 text-slate-600">
-              {rankingType === "transfer-dependency-high"
-                ? "基準外繰入金の比較は法適用事業に限定します。"
-                : "法非適用事業は、総務省調査の共通定義による料金指標だけを参考比較します。"}
+              {metric.metric === "transfer-amount"
+                ? "基準外繰入金額の比較は法適用事業に限定します。実額比較のため、事業規模の差には注意が必要です。"
+                : "全国単純比較であり、類似団体区分の差を調整していません。法非適用事業は、総務省調査の共通定義による料金指標だけを参考比較します。"}
             </p>
           </div>
           <RankingNav current={rankingType} />

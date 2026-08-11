@@ -17,11 +17,12 @@ import {
   Users
 } from "lucide-react";
 import { Badge } from "@/components/Badge";
-import { MunicipalityTable } from "@/components/MunicipalityTable";
+import { MunicipalityFeeRevisionDisplay, MunicipalityTable } from "@/components/MunicipalityTable";
 import { MunicipalitySearchFilterPanel } from "@/components/MunicipalitySearchFilters";
 import { StatCard } from "@/components/StatCard";
 import { accountingTypeLabel, displayBusinessName, matchesBusinessCategory } from "@/lib/businessDisplay";
 import { formatPercent, formatRevisionRate, formatYenPerM3 } from "@/lib/format";
+import { municipalityFeeRevisionStatus } from "@/lib/municipalityFeeRevision";
 import { municipalityDetailHref } from "@/lib/municipalityLinks";
 
 type ViewMode = "table" | "card";
@@ -35,7 +36,7 @@ type StaticMunicipalityDataset = {
 const emptyOverview = {
   averageExpenseRecoveryRate: null,
   averageFeeUnitPriceYenPerM3: null,
-  revisionEventCount: 0
+  feeRevisionMunicipalityCount: 0
 };
 
 export default function MunicipalitiesPage() {
@@ -64,10 +65,12 @@ function MunicipalitiesContent() {
   const view: ViewMode = searchParams.get("view") === "card" ? "card" : "table";
   const accountingType = searchParams.get("accountingType") ?? "";
   const businessType = searchParams.get("businessType") ?? "";
-  const hasRevisionEventParam = searchParams.get("hasRevisionEvent") ?? "";
+  const hasFeeRevisionChangeParam = searchParams.get("hasFeeRevisionChange")
+    ?? searchParams.get("hasRevisionEvent")
+    ?? "";
   const requestedPage = Number(searchParams.get("page") || 1);
   const requestedLimit = Number(searchParams.get("limit") || 10);
-  const hasRevisionEvent = parseBoolean(hasRevisionEventParam);
+  const hasFeeRevisionChange = parseBoolean(hasFeeRevisionChangeParam);
   const limit = [10, 20, 50].includes(requestedLimit) ? requestedLimit : 10;
   const filteredItems = useMemo(() => filterMunicipalities(dataset.items, {
     q,
@@ -76,8 +79,8 @@ function MunicipalitiesContent() {
     sort,
     accountingType,
     businessType,
-    hasRevisionEvent
-  }), [accountingType, businessType, dataset.items, hasRevisionEvent, label, prefecture, q, sort]);
+    hasFeeRevisionChange
+  }), [accountingType, businessType, dataset.items, hasFeeRevisionChange, label, prefecture, q, sort]);
   const totalPagesForRequest = Math.max(Math.ceil(filteredItems.length / limit), 1);
   const page = Math.min(Math.max(Number.isFinite(requestedPage) ? requestedPage : 1, 1), totalPagesForRequest);
   const data = {
@@ -88,6 +91,8 @@ function MunicipalitiesContent() {
   };
   const prefectures = dataset.prefectures;
   const overview = dataset.overview;
+  const feeRevisionMunicipalityCount = overview.feeRevisionMunicipalityCount
+    ?? dataset.items.filter((item) => municipalityFeeRevisionStatus(item.feeRevisionComparison) === "changed").length;
   const totalPages = Math.max(Math.ceil(data.total / data.limit), 1);
   const visibleFrom = data.total === 0 ? 0 : (data.page - 1) * data.limit + 1;
   const visibleTo = data.total === 0 ? 0 : (data.page - 1) * data.limit + data.items.length;
@@ -107,7 +112,7 @@ function MunicipalitiesContent() {
           businessType={businessType}
           accountingType={accountingType}
           label={label}
-          hasRevisionEvent={hasRevisionEventParam}
+          hasFeeRevisionChange={hasFeeRevisionChangeParam}
           sort={sort}
           limit={limit}
           view={view}
@@ -118,7 +123,7 @@ function MunicipalitiesContent() {
             <StatCard icon={Users} label="検索結果" value={data.total.toLocaleString("ja-JP")} unit="自治体" sub="流域下水道を除く比較対象" tone="teal" />
             <StatCard icon={Filter} label="サイト内平均：経費回収率" value={formatPercent(overview.averageExpenseRecoveryRate).replace("%", "")} unit={overview.averageExpenseRecoveryRate == null ? undefined : "%"} sub="表示事業値の単純平均・公式全国平均ではない" tone="violet" />
             <StatCard icon={CircleDollarSign} label="サイト内平均：使用料単価" value={formatYenPerM3(overview.averageFeeUnitPriceYenPerM3).replace("円/m³", "")} unit={overview.averageFeeUnitPriceYenPerM3 == null ? undefined : "円/m³"} sub="法非適用を含む参考値・検索条件に非連動" tone="blue" />
-            <StatCard icon={Bell} label="公式改定情報の登録" value={overview.revisionEventCount.toLocaleString("ja-JP")} unit="自治体" sub="公式公表情報・検索条件に非連動" tone="amber" />
+            <StatCard icon={Bell} label="改定情報の掲載" value={feeRevisionMunicipalityCount.toLocaleString("ja-JP")} unit="自治体" sub="検索対象内・R5→R6第33表の施行年月日変化" tone="amber" />
           </div>
           <div className="search-summary-footer">
             <p className="text-xs font-bold leading-6 text-slate-600">
@@ -126,7 +131,7 @@ function MunicipalitiesContent() {
             </p>
             <div className="view-toggle" aria-label="表示形式">
               <Link
-                href={municipalityHref({ q, prefecture, label, accountingType, businessType, hasRevisionEvent: hasRevisionEventParam, sort, limit: data.limit, view: "table", page: 1 })}
+                href={municipalityHref({ q, prefecture, label, accountingType, businessType, hasFeeRevisionChange: hasFeeRevisionChangeParam, sort, limit: data.limit, view: "table", page: 1 })}
                 className={view === "table" ? "is-active" : undefined}
                 aria-current={view === "table" ? "true" : undefined}
               >
@@ -134,7 +139,7 @@ function MunicipalitiesContent() {
                 テーブル
               </Link>
               <Link
-                href={municipalityHref({ q, prefecture, label, accountingType, businessType, hasRevisionEvent: hasRevisionEventParam, sort, limit: data.limit, view: "card", page: 1 })}
+                href={municipalityHref({ q, prefecture, label, accountingType, businessType, hasFeeRevisionChange: hasFeeRevisionChangeParam, sort, limit: data.limit, view: "card", page: 1 })}
                 className={view === "card" ? "is-active" : undefined}
                 aria-current={view === "card" ? "true" : undefined}
               >
@@ -154,7 +159,7 @@ function MunicipalitiesContent() {
           visibleFrom={visibleFrom}
           visibleTo={visibleTo}
           total={data.total}
-          filters={{ q, prefecture, label, accountingType, businessType, hasRevisionEvent: hasRevisionEventParam, sort, limit: data.limit, view }}
+          filters={{ q, prefecture, label, accountingType, businessType, hasFeeRevisionChange: hasFeeRevisionChangeParam, sort, limit: data.limit, view }}
         />
       </section>
     </div>
@@ -167,7 +172,7 @@ type MunicipalityFilters = {
   label?: string;
   accountingType?: string;
   businessType?: string;
-  hasRevisionEvent?: string;
+  hasFeeRevisionChange?: string;
   sort?: string;
   limit?: number;
   view?: ViewMode;
@@ -201,7 +206,7 @@ function MunicipalityCardGrid({ items }: { items: any[] }) {
           </div>
           <div className="municipality-result-badges">
             <span><span className="sr-only">診断: </span><Badge>{item.diagnosis?.feeAdequacyLabel ?? "判定不可"}</Badge></span>
-            <span><span className="sr-only">公式改定情報: </span><Badge>{item.hasRevisionEvent ? "登録あり" : "未登録"}</Badge></span>
+            <div><span className="sr-only">改定情報: </span><MunicipalityFeeRevisionDisplay comparison={item.feeRevisionComparison} compact /></div>
           </div>
         </Link>
       ))}
@@ -311,7 +316,7 @@ function municipalityHref({
   label,
   accountingType,
   businessType,
-  hasRevisionEvent,
+  hasFeeRevisionChange,
   limit,
   sort,
   view,
@@ -323,7 +328,7 @@ function municipalityHref({
   if (label) params.set("label", label);
   if (accountingType) params.set("accountingType", accountingType);
   if (businessType) params.set("businessType", businessType);
-  if (hasRevisionEvent) params.set("hasRevisionEvent", hasRevisionEvent);
+  if (hasFeeRevisionChange) params.set("hasFeeRevisionChange", hasFeeRevisionChange);
   if (sort && sort !== "latest") params.set("sort", sort);
   if (limit && limit !== 10) params.set("limit", String(limit));
   if (view && view !== "table") params.set("view", view);
@@ -352,7 +357,7 @@ function filterMunicipalities(items: any[], filters: {
   sort: string;
   accountingType: string;
   businessType: string;
-  hasRevisionEvent?: boolean;
+  hasFeeRevisionChange?: boolean;
 }) {
   const needle = normalizeSearchText(filters.q);
   return items
@@ -366,15 +371,18 @@ function filterMunicipalities(items: any[], filters: {
     .filter((item) => !filters.label || item.diagnosis?.feeAdequacyLabel === filters.label)
     .filter((item) => !filters.accountingType || item.accountingType === filters.accountingType)
     .filter((item) => matchesBusinessCategory(item, filters.businessType))
-    .filter((item) => filters.hasRevisionEvent == null || item.hasRevisionEvent === filters.hasRevisionEvent)
+    .filter((item) => filters.hasFeeRevisionChange == null
+      || municipalityFeeRevisionStatus(item.feeRevisionComparison) === (filters.hasFeeRevisionChange ? "changed" : "unchanged"))
     .sort((a, b) => sortMunicipalityRows(a, b, filters.sort));
 }
 
 function sortMunicipalityRows(a: any, b: any, sort: string) {
   if (sort === "expense-recovery-high") return nullsLast(a.diagnosis?.expenseRecoveryRate, b.diagnosis?.expenseRecoveryRate, "desc");
   if (sort === "expense-recovery-low") return nullsLast(a.diagnosis?.expenseRecoveryRate, b.diagnosis?.expenseRecoveryRate, "asc");
-  if (sort === "required-revision-high") return nullsLast(a.diagnosis?.requiredRevisionRateTo100, b.diagnosis?.requiredRevisionRateTo100, "desc");
+  if (sort === "fee-unit-high") return nullsLast(a.diagnosis?.feeUnitPriceYenPerM3, b.diagnosis?.feeUnitPriceYenPerM3, "desc");
   if (sort === "fee-unit-low") return nullsLast(a.diagnosis?.feeUnitPriceYenPerM3, b.diagnosis?.feeUnitPriceYenPerM3, "asc");
+  if (sort === "treatment-cost-high") return nullsLast(a.diagnosis?.treatmentCostYenPerM3, b.diagnosis?.treatmentCostYenPerM3, "desc");
+  if (sort === "treatment-cost-low") return nullsLast(a.diagnosis?.treatmentCostYenPerM3, b.diagnosis?.treatmentCostYenPerM3, "asc");
   if (sort === "municipality-code") return (a.municipalityCode ?? "").localeCompare(b.municipalityCode ?? "", "ja");
   return (b.latestYear ?? 0) - (a.latestYear ?? 0)
     || (a.municipalityCode ?? "").localeCompare(b.municipalityCode ?? "", "ja");

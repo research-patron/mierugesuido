@@ -164,6 +164,83 @@ Header navigation, search, filters, table/card views, sorting, pagination, munic
 
 final result: passed
 
+## Final superseding ranking-selector experience gate — 2026-08-11
+
+This gate supersedes the preceding ranking-condition layout evidence. It is UI-only and does not change the retained indicators, ranking values, or sort formulas.
+
+### Comparison interaction and hierarchy
+
+- Replaced the numbered settings-form layout with one compact comparison switcher headed `比べたい指標を選ぶ`. The current metric and direction are shown together before the controls, so the displayed result is understandable without scanning the selected buttons.
+- Four metric choices and two direction choices are grouped as familiar segmented controls. The active state uses a white surface, thin full-perimeter teal border, check mark, and `aria-current="page"`; it does not rely on color or a solid primary-button treatment.
+- Each metric retains a restrained functional icon and short meaning label. The redundant selected-metric explanation band was removed because the ranking-page introduction already supplies that definition.
+- Desktop places metric and direction selection in one horizontal tool. Mobile uses a 2×2 metric grid and a two-part direction control, with no horizontal scrolling.
+- All choices remain links. Switching the direction preserves the metric, switching the metric preserves the direction, browser back restores the preceding condition, and all eight direct ranking URLs remain generated and test-covered.
+
+### Visual and accessibility evidence
+
+- At 1491×1055, the selector height decreased from approximately 262 px in the first redesign pass to 204 px; all six controls measure 56 px high and the result section appears in the initial viewport.
+- At 390×844, the selector height decreased from approximately 514 px in the first redesign pass to 319 px; the next results panel is visible at the bottom of the initial viewport.
+- The mobile selector measured 345 px for both `scrollWidth` and `clientWidth`; document width stayed within the 390 px viewport. The smallest interactive target measured 48 px high.
+- Keyboard Enter changed `使用料単価・高い順` → `使用料単価・低い順` → `経費回収率・低い順`, preserving the independent condition each time. Browser Back returned to `使用料単価・低い順`.
+- Keyboard focus displayed a 2 px solid teal outline on the selected metric link. Exactly one metric and one direction expose `aria-current="page"` in every state.
+- Supporting text and the current-view label use 10.5 px `#52647c`, with measured contrast from 5.45:1 to 6.05:1 across their rendered backgrounds. The 320 px edge check retained the longest metric and direction labels without overflow.
+- Final captures are stored as ignored QA artifacts at `artifacts/design-qa/ranking-selector-2026-08-11/rankings-desktop-postfix.png`, `rankings-desktop-focus-postfix.png`, `rankings-mobile-postfix.png`, and `rankings-mobile-focus-postfix.png`; they are not part of the publishable diff.
+- Fresh post-fix browser logs contained zero warnings or errors.
+
+### Verification and protected scope
+
+- `pnpm lint`: passed.
+- `pnpm test`: 35/35 files and 231/231 tests passed.
+- `pnpm build`: passed; 1,652 static pages generated.
+- Focused ranking/accessibility and directional-edge tests: 5/5 passed.
+- `git diff --check`: passed.
+- No database, Prisma schema, migration, ETL, downloaded workbook, imported accounting value, GIS record, static ranking payload, or financial formula changed for this UI extension.
+- Intentional subtraction: the `1.` / `2.` step numbering, solid-teal direction button, six detached box choices, and duplicate bottom explanation band were removed. All four metrics, both directions, direct URLs, ranking results, tables, downloads, and source notes remain available.
+
+final result: passed
+
+## Final superseding ranking-basis and revision-status gate — 2026-08-11
+
+This gate supersedes the preceding ranking-condition and municipality-search negative-state evidence.
+
+### Ranking basis and comparison controls
+
+- `使用料収入の必要増加率` remains a detail-level fixed-cost/fixed-volume scenario only. It is no longer a ranking or search-sort condition because `max(100 ÷ 経費回収率 − 1, 0)` is a strict inverse of 経費回収率 below 100%, produces the same order as 経費回収率の低い順, collapses every value at or above 100% to zero, and cannot represent the official combination of revenue, cost, demand, and multi-year planning measures.
+- The ranking selector now separates `比較する指標` from `並び順`. 経費回収率, 使用料単価, 汚水処理原価, and 基準外繰入金額 each expose both high and low directions, with a visible check mark and `aria-current` state.
+- 基準外繰入金額 is explicitly described as an unstandardized actual amount. All nationwide lists state that they are simple comparisons rather than peer-class-adjusted evaluations.
+- The generated manifest contains exactly eight retained metric/direction routes. `required-revision-high.json` is absent, the unused `highRevision` top-five list is absent from every home overview payload, and all eight JSON lists pass direction-order invariants.
+
+### Municipality revision status
+
+- Municipality search uses the same strict R5/R6 Table 33 `現行使用料施行年月日` comparison as the revision tab.
+- `施行年月日が変化` is used for 108 administrative municipalities. `改定情報なし` is used only when every business for a municipality is present in both years, every effective date is valid, and no date changed; 1,288 municipalities meet that rule.
+- One-year-only records, unmatched business keys, invalid or missing dates, and other incomplete comparisons remain `比較対象外`; 190 municipalities are in that state. They are never mixed into the no-change filter.
+- The filter, table/card views, generated municipality JSON, and all 47 prefecture CSV files use the same three-state result. Manual official-announcement records do not affect this classification.
+
+### Responsive interaction and visual evidence
+
+- Desktop 1491×1055 and mobile 390×844 checks found no page-level horizontal overflow. The mobile metric selector uses two compact columns with 44 px targets and preserves readable labels.
+- Pointer navigation changed `経費回収率・低い順` to `使用料単価・高い順`, and the displayed values were descending. Keyboard Enter changed the selected metric to `汚水処理原価` while preserving `高い順`.
+- The desktop search table showed 潟上市 with two changed businesses and both R5→R6 dates. The collapsed mobile result card showed `改定情報なし` together with `R5・R6施行年月日を比較済み（2事業）`; 新篠津村 showed `比較対象外`.
+- Browser console warnings/errors: 0.
+- Ignored QA captures:
+  - `artifacts/design-qa/ranking-revision-status-2026-08-11/rankings-desktop-fee-high.png`
+  - `artifacts/design-qa/ranking-revision-status-2026-08-11/rankings-mobile-fee-high.png`
+  - `artifacts/design-qa/ranking-revision-status-2026-08-11/municipalities-desktop-changed.png`
+  - `artifacts/design-qa/ranking-revision-status-2026-08-11/municipalities-mobile-no-change-result.png`
+
+### Verification and protected scope
+
+- `pnpm static:data`: passed against 86 official workbooks; 1,318,745 source rows, 1,586 municipality detail payloads, and 312 R5/R6 comparison pairs.
+- `pnpm lint`: passed.
+- `pnpm test`: 35/35 files and 231/231 tests passed.
+- `pnpm build`: passed; 1,652 static pages generated.
+- `git diff --check`: passed.
+- No database, Prisma schema, migration, ETL, downloaded workbook, accounting value, source GIS record, or GIS generator changed.
+- Intentional subtraction: the independent `使用料収入の必要増加率が高い順` ranking/search condition and its unused home-overview top-five payload were removed because they duplicated 経費回収率の低い順 without an official basis as a standalone ranking indicator. The explanatory detail-level scenario and its explicit limitations remain available.
+
+final result: passed
+
 ## Superseding desktop vertical-flow and national-map sharpness gate — 2026-08-02
 
 This gate supersedes the earlier desktop home composition and the earlier selector-side `全国` requirement. It is limited to homepage layout, national-map rendering, and the related controls; it does not change source data, aggregation, accounting logic, routes, or the database.
@@ -1632,5 +1709,96 @@ This gate supersedes the preceding test-count and municipality-lookup evidence. 
 - Browser console warnings/errors across the corrected interaction checks: 0.
 - `git diff --check`: passed after the fixes.
 - Commit and push remained stopped after the first publication approval because the reviewed diff changed; publication requires a renewed approval for the corrected scope.
+
+final result: passed
+
+## Final superseding revision-data loading gate — 2026-08-10
+
+This gate supersedes the preceding initial-load result-count evidence.
+
+### Loading, validation, and failure semantics
+
+- The revision dataset starts in an explicit loading state, so the two KPIs and result summary show `読込中` rather than a false 0 while the static JSON is pending.
+- Only a payload whose summary, official events, comparison counts, and every rendered comparison-row field pass the runtime guard enters the ready state. Incomplete summaries, malformed nested tariff data, and count mismatches are rejected before rendering; the generator-compatible nullable municipality code remains accepted.
+- HTTP, parse, or shape failure shows `取得失敗`, an explicit alert with recovery guidance, and a `再試行する` action. The official-information disclosure follows the same loading and failure state.
+- `aria-busy`, a polite loading status, and an explicit failure alert expose state without relying on color. The KPI container does not duplicate the result panel's live announcement.
+- The state copy consistently says `施行年月日比較データ`, avoiding a claim that every date change has already been confirmed as a fee revision.
+
+### Browser and visual evidence
+
+- A local production export served the revision JSON with an intentional two-second delay. Immediately after navigation, both KPI values were `読込中`, the result panel had `role=status`, no comparison rows were present, and no false `0団体` or `0事業` text appeared.
+- After the delayed response, the same page changed to 109 municipalities, 138 businesses, and 40 initial rows with no horizontal overflow and no browser error.
+- A separate local 503 response produced two `取得失敗` KPI values, one explicit `role=alert`, recovery guidance, and one `再試行する` button. Activating retry safely returned to the same failure state while the test server continued to reject the request; it never displayed zero results.
+- The loading and failure states were inspected in fresh browser captures. Both retain the existing quiet two-card hierarchy, neutral borders, readable spacing, and clear recovery action without an emphasized one-sided card edge.
+
+### Verification and protected scope
+
+- `pnpm lint`: passed.
+- `pnpm test`: 33/33 files and 215/215 tests passed.
+- `pnpm build`: passed; 1,649 static pages generated.
+- Independent blocker review: passed after the runtime guard and nullable-code contract were corrected.
+- `git diff --check`: passed.
+- No database, Prisma schema, migration, ETL, imported financial data, GIS, or published comparison value changed.
+
+final result: passed
+
+## Final superseding map identity and revision-consistency gate — 2026-08-11
+
+This gate supersedes the preceding municipality-label fallback, Okinawa interaction, search revision-label, and linear revision-row evidence.
+
+### Municipality-map identity and Hokkaido scope
+
+- The municipality name in the hover/focus card measured 0 px before the fix and 206 px after it at both desktop and mobile widths. The name now occupies the first full-width row, while the diagnosis text wraps below it.
+- The bottom `地図上で重なりを避けた市町村名` fallback list was removed. Municipality shapes, in-map labels, hover/focus identity, keyboard navigation, zoom, reset, visibility control, and detail links remain available.
+- The Hokkaido display-time filter excludes six neutral `kind: geography` records (`01695`–`01700`) from rendering, bounds, and label layout. The map still exposes 179 municipality features, and municipality `01403` retains all 58 official geographic parts. The source GIS files and generator were not changed.
+
+### National and home-map Okinawa interaction
+
+- National-map hover cards are positioned outside the complete prefecture target bounds and clamped on all four sides. The Okinawa card no longer overlaps the prefecture target on desktop, mobile, or the home map.
+- The complete Okinawa inset frame is now a transparent semantic hit area. Pointer activation and keyboard Enter both navigate to `/map/47/`; the hover card does not intercept the click.
+- Home-map passive-card behavior and national-map interactive-card behavior remain distinct, and no prefecture financial values or routes changed.
+
+### Search and revision-list consistency
+
+- Municipality search and the revision tab now share the strict R5/R6 Table 33 `現行使用料施行年月日` comparison. Among 1,586 search municipalities, 108 have a mapped date change; the revision page separately retains 109 operators and 138 changed businesses because `取手地方広域下水道組合` is not an administrative municipality search record.
+- The search label is `改定情報`. Positive rows show the affected business name and R5→R6 dates; other rows say `変更一覧に掲載なし` rather than asserting that no change occurred. `潟上市` correctly shows two changed businesses even though its representative search business is different.
+- The generated municipality JSON and all 47 prefecture CSV files use the same enriched comparison. Manual official-announcement records do not create a positive search result and remain available only in their existing official-information context.
+- Revision results are grouped into bordered municipality sections with a neutral header and business count. The first increment contains 40 municipality groups and 50 businesses, with a valid H2→H3→H4→H5 heading sequence and no thick directional accent.
+
+### Responsive and visual evidence
+
+- Desktop 1491×1055 and mobile 390×844 captures verified readable hover identity, non-overlapping Okinawa interaction, the revised search table/card, and municipality grouping without page-level horizontal overflow.
+- The inspected combined comparison is stored as an ignored QA artifact at `artifacts/design-qa/map-revision-consistency-2026-08-11/combined-before-after.png`. The individual before/final captures are kept in the same ignored directory and are not part of the publishable diff.
+- Browser interaction checks reported zero console warnings or errors.
+
+### Verification and protected scope
+
+- `pnpm static:data`: passed against 86 official workbooks; 1,318,745 source rows, 1,586 municipality detail payloads, and 312 R5/R6 comparison pairs.
+- `pnpm lint`: passed.
+- `pnpm test`: 34/34 files and 223/223 tests passed.
+- `pnpm build`: passed; 1,649 static pages generated.
+- `git diff --check`: passed.
+- No database, Prisma schema, migration, ETL, downloaded workbook, accounting value, ranking formula, source GIS record, or GIS generator changed.
+- Intentional subtraction: the redundant bottom municipality-name fallback list and the municipality-search column backed by unrelated manual official-announcement records were removed. They were replaced by reliable hover/focus identity and the strict Table 33 date-comparison summary, respectively; no municipality or financial record was removed.
+
+final result: passed
+
+## Final superseding gate index — 2026-08-11 ranking basis and revision status
+
+The detailed `Final superseding ranking-basis and revision-status gate — 2026-08-11` is the current acceptance gate for ranking conditions and the municipality-search no-change state, regardless of its earlier position in this append-only QA history.
+
+- The unsupported, order-duplicating required-increase ranking/search sort is absent; four retained indicators each support high and low directions.
+- Municipality search and the revision tab share one R5/R6 effective-date comparison with 108 changed, 1,288 unchanged, and 190 unavailable municipalities.
+- Static generation, 35 files / 231 tests, production build with 1,652 pages, desktop/mobile interaction, keyboard access, overflow checks, browser logs, and protected-scope checks passed.
+
+final result: passed
+
+## Final superseding gate index — 2026-08-11 ranking-selector experience
+
+The detailed `Final superseding ranking-selector experience gate — 2026-08-11` is the current acceptance gate for the ranking comparison-selector layout, regardless of its earlier position in this append-only QA history.
+
+- The numbered settings form is replaced by a compact selector with one current-view summary, four retained metrics, and both sort directions.
+- Final selector heights are 204 px at 1491×1055 and 319 px at 390×844; mobile has 48 px minimum targets and no horizontal overflow.
+- All eight direct routes, independent metric/direction preservation, keyboard focus and Enter, browser Back, 35 files / 231 tests, lint, production build with 1,652 pages, and protected-scope checks passed.
 
 final result: passed

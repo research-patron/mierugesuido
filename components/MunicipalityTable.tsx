@@ -4,6 +4,11 @@ import { Badge } from "@/components/Badge";
 import { accountingTypeLabel, displayBusinessName } from "@/lib/businessDisplay";
 import { formatPercent, formatRevisionRate, formatYenPerM3 } from "@/lib/format";
 import { municipalityDetailHref } from "@/lib/municipalityLinks";
+import {
+  formatFeeRevisionEffectiveDate,
+  municipalityFeeRevisionStatus,
+  type MunicipalityFeeRevisionComparison
+} from "@/lib/municipalityFeeRevision";
 
 export function MunicipalityTable({ items }: { items: any[] }) {
   return (
@@ -31,7 +36,8 @@ export function MunicipalityTable({ items }: { items: any[] }) {
               <MobileMetric label="汚水処理原価" value={formatYenPerM3(item.diagnosis?.treatmentCostYenPerM3)} />
             </div>
             <div className="mt-3 rounded-md bg-panel px-3 py-2 text-xs font-bold text-slate-600">
-              公式改定情報: {revisionStatusLabel(item.hasRevisionEvent)}
+              <span className="mb-1 block text-[11px] text-muted">改定情報</span>
+              <MunicipalityFeeRevisionDisplay comparison={item.feeRevisionComparison} compact />
             </div>
           </article>
         ))}
@@ -63,7 +69,10 @@ export function MunicipalityTable({ items }: { items: any[] }) {
                 help="費用や有収水量が変わらない仮定で、事業全体の使用料収入の不足を解消するために必要な増加率です。家庭の20m³月額への換算ではありません"
               />
               <th scope="col">診断</th>
-              <th scope="col">公式改定情報</th>
+              <MetricHeader
+                label="改定情報"
+                help="R5・R6第33表の現行使用料施行年月日を比較します。全事業を比較できて変化がない自治体は「改定情報なし」、欠損や片年度のみの事業がある自治体は「比較対象外」と表示します"
+              />
               <th scope="col"><span className="sr-only">詳細</span></th>
             </tr>
           </thead>
@@ -91,7 +100,7 @@ export function MunicipalityTable({ items }: { items: any[] }) {
                 <td>{formatYenNumber(item.diagnosis?.treatmentCostYenPerM3)}</td>
                 <td className={revisionClass(item.diagnosis?.requiredRevisionRateTo100)}>{formatRevisionRate(item.diagnosis?.requiredRevisionRateTo100)}</td>
                 <td><Badge>{compactRecoveryBand(item.diagnosis?.expenseRecoveryRate)}</Badge></td>
-                <td><Badge>{revisionStatusLabel(item.hasRevisionEvent)}</Badge></td>
+                <td><MunicipalityFeeRevisionDisplay comparison={item.feeRevisionComparison} /></td>
                 <td>
                   <Link href={municipalityDetailHref(item.municipalityCode, item.businessKey)} className="row-chevron" aria-label={`${item.municipalityName}の${businessLabel}の詳細へ`}>
                     <ChevronRight size={20} />
@@ -154,8 +163,53 @@ function revisionClass(value: number | null | undefined) {
   return "metric-warning";
 }
 
-function revisionStatusLabel(hasRevisionEvent: boolean) {
-  return hasRevisionEvent ? "登録あり" : "未登録";
+export function MunicipalityFeeRevisionDisplay({
+  comparison,
+  compact = false
+}: {
+  comparison?: MunicipalityFeeRevisionComparison | null;
+  compact?: boolean;
+}) {
+  const status = municipalityFeeRevisionStatus(comparison);
+  if (status === "unavailable") {
+    return (
+      <span
+        className="text-xs font-bold text-slate-500"
+        title="R5・R6の有効な現行使用料施行年月日を事業単位で比較できないため、改定情報なしとは判定していません"
+      >
+        比較対象外
+      </span>
+    );
+  }
+  if (status === "unchanged") {
+    return (
+      <span className="grid gap-0.5 text-xs font-bold text-slate-600">
+        <span className="text-ink">改定情報なし</span>
+        <span className="text-[10px] leading-4 text-muted">
+          R5・R6施行年月日を比較済み（{comparison!.comparableBusinessCount}事業）
+        </span>
+      </span>
+    );
+  }
+  const changedComparison = comparison!;
+
+  return (
+    <div className={compact ? "grid gap-1.5" : "grid max-w-[220px] gap-1.5 py-1 text-left"}>
+      <Badge>{`施行年月日が変化（${changedComparison.changedBusinessCount}事業）`}</Badge>
+      <ul className="grid gap-1 whitespace-normal text-[11px] font-bold leading-5 text-slate-600">
+        {changedComparison.changes.map((change) => (
+          <li key={change.businessKey}>
+            <span className="block text-ink">{change.businessName}</span>
+            <span>
+              R5 {formatFeeRevisionEffectiveDate(change.r5EffectiveDate)}
+              <span aria-hidden="true"> → </span>
+              R6 {formatFeeRevisionEffectiveDate(change.r6EffectiveDate)}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 }
 
 function compactRecoveryBand(value: number | null | undefined) {

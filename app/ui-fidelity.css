@@ -1285,15 +1285,15 @@ body {
   line-height: 1.25;
 }
 
-.municipality-search-page .data-table th:nth-child(1) { width: 8.5%; }
-.municipality-search-page .data-table th:nth-child(2) { width: 10%; }
-.municipality-search-page .data-table th:nth-child(3) { width: 17%; }
-.municipality-search-page .data-table th:nth-child(4) { width: 10%; }
-.municipality-search-page .data-table th:nth-child(5) { width: 10%; }
-.municipality-search-page .data-table th:nth-child(6) { width: 10%; }
-.municipality-search-page .data-table th:nth-child(7) { width: 13%; }
-.municipality-search-page .data-table th:nth-child(8) { width: 10%; }
-.municipality-search-page .data-table th:nth-child(9) { width: 8%; }
+.municipality-search-page .data-table th:nth-child(1) { width: 8%; }
+.municipality-search-page .data-table th:nth-child(2) { width: 9%; }
+.municipality-search-page .data-table th:nth-child(3) { width: 14%; }
+.municipality-search-page .data-table th:nth-child(4) { width: 9%; }
+.municipality-search-page .data-table th:nth-child(5) { width: 9%; }
+.municipality-search-page .data-table th:nth-child(6) { width: 9%; }
+.municipality-search-page .data-table th:nth-child(7) { width: 12.5%; }
+.municipality-search-page .data-table th:nth-child(8) { width: 8.5%; }
+.municipality-search-page .data-table th:nth-child(9) { width: 17.5%; }
 .municipality-search-page .data-table th:nth-child(10) { width: 3.5%; }
 
 .municipality-search-page .data-table td:nth-child(1),
@@ -1305,6 +1305,10 @@ body {
 .municipality-search-page .data-table td:nth-child(3) {
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.municipality-search-page .data-table td:nth-child(9) {
+  white-space: normal;
 }
 
 .municipality-search-page .data-table tbody tr {
@@ -2254,13 +2258,77 @@ body {
   font-size: 10px !important;
 }
 
-.revision-comparison-row {
-  padding: 18px;
-  border-bottom: 1px solid var(--ui-divider);
+.revision-comparison-list {
+  display: grid;
+  gap: 12px;
+  padding: 14px 18px 18px;
 }
 
-.revision-comparison-row:last-child {
-  border-bottom: 0;
+.revision-municipality-group {
+  overflow: hidden;
+  border: 1px solid #d7e2e9;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.revision-municipality-header {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border-bottom: 1px solid #d7e2e9;
+  background: #f5f8fa;
+  padding: 10px 14px;
+}
+
+.revision-municipality-header > div {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 5px 9px;
+}
+
+.revision-municipality-header h3 {
+  color: var(--ui-ink-deep);
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.revision-municipality-header h3 a:hover {
+  color: var(--ui-teal-hover);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.revision-municipality-header h3 a:focus-visible,
+.revision-row-header h4 a:focus-visible {
+  border-radius: 3px;
+  outline: 2px solid rgba(7, 153, 168, 0.4);
+  outline-offset: 3px;
+}
+
+.revision-municipality-count {
+  display: inline-flex;
+  min-height: 24px;
+  flex: 0 0 auto;
+  align-items: center;
+  border: 1px solid #d2dde5;
+  border-radius: 999px;
+  background: #ffffff;
+  padding: 3px 9px;
+  color: #52677e;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.revision-municipality-businesses > .revision-comparison-row + .revision-comparison-row {
+  border-top: 1px solid var(--ui-divider);
+}
+
+.revision-comparison-row {
+  padding: 18px;
 }
 
 .revision-row-header {
@@ -2284,16 +2352,17 @@ body {
   font-weight: 800;
 }
 
-.revision-row-header a,
-.revision-row-header strong {
+.revision-row-header h4,
+.revision-row-header h4 a {
   color: var(--ui-ink-deep);
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 900;
 }
 
-.revision-row-header a:hover {
+.revision-row-header h4 a:hover {
   color: var(--ui-teal-hover);
   text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .revision-row-header div > span:last-child {
@@ -2527,7 +2596,7 @@ body {
   border-bottom: 0;
 }
 
-.revision-detail-body h3 {
+.revision-detail-body h5 {
   color: var(--ui-ink-deep);
   font-size: 12px;
   font-weight: 900;
@@ -2820,6 +2889,20 @@ body {
 
   .revision-source-links strong {
     margin-right: 0;
+  }
+
+  .revision-comparison-list {
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .revision-municipality-header {
+    min-height: 44px;
+    padding: 9px 12px;
+  }
+
+  .revision-municipality-header h3 {
+    font-size: 15px;
   }
 
   .revision-list-heading,

@@ -226,33 +226,6 @@ export function splitSubpaths(path: string) {
   return path.match(/M[^M]+/g) ?? [];
 }
 
-const WESTERNMOST_MUNICIPALITY_SUBPATH_ONLY = new Set(["01403"]);
-
-/**
- * The protected N03 payload contains one known same-name collision: the
- * present-day Hokkaido municipality `01403 泊村` and a distant historical
- * Northern Territories polygon were grouped into one feature. Keep the actual
- * western municipality interactive and return the distant polygon separately
- * so callers can render it as neutral, non-interactive geography. The source
- * GIS file remains unchanged.
- */
-export function municipalityDisplayPaths(feature: { code: string; path: string }) {
-  if (!WESTERNMOST_MUNICIPALITY_SUBPATH_ONLY.has(feature.code)) {
-    return { interactivePath: feature.path, excludedPath: "" };
-  }
-
-  const parts = splitSubpaths(feature.path)
-    .map((path) => ({ path, bounds: pathScreenBounds(path) }))
-    .filter((item): item is { path: string; bounds: Bounds } => Boolean(item.bounds))
-    .sort((a, b) => a.bounds[0] - b.bounds[0]);
-
-  if (parts.length < 2) return { interactivePath: feature.path, excludedPath: "" };
-  return {
-    interactivePath: parts[0].path,
-    excludedPath: parts.slice(1).map((item) => item.path).join("")
-  };
-}
-
 type Point = [number, number];
 
 type OutlineEdge = {

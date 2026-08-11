@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { revisionPeriodLabel, revisionPeriodOrder } from "@/lib/revisionEvents";
 import { businessCategoryCode, matchesBusinessCategory } from "@/lib/businessDisplay";
 import { getPrefectureName } from "@/lib/prefectures";
-import type { RankingType } from "@/lib/rankings";
+import { rankingSelection, type RankingType } from "@/lib/rankings";
 import {
   buildPrefecturePeerComparison,
   getPrefecturePeerBusinessKeys,
@@ -41,10 +41,6 @@ export async function getHomepageData(comparableInput?: ComparableMapMunicipalit
       .filter((item) => item.expenseRecoveryRate != null)
       .sort((a, b) => nullsLast(a.expenseRecoveryRate, b.expenseRecoveryRate, "asc"))
       .slice(0, 5);
-    const highRevision = [...comparableMunicipalities]
-      .filter((item) => item.requiredRevisionRateTo100 != null)
-      .sort((a, b) => nullsLast(a.requiredRevisionRateTo100, b.requiredRevisionRateTo100, "desc"))
-      .slice(0, 5);
 
     return {
       municipalityCount: comparableMunicipalities.length,
@@ -54,8 +50,7 @@ export async function getHomepageData(comparableInput?: ComparableMapMunicipalit
       averageFeeUnitPriceYenPerM3: average(feeUnitPriceValues),
       below100Rate: recoveryValues.length > 0 ? (below100 / recoveryValues.length) * 100 : null,
       revisionEventCount: comparableMunicipalities.filter((item) => item.hasRevisionEvent).length,
-      lowRecovery,
-      highRevision
+      lowRecovery
     };
   }, {
     municipalityCount: 0,
@@ -65,8 +60,7 @@ export async function getHomepageData(comparableInput?: ComparableMapMunicipalit
     averageFeeUnitPriceYenPerM3: null,
     below100Rate: null,
     revisionEventCount: 0,
-    lowRecovery: [],
-    highRevision: []
+    lowRecovery: []
   });
 }
 
@@ -609,6 +603,7 @@ export async function getPrefecturePeerComparison({
 
 export async function getRankings(type: RankingType, limit = 30) {
   return withDatabaseFallback(async () => {
+    const { metric } = rankingSelection(type);
     const latest = await prisma.annualFinancial.findFirst({
       orderBy: [{ surveyYear: "desc" }, { fiscalYearLabel: "desc" }],
       select: { surveyYear: true }
@@ -632,10 +627,9 @@ export async function getRankings(type: RankingType, limit = 30) {
       .filter((item) => item.sewerBusiness.municipality.municipalityName !== item.sewerBusiness.municipality.prefectureName)
       .filter((item) => !hasAmbiguousZeroFlag(item.annualFinancial.flagsJson))
       .filter((item) => {
-        if (type === "expense-recovery-low") return item.expenseRecoveryRate != null;
-        if (type === "required-revision-high") return item.requiredRevisionRateTo100 != null;
-        if (type === "fee-unit-low") return item.feeUnitPriceYenPerM3 != null;
-        if (type === "treatment-cost-high") return item.treatmentCostYenPerM3 != null;
+        if (metric.metric === "expense-recovery") return item.expenseRecoveryRate != null;
+        if (metric.metric === "fee-unit") return item.feeUnitPriceYenPerM3 != null;
+        if (metric.metric === "treatment-cost") return item.treatmentCostYenPerM3 != null;
         return item.sewerBusiness.accountingType === "legal_applied"
           && item.annualFinancial.nonStandardTransfer != null;
       })
@@ -693,11 +687,17 @@ function sortListRows(
   if (sort === "expense-recovery-low") {
     return nullsLast(a.diagnosis?.expenseRecoveryRate, b.diagnosis?.expenseRecoveryRate, "asc");
   }
-  if (sort === "required-revision-high") {
-    return nullsLast(a.diagnosis?.requiredRevisionRateTo100, b.diagnosis?.requiredRevisionRateTo100, "desc");
+  if (sort === "fee-unit-high") {
+    return nullsLast(a.diagnosis?.feeUnitPriceYenPerM3, b.diagnosis?.feeUnitPriceYenPerM3, "desc");
   }
   if (sort === "fee-unit-low") {
     return nullsLast(a.diagnosis?.feeUnitPriceYenPerM3, b.diagnosis?.feeUnitPriceYenPerM3, "asc");
+  }
+  if (sort === "treatment-cost-high") {
+    return nullsLast(a.diagnosis?.treatmentCostYenPerM3, b.diagnosis?.treatmentCostYenPerM3, "desc");
+  }
+  if (sort === "treatment-cost-low") {
+    return nullsLast(a.diagnosis?.treatmentCostYenPerM3, b.diagnosis?.treatmentCostYenPerM3, "asc");
   }
   if (sort === "municipality-code") {
     return (a.municipalityCode ?? "").localeCompare(b.municipalityCode ?? "", "ja");
@@ -734,13 +734,12 @@ function isFlowSewerBusinessCode(value?: string | null) {
 }
 
 function sortRanking(a: any, b: any, type: RankingType) {
-  if (type === "expense-recovery-low") return nullsLast(a.expenseRecoveryRate, b.expenseRecoveryRate, "asc");
-  if (type === "required-revision-high") {
-    return nullsLast(a.requiredRevisionRateTo100, b.requiredRevisionRateTo100, "desc");
-  }
-  if (type === "fee-unit-low") return nullsLast(a.feeUnitPriceYenPerM3, b.feeUnitPriceYenPerM3, "asc");
-  if (type === "treatment-cost-high") return nullsLast(a.treatmentCostYenPerM3, b.treatmentCostYenPerM3, "desc");
-  return nullsLast(a.annualFinancial.nonStandardTransfer, b.annualFinancial.nonStandardTransfer, "desc");
+  const { metric, direction } = rankingSelection(type);
+  const order = direction === "high" ? "desc" : "asc";
+  if (metric.metric === "expense-recovery") return nullsLast(a.expenseRecoveryRate, b.expenseRecoveryRate, order);
+  if (metric.metric === "fee-unit") return nullsLast(a.feeUnitPriceYenPerM3, b.feeUnitPriceYenPerM3, order);
+  if (metric.metric === "treatment-cost") return nullsLast(a.treatmentCostYenPerM3, b.treatmentCostYenPerM3, order);
+  return nullsLast(a.annualFinancial.nonStandardTransfer, b.annualFinancial.nonStandardTransfer, order);
 }
 
 function selectMapMunicipalityRepresentative(municipality: any, scope?: MapBusinessScope) {

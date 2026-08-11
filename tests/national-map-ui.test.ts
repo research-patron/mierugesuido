@@ -22,6 +22,7 @@ import {
   screenViewBox,
   splitSubpaths
 } from "@/lib/gisMapLayout";
+import { positionNationalHover } from "@/components/JapanMapSelector";
 import {
   getPrefectureCode,
   normalizePrefectureName,
@@ -211,6 +212,48 @@ describe("national map UI guardrails", () => {
     expect(splitSubpaths(okinawa.path)).toHaveLength(splitSubpaths(fullDisplayPath).length);
   });
 
+  it("places edge hover cards on a free side and clamps all four edges", () => {
+    const base = {
+      containerWidth: 1_000,
+      containerHeight: 500,
+      cardWidth: 224,
+      cardHeight: 206
+    };
+    const rightTarget = { targetLeft: 80, targetTop: 230, targetRight: 120, targetBottom: 270 };
+    const leftTarget = { targetLeft: 880, targetTop: 230, targetRight: 920, targetBottom: 270 };
+    const belowTarget = { targetLeft: 130, targetTop: 30, targetRight: 170, targetBottom: 70 };
+    const aboveTarget = { targetLeft: 130, targetTop: 430, targetRight: 170, targetBottom: 470 };
+    const placements = [
+      positionNationalHover({ ...base, ...rightTarget }),
+      positionNationalHover({ ...base, ...leftTarget }),
+      positionNationalHover({ ...base, containerWidth: 300, ...belowTarget }),
+      positionNationalHover({ ...base, containerWidth: 300, ...aboveTarget })
+    ];
+
+    expect(placements.map((item) => item.side)).toEqual(["right", "left", "below", "above"]);
+    expect(placements[0].x).toBeGreaterThanOrEqual(rightTarget.targetRight + 16);
+    expect(placements[1].x + base.cardWidth).toBeLessThanOrEqual(leftTarget.targetLeft - 16);
+    expect(placements[2].y).toBeGreaterThanOrEqual(belowTarget.targetBottom + 16);
+    expect(placements[3].y + base.cardHeight).toBeLessThanOrEqual(aboveTarget.targetTop - 16);
+    for (const placement of placements) {
+      expect(placement.x).toBeGreaterThanOrEqual(12);
+      expect(placement.y).toBeGreaterThanOrEqual(12);
+      expect(placement.x + base.cardWidth).toBeLessThanOrEqual((placement.side === "below" || placement.side === "above" ? 300 : 1_000) - 12);
+      expect(placement.y + base.cardHeight).toBeLessThanOrEqual(500 - 12);
+    }
+
+    const okinawaFrame = { targetLeft: 796, targetTop: 360, targetRight: 966, targetBottom: 476 };
+    const okinawaPlacement = positionNationalHover({
+      ...base,
+      containerWidth: 980,
+      ...okinawaFrame
+    });
+    expect(okinawaPlacement.side).toBe("left");
+    expect(okinawaPlacement.x + base.cardWidth).toBeLessThanOrEqual(okinawaFrame.targetLeft - 16);
+    expect(okinawaPlacement.y).toBeGreaterThanOrEqual(12);
+    expect(okinawaPlacement.y + base.cardHeight).toBeLessThanOrEqual(500 - 12);
+  });
+
   it("uses the same home renderer, selector, and three controls for home and atlas", () => {
     const explorer = componentFunctionBlock("NationalMapExplorer");
     const homeRenderer = componentFunctionBlock("HomeNationalMap");
@@ -241,6 +284,9 @@ describe("national map UI guardrails", () => {
     expect(insetRenderer).toContain("nationalInsetDisplayPath(feature)");
     expect(insetRenderer).toContain('overflow="visible"');
     expect(insetRenderer).toContain('className={clsx("home-map-inset gis-region"');
+    expect(insetRenderer).toContain('className="home-map-inset-hit-area"');
+    expect(insetRenderer).toContain('pointerEvents="all"');
+    expect(insetRenderer).toContain('fill="transparent"');
     expect(insetRenderer.match(/role="link"/g)).toHaveLength(1);
     expect(insetRenderer.match(/tabIndex=\{0\}/g)).toHaveLength(1);
     expect(insetRenderer).not.toContain("home-map-inset-frame");
@@ -372,7 +418,7 @@ describe("national map UI guardrails", () => {
   });
 
   it("keeps the national hover popup informational and removes its unreachable CTA", () => {
-    const tooltipOpeningTag = componentOpeningTagAround('className="map-tooltip absolute z-20 min-w-[220px] p-4"');
+    const tooltipOpeningTag = componentOpeningTagAround('className="map-tooltip absolute z-20 w-[224px] p-4"');
     const hoverCardBlock = componentFunctionBlock("MapHoverCard");
     const hoverStateBlock = componentFunctionBlock("hoverStateFromEvent");
 
@@ -384,12 +430,21 @@ describe("national map UI guardrails", () => {
     expect(tooltipOpeningTag).not.toContain("<Link");
     expect(hoverStateBlock).toContain("const href = mapFeatureHref(feature, municipalities);");
     expect(hoverStateBlock).toContain("href,");
+    expect(hoverStateBlock).toContain("const targetRect = event.currentTarget.getBoundingClientRect();");
+    expect(hoverStateBlock).toContain("positionNationalHover({");
+    expect(hoverStateBlock).toContain("targetLeft: targetRect.left - rect.left");
+    expect(hoverStateBlock).toContain("targetRight: targetRect.right - rect.left");
+    expect(hoverStateBlock).not.toContain("event.clientX");
+    expect(hoverCardBlock).toContain('left: `${hover.x}px`');
+    expect(hoverCardBlock).toContain('top: `${hover.y}px`');
     expect(componentSource).toContain("const NATIONAL_HOVER_DELAY_MS = 280;");
     expect(cssBlock(".map-tooltip")).toContain("pointer-events: auto");
     expect(cssBlock(".map-tooltip[data-passive]")).toContain("pointer-events: none");
     expect(cssBlock(".map-tooltip-cta")).toContain("display: inline-flex");
     expect(cssBlock(".map-tooltip-cta")).toContain("min-height: 34px");
     expect(cssBlock(".map-tooltip-cta")).toContain("cursor: pointer");
+    expect(cssBlock(".home-map-inset-hit-area")).toContain("fill: transparent");
+    expect(cssBlock(".home-map-inset-hit-area")).toContain("stroke: none");
   });
 
   it("resolves hover detail links for prefectures, municipalities, and search fallback", () => {

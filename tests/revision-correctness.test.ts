@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { formatOfficialRevisionRate } from "../lib/format";
 import { effectiveFiscalYear, revisionPeriodLabel } from "../lib/revisionEvents";
+import { isStaticRevisionDataset } from "../lib/staticRevisionDataset";
 import {
   type ManualRevisionEventRecord,
   upsertManualRevisionEvent
@@ -106,11 +107,32 @@ describe("revision schedule correctness", () => {
     expect(source).toContain('aria-autocomplete="list"');
     expect(source).toContain('role="listbox"');
     expect(source).toContain("文字入力でも、候補の選択でも絞り込めます。");
-    expect(source).toContain("const revisionPageSize = 40");
-    expect(source).toContain("さらに{Math.min(revisionPageSize");
+    expect(source).toContain("const revisionGroupPageSize = 40");
+    expect(source).toContain("さらに{Math.min(revisionGroupPageSize");
     expect(source.match(/onKeyDown=\{toggleDetailsOnKeyboard\}/g)).toHaveLength(2);
     expect(source).not.toContain("feeUnitPrice");
     expect(source).not.toContain("増減方向");
+  });
+
+  it("groups the revision list by municipality and paginates whole groups", () => {
+    const dataset = JSON.parse(readFileSync(
+      path.join(process.cwd(), "public/data/static/revisions.json"),
+      "utf8"
+    ));
+    const municipalityCodes = dataset.yearbookFeeComparison.items.map((item: any) => item.municipalityCode);
+    expect(new Set(municipalityCodes).size).toBe(dataset.yearbookFeeComparison.changedMunicipalityCount);
+    expect(municipalityCodes).toHaveLength(dataset.yearbookFeeComparison.changedBusinessCount);
+
+    const source = readFileSync(path.join(process.cwd(), "app/revisions/page.tsx"), "utf8");
+    expect(source).toContain("function groupYearbookChangesByMunicipality");
+    expect(source).toContain("const groupsByKey = new Map<string, RevisionMunicipalityGroup>()");
+    expect(source).toContain("existing.items.push(item)");
+    expect(source).toContain('<section className="revision-municipality-group" aria-labelledby={headingId}>');
+    expect(source).toContain("<h3 id={headingId}>");
+    expect(source).toContain("<h4 id={businessHeadingId}>");
+    expect(source.match(/<h5>/g)).toHaveLength(3);
+    expect(source).toContain("団体（${visibleBusinessCount.toLocaleString");
+    expect(source).toContain("setVisibleGroupCount((current) => current + revisionGroupPageSize)");
   });
 
   it("keeps an empty prefecture suggestion list unselected and recoverable", () => {
@@ -124,5 +146,70 @@ describe("revision schedule correctness", () => {
     expect(source).toContain("const nextFilteredOptions = filterPrefectureOptions(options, nextQuery);");
     expect(source).toContain("setActiveIndex(firstPrefectureOptionIndex(nextFilteredOptions));");
     expect(source).toContain("setActiveIndex(firstPrefectureOptionIndex(options));");
+  });
+
+  it("never presents zero results while revision data is loading or unavailable", () => {
+    const source = readFileSync(path.join(process.cwd(), "app/revisions/page.tsx"), "utf8");
+
+    expect(source).toContain('type RevisionLoadState = "loading" | "ready" | "error";');
+    expect(source).toContain('useState<RevisionLoadState>("loading")');
+    expect(source).toContain('setLoadState("ready")');
+    expect(source).toContain('setLoadState("error")');
+    expect(source).toContain('aria-busy={isLoading}');
+    expect(source).toContain('role="status"');
+    expect(source).toContain('施行年月日比較データを読み込んでいます');
+    expect(source).toContain('role="alert"');
+    expect(source).toContain('施行年月日比較データを取得できませんでした');
+    expect(source).toContain('再試行する');
+    expect(source).toContain('ページを再読み込みしてください');
+    expect(source).toContain('setLoadAttempt((current) => current + 1)');
+    expect(source).toContain('isStaticRevisionDataset(json)');
+    expect(source).not.toContain('.catch(() => undefined)');
+    expect(source).not.toContain('(comparison?.changedMunicipalityCount ?? 0)');
+    expect(source).not.toContain('(comparison?.changedBusinessCount ?? 0)');
+    expect(source.match(/<StatCard\b/g)).toHaveLength(2);
+  });
+
+  it("rejects incomplete revision payloads before rendering them", () => {
+    const validDataset = JSON.parse(readFileSync(
+      path.join(process.cwd(), "public/data/static/revisions.json"),
+      "utf8"
+    ));
+    const firstComparisonItem = validDataset.yearbookFeeComparison.items[0];
+
+    expect(isStaticRevisionDataset(validDataset)).toBe(true);
+    expect(isStaticRevisionDataset({ ...validDataset, summary: {} })).toBe(false);
+    expect(isStaticRevisionDataset({
+      ...validDataset,
+      yearbookFeeComparison: {
+        ...validDataset.yearbookFeeComparison,
+        items: [{ ...firstComparisonItem, tariffChanges: null }]
+      }
+    })).toBe(false);
+    expect(isStaticRevisionDataset({
+      ...validDataset,
+      yearbookFeeComparison: {
+        ...validDataset.yearbookFeeComparison,
+        changedBusinessCount: validDataset.yearbookFeeComparison.changedBusinessCount + 1
+      }
+    })).toBe(false);
+
+    const generatedEventWithNullableCode = {
+      id: 1,
+      targetBusiness: null,
+      averageRevisionRate: null,
+      effectiveDate: null,
+      sourceUrl: "https://example.test/revision",
+      municipality: {
+        municipalityCode: null,
+        municipalityName: "コード未登録団体",
+        prefectureName: "テスト県"
+      }
+    };
+    expect(isStaticRevisionDataset({
+      ...validDataset,
+      summary: { ...validDataset.summary, total: 1 },
+      items: [generatedEventWithNullableCode]
+    })).toBe(true);
   });
 });

@@ -16,6 +16,11 @@ import {
 import { mapBusinessScopes, type MapBusinessScope } from "@/lib/data";
 import { buildFinancialStoryModel } from "@/lib/financialStoryModel";
 import { municipalitiesToCsv } from "@/lib/municipalityCsv";
+import {
+  addComparableUnchangedMunicipalities,
+  buildMunicipalityFeeRevisionIndex,
+  municipalityFeeRevisionStatus
+} from "@/lib/municipalityFeeRevision";
 import { getPrefectureCode, prefectures } from "@/lib/prefectures";
 import { prisma } from "@/lib/prisma";
 import { rankingLabels, type RankingType } from "@/lib/rankings";
@@ -82,6 +87,20 @@ async function main() {
     getMunicipalityList({ all: true, sort: "municipality-code" }),
     getHomepageData(mapMunicipalities)
   ]);
+  const feeRevisionIndex = addComparableUnchangedMunicipalities(
+    buildMunicipalityFeeRevisionIndex(yearbookFeeComparison.items),
+    yearbookFeeSnapshots
+  );
+  const municipalitySearchItems = municipalityList.items.map((item) => ({
+    ...compactListItem(item),
+    municipalityNameKana: mapMunicipalities.find((candidate) => candidate.municipalityCode === item.municipalityCode)?.municipalityNameKana ?? null,
+    feeRevisionComparison: item.municipalityCode
+      ? feeRevisionIndex.get(item.municipalityCode) ?? null
+      : null
+  }));
+  const feeRevisionMunicipalityCount = municipalitySearchItems.filter(
+    (item) => municipalityFeeRevisionStatus(item.feeRevisionComparison) === "changed"
+  ).length;
 
   await writeJson(path.join(sourceRoot, "home.json"), {
     defaultMapScope,
@@ -93,11 +112,11 @@ async function main() {
     prefectures: prefectureNames
   });
   await writeJson(path.join(publicRoot, "municipalities.json"), {
-    items: municipalityList.items.map((item) => ({
-      ...compactListItem(item),
-      municipalityNameKana: mapMunicipalities.find((candidate) => candidate.municipalityCode === item.municipalityCode)?.municipalityNameKana ?? null
-    })),
-    overview: searchOverview,
+    items: municipalitySearchItems,
+    overview: {
+      ...searchOverview,
+      feeRevisionMunicipalityCount
+    },
     prefectures: prefectureNames
   });
   await writeJson(path.join(publicRoot, "search-index.json"), mapMunicipalities.map((item) => ({
@@ -114,7 +133,7 @@ async function main() {
   await Promise.all(prefectures.map(async (prefecture) => {
     const data = await getPrefectureMapData(prefecture.code);
     await writeJson(path.join(sourceRoot, "prefectures", `${prefecture.code}.json`), data);
-    const rows = municipalityList.items
+    const rows = municipalitySearchItems
       .filter((item) => item.prefectureName === prefecture.name)
       .sort((a, b) => nullsLast(a.diagnosis?.expenseRecoveryRate, b.diagnosis?.expenseRecoveryRate, "desc"));
     await writeText(path.join(publicRoot, "csv", "prefectures", `${prefecture.code}.csv`), municipalitiesToCsv(rows));

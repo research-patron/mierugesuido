@@ -159,6 +159,11 @@ const nationalRecoveryColors: Record<string, string> = Object.fromEntries(
 );
 
 const NATIONAL_HOVER_DELAY_MS = 280;
+const NATIONAL_TOOLTIP_WIDTH = 224;
+const NATIONAL_TOOLTIP_HOME_HEIGHT = 160;
+const NATIONAL_TOOLTIP_DETAIL_HEIGHT = 206;
+const NATIONAL_TOOLTIP_MARGIN = 12;
+const NATIONAL_TOOLTIP_OFFSET = 16;
 type NationalHoverEvent = MouseEvent<SVGGElement | HTMLAnchorElement> | PointerEvent<SVGGElement | HTMLAnchorElement>;
 
 export function JapanMapSelector({
@@ -285,7 +290,14 @@ export function NationalMapExplorer({
     summary: PrefectureSummary | undefined,
     featureMunicipalities: MapMunicipality[] | undefined
   ) {
-    const nextHover = hoverStateFromEvent(event, feature, summary, featureMunicipalities, mapSurfaceRef.current);
+    const nextHover = hoverStateFromEvent(
+      event,
+      feature,
+      summary,
+      featureMunicipalities,
+      mapSurfaceRef.current,
+      variant === "home" ? NATIONAL_TOOLTIP_HOME_HEIGHT : NATIONAL_TOOLTIP_DETAIL_HEIGHT
+    );
     pendingHoverRef.current = nextHover;
 
     if (hoverTargetCodeRef.current !== feature.code) {
@@ -650,6 +662,16 @@ function HomeInsetMap({
       }}
       onMouseMove={(event) => onHover(event, feature, summary, featureMunicipalities)}
     >
+      <rect
+        x={frame.x}
+        y={frame.y}
+        width={frame.width}
+        height={frame.height}
+        className="home-map-inset-hit-area"
+        fill="transparent"
+        pointerEvents="all"
+        aria-hidden="true"
+      />
       <text x={titleX} y={frame.y + 14} className="home-map-inset-title">{title}</text>
       <svg
         x={frame.x}
@@ -1096,7 +1118,10 @@ export function PrefectureMapExplorer({
           <select value={sort} onChange={(event) => setSort(event.target.value)} className="input-control">
             <option value="recovery-desc">経費回収率（高い順）</option>
             <option value="recovery-asc">経費回収率（低い順）</option>
-            <option value="revision-desc">使用料収入の必要増加率（高い順）</option>
+            <option value="fee-desc">使用料単価（高い順）</option>
+            <option value="fee-asc">使用料単価（低い順）</option>
+            <option value="cost-desc">汚水処理原価（高い順）</option>
+            <option value="cost-asc">汚水処理原価（低い順）</option>
             <option value="name">自治体コード順</option>
           </select>
           <div className="grid grid-cols-4 gap-2">
@@ -1332,56 +1357,6 @@ function MapFeatureLabel({
   );
 }
 
-function RankingMini({
-  title,
-  href,
-  items,
-  mode
-}: {
-  title: string;
-  href: string;
-  items: MapMunicipality[];
-  mode: "low" | "revision";
-}) {
-  const rows = [...items]
-    .filter((item) => mode === "low" ? item.expenseRecoveryRate != null : item.requiredRevisionRateTo100 != null)
-    .sort((a, b) => {
-      if (mode === "low") return nullsLast(a.expenseRecoveryRate, b.expenseRecoveryRate, "asc");
-      return nullsLast(a.requiredRevisionRateTo100, b.requiredRevisionRateTo100, "desc");
-    })
-    .slice(0, 5);
-
-  return (
-    <section className="panel overflow-hidden p-4">
-      <div className="mb-2 flex items-center justify-between gap-3">
-        <h2 className="text-base font-black text-ink">{title}</h2>
-        <Link href={href} className="text-xs font-black text-ink hover:text-teal">もっと見る →</Link>
-      </div>
-      {rows.length > 0 ? (
-        <table className="data-table">
-          <tbody>
-            {rows.map((item, index) => (
-              <tr key={`${title}-${item.municipalityCode}-${index}`}>
-                <td className="w-10 font-black">{index + 1}</td>
-                <td>
-                  <Link href={municipalityHref(item)} className="font-black text-ink hover:text-teal">
-                    {item.prefectureName} {item.municipalityName}
-                  </Link>
-                </td>
-                <td className={mode === "low" ? "text-danger" : "text-danger"}>
-                  {mode === "low" ? formatPercent(item.expenseRecoveryRate) : formatRevisionRate(item.requiredRevisionRateTo100)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      ) : (
-        <p className="rounded-md bg-panel p-4 text-sm font-bold text-muted">ランキング表示用のデータは未登録です。</p>
-      )}
-    </section>
-  );
-}
-
 function RankingPair({ items }: { items: MapMunicipality[] }) {
   const highRows = [...items]
     .filter((item) => item.expenseRecoveryRate != null)
@@ -1544,11 +1519,11 @@ function MapHoverCard({
 }) {
   return (
     <div
-      className="map-tooltip absolute z-20 min-w-[220px] p-4"
+      className="map-tooltip absolute z-20 w-[224px] p-4"
       data-passive={!showDetailLink || undefined}
       style={{
-        left: `min(calc(100% - 236px), ${hover.x + 16}px)`,
-        top: `max(12px, ${hover.y - 96}px)`
+        left: `${hover.x}px`,
+        top: `${hover.y}px`
       }}
     >
       <div className="flex items-center gap-2">
@@ -1586,12 +1561,22 @@ function hoverStateFromEvent(
   feature: GisFeature,
   summary: PrefectureSummary | undefined,
   municipalities: MapMunicipality[] | undefined,
-  container?: HTMLElement | SVGSVGElement | null
+  container?: HTMLElement | SVGSVGElement | null,
+  cardHeight = NATIONAL_TOOLTIP_DETAIL_HEIGHT
 ): HoverState {
   const ownerSvg = "ownerSVGElement" in event.currentTarget ? event.currentTarget.ownerSVGElement : null;
   const rect = (container ?? ownerSvg ?? event.currentTarget).getBoundingClientRect();
-  const x = event.clientX - rect.left;
-  const y = event.clientY - rect.top;
+  const targetRect = event.currentTarget.getBoundingClientRect();
+  const position = positionNationalHover({
+    containerWidth: rect.width,
+    containerHeight: rect.height,
+    cardWidth: NATIONAL_TOOLTIP_WIDTH,
+    cardHeight,
+    targetLeft: targetRect.left - rect.left,
+    targetTop: targetRect.top - rect.top,
+    targetRight: targetRect.right - rect.left,
+    targetBottom: targetRect.bottom - rect.top
+  });
   const first = municipalities?.[0];
   const isMunicipalityFeature = Boolean(feature.prefectureCode);
   const recovery = isMunicipalityFeature
@@ -1613,8 +1598,71 @@ function hoverStateFromEvent(
     basis: isMunicipalityFeature
       ? `${accountingTypeLabel(first?.accountingType)}${first?.accountingType === "non_legal_applied" ? "・料金指標は参考" : ""}`
       : "法非適用を含む参考平均",
-    x,
-    y
+    x: position.x,
+    y: position.y
+  };
+}
+
+export function positionNationalHover({
+  containerWidth,
+  containerHeight,
+  cardWidth,
+  cardHeight,
+  targetLeft,
+  targetTop,
+  targetRight,
+  targetBottom,
+  margin = NATIONAL_TOOLTIP_MARGIN,
+  offset = NATIONAL_TOOLTIP_OFFSET
+}: {
+  containerWidth: number;
+  containerHeight: number;
+  cardWidth: number;
+  cardHeight: number;
+  targetLeft: number;
+  targetTop: number;
+  targetRight: number;
+  targetBottom: number;
+  margin?: number;
+  offset?: number;
+}) {
+  const minX = margin;
+  const minY = margin;
+  const maxX = Math.max(containerWidth - cardWidth - margin, minX);
+  const maxY = Math.max(containerHeight - cardHeight - margin, minY);
+  const targetCenterX = (targetLeft + targetRight) / 2;
+  const targetCenterY = (targetTop + targetBottom) / 2;
+  const centeredX = clamp(targetCenterX - cardWidth / 2, minX, maxX);
+  const centeredY = clamp(targetCenterY - cardHeight / 2, minY, maxY);
+  const rightSpace = containerWidth - margin - targetRight;
+  const leftSpace = targetLeft - margin;
+  const belowSpace = containerHeight - margin - targetBottom;
+  const aboveSpace = targetTop - margin;
+
+  if (rightSpace >= cardWidth + offset) {
+    return { x: targetRight + offset, y: centeredY, side: "right" as const };
+  }
+  if (leftSpace >= cardWidth + offset) {
+    return { x: targetLeft - offset - cardWidth, y: centeredY, side: "left" as const };
+  }
+  if (belowSpace >= cardHeight + offset) {
+    return { x: centeredX, y: targetBottom + offset, side: "below" as const };
+  }
+  if (aboveSpace >= cardHeight + offset) {
+    return { x: centeredX, y: targetTop - offset - cardHeight, side: "above" as const };
+  }
+
+  const fallbackSides = [
+    { side: "right" as const, space: rightSpace - cardWidth, x: targetRight + offset, y: centeredY },
+    { side: "left" as const, space: leftSpace - cardWidth, x: targetLeft - offset - cardWidth, y: centeredY },
+    { side: "below" as const, space: belowSpace - cardHeight, x: centeredX, y: targetBottom + offset },
+    { side: "above" as const, space: aboveSpace - cardHeight, x: centeredX, y: targetTop - offset - cardHeight }
+  ].sort((a, b) => b.space - a.space);
+  const fallback = fallbackSides[0];
+  return {
+    x: clamp(fallback.x, minX, maxX),
+    y: clamp(fallback.y, minY, maxY),
+    side: fallback.side
   };
 }
 
@@ -1814,7 +1862,10 @@ function averageMetric<T>(items: T[] | undefined, selector: (item: T) => number 
 
 function sortMunicipalities(a: MapMunicipality, b: MapMunicipality, sort: string) {
   if (sort === "recovery-asc") return nullsLast(a.expenseRecoveryRate, b.expenseRecoveryRate, "asc");
-  if (sort === "revision-desc") return nullsLast(a.requiredRevisionRateTo100, b.requiredRevisionRateTo100, "desc");
+  if (sort === "fee-desc") return nullsLast(a.feeUnitPriceYenPerM3, b.feeUnitPriceYenPerM3, "desc");
+  if (sort === "fee-asc") return nullsLast(a.feeUnitPriceYenPerM3, b.feeUnitPriceYenPerM3, "asc");
+  if (sort === "cost-desc") return nullsLast(a.treatmentCostYenPerM3, b.treatmentCostYenPerM3, "desc");
+  if (sort === "cost-asc") return nullsLast(a.treatmentCostYenPerM3, b.treatmentCostYenPerM3, "asc");
   if (sort === "name") return (a.municipalityCode ?? "").localeCompare(b.municipalityCode ?? "", "ja");
   return nullsLast(a.expenseRecoveryRate, b.expenseRecoveryRate, "desc");
 }

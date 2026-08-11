@@ -14,7 +14,7 @@ export function MunicipalitySearchFilterPanel({
   businessType,
   accountingType,
   label,
-  hasRevisionEvent,
+  hasFeeRevisionChange,
   sort,
   limit,
   view
@@ -25,13 +25,13 @@ export function MunicipalitySearchFilterPanel({
   businessType?: string;
   accountingType?: string;
   label?: string;
-  hasRevisionEvent?: string;
+  hasFeeRevisionChange?: string;
   sort: string;
   limit: number;
   view: ViewMode;
 }) {
   const advancedRef = useRef<HTMLDetailsElement | null>(null);
-  const advancedActive = Boolean(prefecture || businessType || accountingType || label || hasRevisionEvent);
+  const advancedActive = Boolean(prefecture || businessType || accountingType || label || hasFeeRevisionChange);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(max-width: 900px)");
@@ -94,12 +94,12 @@ export function MunicipalitySearchFilterPanel({
           />
           <FilterSelect label="経費回収率レンジ" name="label" value={label} options={[...feeRecoveryBandOptions]} />
           <FilterSelect
-            label="公式改定情報"
-            name="hasRevisionEvent"
-            value={hasRevisionEvent}
+            label="改定情報"
+            name="hasFeeRevisionChange"
+            value={hasFeeRevisionChange}
             options={[
-              { value: "true", label: "登録あり" },
-              { value: "false", label: "未登録" }
+              { value: "true", label: "施行年月日が変化" },
+              { value: "false", label: "改定情報なし（比較済み）" }
             ]}
           />
           <div className="filter-field filter-field--static" role="note">
@@ -110,14 +110,17 @@ export function MunicipalitySearchFilterPanel({
             </span>
           </div>
           <FilterSelect
-            label="並び順"
+            label="比較指標・並び順"
             name="sort"
             value={sort === "latest" ? "" : sort}
             allLabel="標準順"
             options={[
-              { value: "expense-recovery-low", label: "経費回収率が低い順" },
-              { value: "required-revision-high", label: "使用料収入の必要増加率が高い順" },
-              { value: "fee-unit-low", label: "使用料単価が低い順" }
+              { value: "expense-recovery-high", label: "経費回収率｜高い順" },
+              { value: "expense-recovery-low", label: "経費回収率｜低い順" },
+              { value: "fee-unit-high", label: "使用料単価｜高い順" },
+              { value: "fee-unit-low", label: "使用料単価｜低い順" },
+              { value: "treatment-cost-high", label: "汚水処理原価｜高い順" },
+              { value: "treatment-cost-low", label: "汚水処理原価｜低い順" }
             ]}
           />
         </div>

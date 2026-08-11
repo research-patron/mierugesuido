@@ -12,7 +12,9 @@ import {
   ChevronsUpDown,
   ExternalLink,
   Info,
+  LoaderCircle,
   MapPinned,
+  RefreshCw,
   Search,
   X
 } from "lucide-react";
@@ -20,23 +22,23 @@ import { StatCard } from "@/components/StatCard";
 import { accountingTypeLabel, displayBusinessName } from "@/lib/businessDisplay";
 import { formatOfficialRevisionRate } from "@/lib/format";
 import { municipalityDetailHref } from "@/lib/municipalityLinks";
+import { isStaticRevisionDataset, type StaticRevisionDataset } from "@/lib/staticRevisionDataset";
 import type {
   YearbookFeeChange,
-  YearbookFeeChangeSupportReason,
-  YearbookFeeComparisonDataset
+  YearbookFeeChangeSupportReason
 } from "@/lib/yearbookFeeChanges";
 
-type StaticRevisionDataset = {
-  summary: any;
-  items: any[];
-  prefectures: string[];
-  yearbookFeeComparison?: YearbookFeeComparisonDataset;
+type FilterOption = { value: string; label: string };
+type RevisionLoadState = "loading" | "ready" | "error";
+type RevisionMunicipalityGroup = {
+  key: string;
+  municipalityCode: string | null;
+  prefectureName: string;
+  operatorName: string;
+  items: YearbookFeeChange[];
 };
 
-type FilterOption = { value: string; label: string };
-
-const emptySummary = { total: 0, averageRevisionRate: null, byStatus: [], byPeriod: [] };
-const revisionPageSize = 40;
+const revisionGroupPageSize = 40;
 
 const supportReasonLabels: Record<YearbookFeeChangeSupportReason, string> = {
   previous_date_matches: "R6の前回使用料改定年月日が、R5の現行使用料施行年月日と一致",
@@ -55,7 +57,7 @@ const tariffSystemLabels: Record<string, string> = {
 
 export default function RevisionsPage() {
   return (
-    <Suspense fallback={<div className="mx-auto max-w-[1500px] px-8 py-12 text-sm font-bold text-muted">第33表の料金改定データを読み込んでいます…</div>}>
+    <Suspense fallback={<div className="mx-auto max-w-[1500px] px-8 py-12 text-sm font-bold text-muted">第33表の施行年月日比較データを読み込んでいます…</div>}>
       <RevisionsContent />
     </Suspense>
   );
@@ -63,28 +65,39 @@ export default function RevisionsPage() {
 
 function RevisionsContent() {
   const searchParams = useSearchParams();
-  const [dataset, setDataset] = useState<StaticRevisionDataset>({
-    summary: emptySummary,
-    items: [],
-    prefectures: []
-  });
-  const [visibleCount, setVisibleCount] = useState(revisionPageSize);
+  const [dataset, setDataset] = useState<StaticRevisionDataset | null>(null);
+  const [loadState, setLoadState] = useState<RevisionLoadState>("loading");
+  const [loadAttempt, setLoadAttempt] = useState(0);
+  const [visibleGroupCount, setVisibleGroupCount] = useState(revisionGroupPageSize);
 
   useEffect(() => {
     let cancelled = false;
+    setDataset(null);
+    setLoadState("loading");
     fetch("/data/static/revisions.json")
       .then((response) => {
         if (!response.ok) throw new Error("Revision data unavailable");
         return response.json();
       })
-      .then((json) => { if (!cancelled) setDataset(json); })
-      .catch(() => undefined);
+      .then((json: unknown) => {
+        if (!isStaticRevisionDataset(json)) throw new Error("Revision data invalid");
+        if (!cancelled) {
+          setDataset(json);
+          setLoadState("ready");
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setDataset(null);
+          setLoadState("error");
+        }
+      });
     return () => { cancelled = true; };
-  }, []);
+  }, [loadAttempt]);
 
   const prefecture = searchParams.get("prefecture") ?? "";
   const businessType = searchParams.get("businessType") ?? "";
-  const comparison = dataset.yearbookFeeComparison;
+  const comparison = dataset?.yearbookFeeComparison;
   const comparisonItems = useMemo(
     () => (comparison?.items ?? []).filter(hasChangedEffectiveDateShape),
     [comparison?.items]
@@ -93,10 +106,15 @@ function RevisionsContent() {
     .filter((item) => !prefecture || item.prefectureName.includes(prefecture))
     .filter((item) => !businessType || item.categoryCode === businessType),
   [businessType, comparisonItems, prefecture]);
-  const visibleItems = matchingItems.slice(0, visibleCount);
+  const matchingGroups = useMemo(
+    () => groupYearbookChangesByMunicipality(matchingItems),
+    [matchingItems]
+  );
+  const visibleGroups = matchingGroups.slice(0, visibleGroupCount);
+  const visibleBusinessCount = visibleGroups.reduce((total, group) => total + group.items.length, 0);
 
   useEffect(() => {
-    setVisibleCount(revisionPageSize);
+    setVisibleGroupCount(revisionGroupPageSize);
   }, [businessType, prefecture]);
   const availablePrefectures = useMemo(
     () => [...new Set(comparisonItems.map((item) => item.prefectureName))]
@@ -110,6 +128,14 @@ function RevisionsContent() {
       .map(([value, label]) => ({ value, label }))
       .sort((a, b) => a.label.localeCompare(b.label, "ja"));
   }, [comparisonItems]);
+  const isLoading = loadState === "loading";
+  const hasLoadError = loadState === "error";
+  const municipalityKpiValue = loadState === "ready" && comparison
+    ? comparison.changedMunicipalityCount.toLocaleString("ja-JP")
+    : isLoading ? "読込中" : "取得失敗";
+  const businessKpiValue = loadState === "ready" && comparison
+    ? comparison.changedBusinessCount.toLocaleString("ja-JP")
+    : isLoading ? "読込中" : "取得失敗";
 
   return (
     <div className="revision-page">
@@ -131,9 +157,26 @@ function RevisionsContent() {
             </div>
           </div>
 
-          <div className="revision-kpi-grid grid gap-3 sm:grid-cols-2">
-            <StatCard icon={MapPinned} label="施行年月日が変わった団体" value={(comparison?.changedMunicipalityCount ?? 0).toLocaleString("ja-JP")} unit="団体" sub="同一団体は1件として集計" tone="teal" />
-            <StatCard icon={Building2} label="施行年月日が変わった事業" value={(comparison?.changedBusinessCount ?? 0).toLocaleString("ja-JP")} unit="事業" sub="R5・R6の同一事業を比較" tone="blue" />
+          <div
+            className="revision-kpi-grid grid gap-3 sm:grid-cols-2"
+            aria-busy={isLoading}
+          >
+            <StatCard
+              icon={MapPinned}
+              label="施行年月日が変わった団体"
+              value={municipalityKpiValue}
+              unit={loadState === "ready" ? "団体" : undefined}
+              sub={loadState === "ready" ? "同一団体は1件として集計" : isLoading ? "比較結果を読み込んでいます" : "データを再取得してください"}
+              tone="teal"
+            />
+            <StatCard
+              icon={Building2}
+              label="施行年月日が変わった事業"
+              value={businessKpiValue}
+              unit={loadState === "ready" ? "事業" : undefined}
+              sub={loadState === "ready" ? "R5・R6の同一事業を比較" : isLoading ? "比較結果を読み込んでいます" : "データを再取得してください"}
+              tone="blue"
+            />
           </div>
         </div>
       </section>
@@ -164,45 +207,81 @@ function RevisionsContent() {
           <div className="revision-list-heading">
             <div>
               <h2>施行年月日が変わった事業</h2>
-              <p>{matchingItems.length.toLocaleString("ja-JP")}事業中、{visibleItems.length.toLocaleString("ja-JP")}事業を表示</p>
+              <p>
+                {loadState === "ready"
+                  ? `${matchingGroups.length.toLocaleString("ja-JP")}団体・${matchingItems.length.toLocaleString("ja-JP")}事業中、${visibleGroups.length.toLocaleString("ja-JP")}団体（${visibleBusinessCount.toLocaleString("ja-JP")}事業）を表示`
+                  : isLoading ? "比較結果を読み込んでいます" : "比較結果を表示できません"}
+              </p>
             </div>
             <p className="revision-list-rule"><CalendarDays size={16} aria-hidden="true" /> 抽出条件：R5とR6の施行年月日が異なる事業</p>
           </div>
 
-          <div className="revision-comparison-list">
-            {visibleItems.map((item) => <YearbookChangeRow key={item.id} item={item} />)}
-          </div>
-          {matchingItems.length === 0 ? (
-            <div className="revision-empty-state">
-              <CalendarDays className="mx-auto text-teal" size={38} aria-hidden="true" />
-              <h3>条件に一致する記録はありません</h3>
-              <p>条件をクリアして、判定結果をもう一度ご確認ください。</p>
+          {isLoading ? (
+            <div className="revision-empty-state" role="status" aria-live="polite">
+              <LoaderCircle className="mx-auto animate-spin text-teal" size={38} aria-hidden="true" />
+              <h3>施行年月日比較データを読み込んでいます</h3>
+              <p>R5・R6の現行使用料施行年月日を比較した結果を取得しています。</p>
             </div>
-          ) : null}
-          {visibleItems.length < matchingItems.length ? (
-            <div className="revision-load-more">
+          ) : hasLoadError ? (
+            <div className="revision-empty-state" role="alert">
+              <Info className="mx-auto text-amber" size={38} aria-hidden="true" />
+              <h3>施行年月日比較データを取得できませんでした</h3>
+              <p>通信状況を確認して再試行してください。解決しない場合は、ページを再読み込みしてください。</p>
               <button
                 type="button"
-                className="button-secondary"
-                onClick={() => setVisibleCount((current) => current + revisionPageSize)}
+                className="button-secondary mt-4"
+                onClick={() => setLoadAttempt((current) => current + 1)}
               >
-                さらに{Math.min(revisionPageSize, matchingItems.length - visibleItems.length).toLocaleString("ja-JP")}事業を表示
+                <RefreshCw size={15} aria-hidden="true" />
+                再試行する
               </button>
-              <span>残り{(matchingItems.length - visibleItems.length).toLocaleString("ja-JP")}事業</span>
             </div>
-          ) : null}
+          ) : (
+            <>
+              <div className="revision-comparison-list">
+                {visibleGroups.map((group) => <MunicipalityChangeGroup key={group.key} group={group} />)}
+              </div>
+              {matchingItems.length === 0 ? (
+                <div className="revision-empty-state">
+                  <CalendarDays className="mx-auto text-teal" size={38} aria-hidden="true" />
+                  <h3>条件に一致する記録はありません</h3>
+                  <p>条件をクリアして、判定結果をもう一度ご確認ください。</p>
+                </div>
+              ) : null}
+              {visibleGroups.length < matchingGroups.length ? (
+                <div className="revision-load-more">
+                  <button
+                    type="button"
+                    className="button-secondary"
+                    onClick={() => setVisibleGroupCount((current) => current + revisionGroupPageSize)}
+                  >
+                    さらに{Math.min(revisionGroupPageSize, matchingGroups.length - visibleGroups.length).toLocaleString("ja-JP")}団体を表示
+                  </button>
+                  <span>残り{(matchingGroups.length - visibleGroups.length).toLocaleString("ja-JP")}団体</span>
+                </div>
+              ) : null}
+            </>
+          )}
         </section>
 
         <details className="panel revision-official-disclosure">
           <summary onKeyDown={toggleDetailsOnKeyboard}>
             <span>
               <strong>自治体が公式に公表した改定情報</strong>
-              <small>{dataset.summary.total.toLocaleString("ja-JP")}件登録・第33表の年月日比較とは別枠</small>
+              <small>
+                {loadState === "ready" && dataset
+                  ? `${dataset.summary.total.toLocaleString("ja-JP")}件登録・第33表の年月日比較とは別枠`
+                  : isLoading ? "自治体公式情報を読み込んでいます" : "自治体公式情報を取得できませんでした"}
+              </small>
             </span>
             <span>詳細を見る <ChevronDown size={15} aria-hidden="true" /></span>
           </summary>
           <div className="revision-official-body">
-            {dataset.items.length ? dataset.items.map((event) => (
+            {isLoading ? (
+              <p>自治体公式情報を読み込んでいます。</p>
+            ) : hasLoadError ? (
+              <p>自治体公式情報を取得できませんでした。上の「再試行する」からデータを再取得してください。</p>
+            ) : dataset?.items.length ? dataset.items.map((event) => (
               <article key={event.id} className="revision-official-row">
                 <div>
                   <strong>{event.municipality.prefectureName} {event.municipality.municipalityName}</strong>
@@ -223,7 +302,62 @@ function RevisionsContent() {
   );
 }
 
+function groupYearbookChangesByMunicipality(items: YearbookFeeChange[]): RevisionMunicipalityGroup[] {
+  const groups: RevisionMunicipalityGroup[] = [];
+  const groupsByKey = new Map<string, RevisionMunicipalityGroup>();
+
+  items.forEach((item) => {
+    const key = item.municipalityCode
+      ? `code:${item.municipalityCode}`
+      : `name:${item.prefectureName}\u0000${item.operatorName}`;
+    const existing = groupsByKey.get(key);
+
+    if (existing) {
+      existing.items.push(item);
+      return;
+    }
+
+    const group = {
+      key,
+      municipalityCode: item.municipalityCode,
+      prefectureName: item.prefectureName,
+      operatorName: item.operatorName,
+      items: [item]
+    };
+    groupsByKey.set(key, group);
+    groups.push(group);
+  });
+
+  return groups;
+}
+
+function MunicipalityChangeGroup({ group }: { group: RevisionMunicipalityGroup }) {
+  const headingId = useId();
+  const firstBusiness = group.items[0];
+  const detailHref = group.municipalityCode
+    ? municipalityDetailHref(group.municipalityCode, firstBusiness.businessKey, "fees")
+    : null;
+
+  return (
+    <section className="revision-municipality-group" aria-labelledby={headingId}>
+      <header className="revision-municipality-header">
+        <div>
+          <span className="revision-location">{group.prefectureName}</span>
+          <h3 id={headingId}>
+            {detailHref ? <Link href={detailHref}>{group.operatorName}</Link> : group.operatorName}
+          </h3>
+        </div>
+        <span className="revision-municipality-count">{group.items.length.toLocaleString("ja-JP")}事業</span>
+      </header>
+      <div className="revision-municipality-businesses">
+        {group.items.map((item) => <YearbookChangeRow key={item.id} item={item} />)}
+      </div>
+    </section>
+  );
+}
+
 function YearbookChangeRow({ item }: { item: YearbookFeeChange }) {
+  const businessHeadingId = useId();
   const detailHref = item.municipalityCode
     ? municipalityDetailHref(item.municipalityCode, item.businessKey, "fees")
     : null;
@@ -231,12 +365,13 @@ function YearbookChangeRow({ item }: { item: YearbookFeeChange }) {
   const accountingChanged = item.accountingTypes.r5 !== item.accountingTypes.r6;
 
   return (
-    <article className="revision-comparison-row">
+    <article className="revision-comparison-row" aria-labelledby={businessHeadingId}>
       <header className="revision-row-header">
         <div>
-          <span className="revision-location">{item.prefectureName}</span>
-          {detailHref ? <Link href={detailHref}>{item.operatorName}</Link> : <strong>{item.operatorName}</strong>}
-          <span>{item.businessName}・{accountingTypeLabel(item.accountingType)}</span>
+          <h4 id={businessHeadingId}>
+            {detailHref ? <Link href={detailHref}>{item.businessName}</Link> : item.businessName}
+          </h4>
+          <span>{accountingTypeLabel(item.accountingType)}</span>
         </div>
         <span className="revision-date-change-badge"><CalendarDays size={14} aria-hidden="true" />施行年月日が変化</span>
       </header>
@@ -290,7 +425,7 @@ function YearbookChangeRow({ item }: { item: YearbookFeeChange }) {
         </summary>
         <div className="revision-detail-body">
           <section>
-            <h3>業務用料金の差異</h3>
+            <h5>業務用料金の差異</h5>
             {businessTariffChanges.length ? (
               <dl className="revision-change-list">
                 {businessTariffChanges.map((change) => (
@@ -304,7 +439,7 @@ function YearbookChangeRow({ item }: { item: YearbookFeeChange }) {
           </section>
 
           <section>
-            <h3>料金体系の差異</h3>
+            <h5>料金体系の差異</h5>
             {item.tariffSystemChanges.length ? (
               <dl className="revision-change-list">
                 {item.tariffSystemChanges.map((change) => (
@@ -318,7 +453,7 @@ function YearbookChangeRow({ item }: { item: YearbookFeeChange }) {
           </section>
 
           <section>
-            <h3>関連する第33表の記載</h3>
+            <h5>関連する第33表の記載</h5>
             {item.supportReasons.length ? (
               <ul className="revision-reason-list">
                 {item.supportReasons.map((reason) => <li key={reason}><CheckCircle2 size={14} aria-hidden="true" />{supportReasonLabels[reason]}</li>)}

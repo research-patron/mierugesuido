@@ -1,5 +1,36 @@
 # Current Goal: R2-R6 Accounting Eligibility, Data Completion, and Financial Storytelling
 
+## Goal Extension (2026-08-11 — inviting ranking comparison selector)
+
+- Redesign the ranking page's comparison-condition area so it feels like a compact, inviting comparison tool rather than a numbered settings form. Make the current metric and direction immediately understandable before the user reaches the results.
+- Keep all four retained metrics and both high/low URL-addressable directions. Preserve direct links, browser back/forward behavior, keyboard access, visible non-color-only selected states, and clear focus treatment.
+- Use restrained hierarchy, familiar controls, concise supporting copy, thin neutral borders, and the existing navy/teal visual system. Avoid decorative gradients, excessive nested cards, thick one-sided accents, or iconography that competes with the data.
+- On desktop, keep metric choice and sort direction in one coherent horizontal tool; on mobile, stack them without horizontal scrolling and retain comfortable tap targets.
+- Do not change ranking formulas, source values, static ranking data, database, Prisma, migrations, ETL, or imported financial data for this UI-only extension.
+- Capture and inspect the updated selector at 1491 × 1055 and 390 × 844, verify all eight direct routes and keyboard-visible state, rerun the relevant tests and production build, and append a superseding `design-qa.md` gate ending in `final result: passed` only after the design and regression checks pass.
+
+## Goal Extension (2026-08-11 — ranking-basis audit, bidirectional comparison, and explicit no-revision state)
+
+- Audit the ranking option `使用料収入の必要増加率が高い順` against the implemented formula and primary government definitions. Distinguish a mathematically derived scenario from an officially endorsed management indicator; if the ranking lacks a clear defensible basis, remove it from ranking search/navigation rather than presenting it as an authoritative comparison.
+- Preserve any separately justified explanatory calculation only with its assumptions and simple-calculation caveat. Removing an unsupported ranking must not silently change source values, the official expense-recovery ratio, or municipality-detail evidence.
+- Replace fixed one-direction ranking choices with a compact comparison control that offers both high and low directions for every retained metric, including expense-recovery ratio and fee unit price. Keep the selection legible, keyboard accessible, URL-addressable, and usable without horizontal overflow on mobile.
+- Keep municipality-search revision information synchronized with the revision tab's R5/R6 Table 33 `現行使用料施行年月日` comparison. Show `改定情報なし` only when both years are validly comparable and the effective date is unchanged; retain a distinct unavailable/non-comparable state when that conclusion cannot be supported.
+- A changed effective date remains the sole trigger for the positive revision-list/search state. Household amounts, manual announcements, and missing comparison rows must not independently create either a positive or a confirmed no-revision state.
+- Apply an add/subtract design discipline: clarify metric and direction selection without duplicative cards, decorative color coding, or thick one-sided accents. Preserve ranking detail links, pagination, downloads, municipality switching, and the separate official-announcement disclosure.
+- Do not change the database, Prisma schema, migrations, ETL, downloaded official workbooks, imported accounting values, source GIS records, or financial formulas for this UI and derived-static-data extension.
+- Capture and inspect final 1491 × 1055 and 390 × 844 ranking and municipality-search states. Verify selection, keyboard behavior, direct URLs, empty/unavailable states, static generation, full tests, production build, and no horizontal overflow before appending a superseding `design-qa.md` gate ending in `final result: passed`.
+
+## Goal Extension (2026-08-11 — map hover identity, Okinawa interaction, and revision-list consistency)
+
+- On every prefecture municipality map, make the active municipality name the first and unmistakable item in the hover, focus, keyboard, and tap information card. Preserve municipality links, business switching, recovery-rate evidence, zoom, reset, and accessible shape naming.
+- Remove the separate `地図上で重なりを避けた市町村名` fallback list once every omitted direct label remains discoverable through the municipality shape and information card. Do not remove municipality data, shapes, keyboard access, or direct on-map labels that fit without collision.
+- In the Hokkaido prefecture view, omit non-interactive neighboring or neutral land geometry outside the official municipality records. Do not alter official N03 municipality shapes, financial data, or make new territorial assertions in user-facing copy.
+- Fix the national/home prefecture map so the Okinawa hover card remains within the map surface, does not cover or intercept the Okinawa shape, and never prevents pointer or keyboard navigation. Apply the same safe popup positioning to every edge prefecture.
+- Replace the municipality-search column name `公式改定情報` with `改定情報` and derive its state from the same strict R5-R6 `現行使用料施行年月日` comparison used by the revision page. Household amounts and manual announcements must not independently create a positive state.
+- Make the revision page visually group records by municipality, with calm alternating surfaces, consistent neutral borders, and explicit municipality/business hierarchy informed by the ranking page. Avoid thick or emphasized one-sided card edges and preserve progressive details and mobile readability.
+- Keep the pending revision-data loading/error-state correction intact. Do not change the database, Prisma schema, migrations, ETL, official source workbooks, imported accounting values, GIS municipality records, or financial calculations for this UI/static-binding extension.
+- Capture and inspect the supplied state plus final 1491 × 1055 and 390 × 844 states for municipality maps, national/home Okinawa interaction, municipality search, and revision grouping. Verify pointer, keyboard, tap, responsive overflow, tests, and production build before appending a superseding `design-qa.md` gate ending in `final result: passed`.
+
 ## Goal Extension (2026-08-02 — revision-list clarity and municipality-map usability)
 
 - Limit the public R5-R6 revision list strictly to business records whose official `現行使用料施行年月日` changed. Do not include unchanged-date records because of household amounts, business tariffs, tariff systems, support evidence, or other monetary differences.

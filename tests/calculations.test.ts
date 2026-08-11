@@ -40,6 +40,14 @@ describe("calculation formulas", () => {
     expect(calculateRequiredRevisionRateTo100(0)).toBeNull();
   });
 
+  it("keeps the 100% required-increase scenario as a strict inverse of recovery below 100%", () => {
+    const recoveryRates = [20, 40, 60, 80, 99];
+    const requiredIncreases = recoveryRates.map(calculateRequiredRevisionRateTo100);
+
+    expect(requiredIncreases).toEqual([4, 1.5, 0.666667, 0.25, 0.010101]);
+    expect(requiredIncreases.every((value, index) => index === 0 || value! < requiredIncreases[index - 1]!)).toBe(true);
+  });
+
   it("rejects negative accounting inputs instead of producing negative rates or unit costs", () => {
     expect(safeDivide(100, -10)).toBeNull();
     expect(calculateFeeUnitPrice(100, -1)).toBeNull();

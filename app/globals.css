@@ -2670,6 +2670,11 @@ body {
   stroke-width: 3px;
 }
 
+.home-map-inset-hit-area {
+  fill: transparent;
+  stroke: none;
+}
+
 .home-map-explorer--home .home-support-grid {
   grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.48fr);
 }

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { buildMunicipalityLookup } from "@/components/PrefectureMapExplorer";
-import { municipalityDisplayPaths, splitSubpaths } from "@/lib/gisMapLayout";
+import { buildMunicipalityLookup, filterPrefectureMapFeatures } from "@/components/PrefectureMapExplorer";
+import { splitSubpaths } from "@/lib/gisMapLayout";
 
 const root = process.cwd();
 const pageSource = readFileSync(path.join(root, "app/map/[prefectureCode]/page.tsx"), "utf8");
@@ -41,18 +41,23 @@ describe("prefecture municipality map UI guardrails", () => {
     expect(componentSource).not.toContain('role="img"');
   });
 
-  it("keeps current Tomari separate from neutral Northern Territories geography", () => {
-    const tomariFeatures = hokkaidoGisData.features.filter((item: any) => item.name === "泊村");
-    expect(tomariFeatures.map((item: any) => item.code)).toEqual(["01403", "01696"]);
-    expect(tomariFeatures.every((item: any) => splitSubpaths(item.path).length > 1)).toBe(true);
-    const tomariDisplay = municipalityDisplayPaths(tomariFeatures[0]);
-    expect(splitSubpaths(tomariDisplay.interactivePath)).toHaveLength(1);
-    expect(splitSubpaths(tomariDisplay.excludedPath)).toHaveLength(57);
-    expect(componentSource).toContain('const nonMunicipalityGeographyCodes = new Set(["01695", "01696"');
-    expect(componentSource).toContain("if (!isMunicipalityFeature(feature))");
-    expect(componentSource).toContain("const paths = municipalityDisplayPaths(feature);");
-    expect(componentSource).toContain("d={display.paths.interactivePath}");
-    expect(componentSource).toContain("d={display.paths.excludedPath}");
+  it("omits the six Hokkaido geography records only at display time and keeps every current Tomari part", () => {
+    const omittedCodes = ["01695", "01696", "01697", "01698", "01699", "01700"];
+    const sourceFeatures = hokkaidoGisData.features.filter((item: any) => omittedCodes.includes(item.code));
+    const displayedFeatures = filterPrefectureMapFeatures("01", hokkaidoGisData.features);
+    const currentTomari = displayedFeatures.find((item: any) => item.code === "01403");
+
+    expect(sourceFeatures.map((item: any) => item.code)).toEqual(omittedCodes);
+    expect(sourceFeatures.every((item: any) => item.kind === "geography")).toBe(true);
+    expect(displayedFeatures.some((item: any) => omittedCodes.includes(item.code))).toBe(false);
+    expect(currentTomari?.name).toBe("泊村");
+    expect(splitSubpaths(currentTomari?.path ?? "")).toHaveLength(58);
+    expect(currentTomari?.path).toBe(hokkaidoGisData.features.find((item: any) => item.code === "01403")?.path);
+    expect(filterPrefectureMapFeatures("47", hokkaidoGisData.features)).toBe(hokkaidoGisData.features);
+    expect(componentSource).toContain("filterPrefectureMapFeatures(prefectureCode, data.features)");
+    expect(componentSource).toContain("d={feature.path}");
+    expect(componentSource).not.toContain("municipalityDisplayPaths");
+    expect(componentSource).not.toContain("display.paths.excludedPath");
   });
 
   it("resolves GIS municipalities by the five-digit prefix of exact six-digit detail codes", () => {
@@ -132,7 +137,8 @@ describe("prefecture municipality map UI guardrails", () => {
     expect(componentSource).not.toContain("const densityBudget = dense");
     expect(componentSource).toContain("collisionAwareOffsets(compact, zoom)");
     expect(componentSource).toContain("fallbackFeatures.push(feature)");
-    expect(componentSource).toContain("labelLayout.fallbackFeatures.map");
+    expect(componentSource).not.toContain("labelLayout.fallbackFeatures.map");
+    expect(componentSource).not.toContain("地図上で重なりを避けた市町村名");
     expect(componentSource).toContain("placements.set(feature.code");
     expect(componentSource).toContain("activeFeatureCode: selectedFeatureCode");
     expect(componentSource).toContain("className={styles.mapLabelCallout}");
@@ -144,6 +150,7 @@ describe("prefecture municipality map UI guardrails", () => {
     expect(componentSource).toContain("<Link href={exportHref}>");
     expect(componentSource).not.toContain("limit=100&format=csv");
     expect(cssSource).not.toContain(".resultList {");
+    expect(cssSource).not.toContain(".labelFallback {");
     expect(cssSource).toContain("height: clamp(600px, 44vw, 640px);");
     expect(cssSource).toContain("shape-rendering: geometricPrecision;");
     expect(cssSource).toContain("stroke-width: 0.58;");
@@ -151,6 +158,15 @@ describe("prefecture municipality map UI guardrails", () => {
     const legendCss = cssSource.slice(cssSource.indexOf(".legend {"), cssSource.indexOf(".mapSurface {"));
     expect(legendCss).not.toContain("text-overflow: ellipsis;");
     expect(legendCss).not.toContain("white-space: nowrap;");
+  });
+
+  it("keeps the hovered municipality name on its own full-width row", () => {
+    expect(componentSource).toContain("const municipalityTooltipHeight = 196;");
+    expect(componentSource).toContain("<strong>{hover.title}</strong>");
+    expect(cssSource).toContain("grid-template-columns: minmax(0, 1fr);");
+    expect(cssSource).toContain("width: 100%;");
+    expect(cssSource).toContain("overflow-wrap: anywhere;");
+    expect(cssSource).toContain("white-space: normal;");
   });
 
   it("keeps the full map and its controls readable on mobile without a redundant mode switch", () => {

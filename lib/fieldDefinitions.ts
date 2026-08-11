@@ -156,7 +156,7 @@ export const fieldDefinitions: Record<string, FieldDefinition> = {
   },
   nonStandardTransfer: {
     label: "基準外繰入金",
-    meaning: "総務省の繰出基準に基づかない一般会計等からの繰入金です。使用料収入の不足額、営業損失、損益計算書の他会計補助金とは範囲が異なります。",
+    meaning: "総務省「繰入金に関する調」で基準外に区分された一般会計等からの繰入金です。使用料収入の不足額、営業損失、損益計算書の他会計補助金とは範囲が異なります。",
     unit: "千円",
     sourceTable: "繰入金に関する調",
     role: "繰入金"

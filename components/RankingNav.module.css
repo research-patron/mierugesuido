@@ -89,14 +89,18 @@
 
 .controls {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(264px, 0.28fr);
+  grid-template-columns: minmax(0, 1fr) 196px;
   align-items: end;
-  gap: 16px;
+  gap: 12px;
 }
 
 .metricGroup,
 .directionGroup {
   min-width: 0;
+}
+
+.directionGroup {
+  width: 196px;
 }
 
 .controlLabel {
@@ -124,6 +128,9 @@
 
 .directionOptions {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px;
+  padding: 3px;
+  background: #f1f5f7;
 }
 
 .metricOption,
@@ -227,24 +234,14 @@
 
 .directionOption {
   justify-content: center;
-  padding: 10px;
-  text-align: left;
+  min-height: 44px;
+  gap: 6px;
+  padding: 8px;
+  text-align: center;
 }
 
-.directionOption > svg:first-child {
-  width: 18px;
-  height: 18px;
-  flex: 0 0 18px;
-  color: #60758c;
-}
-
-.directionOption > span {
-  display: grid;
-  gap: 2px;
-}
-
-.directionOption.selected > svg:first-child {
-  color: #007f8f;
+.directionOption strong {
+  font-size: 11.5px;
 }
 
 .directionCheck {
@@ -255,14 +252,10 @@
   stroke-width: 3;
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 850px) {
   .controls {
     grid-template-columns: 1fr;
     gap: 12px;
-  }
-
-  .directionGroup {
-    max-width: 420px;
   }
 }
 
@@ -327,11 +320,11 @@
   }
 
   .directionGroup {
-    max-width: none;
+    width: 100%;
   }
 
   .directionOption {
-    min-height: 48px;
+    min-height: 44px;
   }
 }
 

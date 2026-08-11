@@ -93,8 +93,8 @@ describe("revision schedule correctness", () => {
     expect(source).toContain("金額差だけでは一覧に含めません");
     expect(source).toContain("hasChangedEffectiveDateShape");
     expect(source).toContain("第33表の公式記載");
-    expect(source).toContain("20m³料金の単純変化率");
-    expect(source).toContain("公式の実質使用料改定率とは異なる単純計算です。");
+    expect(source).toContain("20m³月額の前年比");
+    expect(source).toContain("第33表「実質使用料改定率」ではありません。R5・R6の表示月額から算定しています。");
     expect(source).toContain("業務用料金・料金体系・関連項目を見る");
     expect(source).toContain("自治体が公式に公表した改定情報");
     expect(source.match(/<StatCard\b/g)).toHaveLength(2);
@@ -107,11 +107,32 @@ describe("revision schedule correctness", () => {
     expect(source).toContain('aria-autocomplete="list"');
     expect(source).toContain('role="listbox"');
     expect(source).toContain("文字入力でも、候補の選択でも絞り込めます。");
+    expect(source).toContain('className="revision-filter-controls"');
+    expect(source).toContain("prefecture || businessType ? <Link");
+    expect(source).toContain("inputRef.current?.focus()");
     expect(source).toContain("const revisionGroupPageSize = 40");
     expect(source).toContain("さらに{Math.min(revisionGroupPageSize");
     expect(source.match(/onKeyDown=\{toggleDetailsOnKeyboard\}/g)).toHaveLength(2);
     expect(source).not.toContain("feeUnitPrice");
     expect(source).not.toContain("増減方向");
+  });
+
+  it("uses a clear municipality band and semantic fee-delta states", () => {
+    const source = readFileSync(path.join(process.cwd(), "app/revisions/page.tsx"), "utf8");
+    const css = readFileSync(path.join(process.cwd(), "app/ui-fidelity.css"), "utf8");
+
+    expect(source).toContain("revisionFeeDeltaPresentation");
+    expect(source).toContain('className="revision-fee-delta"');
+    expect(source).toContain("data-tone={presentation.tone}");
+    expect(source).toContain("aria-label={presentation.ariaLabel}");
+    expect(source).toContain("data-tone={householdFeeDelta.tone}");
+    expect(css).toMatch(/\.revision-municipality-header\s*\{[^}]*background:\s*#d3e6eb/si);
+    expect(css).toContain('.revision-fee-delta[data-tone="increase"]');
+    expect(css).toContain('.revision-fee-delta[data-tone="decrease"]');
+    expect(css).toContain('.revision-fee-delta[data-tone="unchanged"]');
+    expect(css).toContain('.revision-fee-delta[data-tone="unavailable"]');
+    expect(css).toMatch(/\.revision-fee-delta\[data-tone="increase"\]\s*\{[^}]*color:\s*#b42318/si);
+    expect(css).not.toMatch(/\.revision-rate-section[^}]*#b42318/si);
   });
 
   it("groups the revision list by municipality and paginates whole groups", () => {

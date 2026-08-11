@@ -22,6 +22,7 @@ import { StatCard } from "@/components/StatCard";
 import { accountingTypeLabel, displayBusinessName } from "@/lib/businessDisplay";
 import { formatOfficialRevisionRate } from "@/lib/format";
 import { municipalityDetailHref } from "@/lib/municipalityLinks";
+import { revisionFeeDeltaPresentation } from "@/lib/revisionFeeDelta";
 import { isStaticRevisionDataset, type StaticRevisionDataset } from "@/lib/staticRevisionDataset";
 import type {
   YearbookFeeChange,
@@ -187,13 +188,17 @@ function RevisionsContent() {
             <div className="revision-filter-heading">
               <div>
                 <h2 id="revision-filter-heading">表示を絞り込む</h2>
-                <p>都道府県名を入力するか候補から選び、必要に応じて事業を指定します。</p>
+                <p>都道府県と事業を組み合わせて、確認したい団体へすばやく絞り込めます。</p>
               </div>
-              <Link href="/revisions">条件をクリア</Link>
+              {prefecture || businessType ? <Link href="/revisions">すべて表示に戻す</Link> : null}
             </div>
-            <PrefectureCombobox value={prefecture} options={availablePrefectures} />
-            <FilterSelect label="事業" name="businessType" value={businessType} options={availableBusinesses} />
-            <button type="submit" className="button-primary">この条件で表示</button>
+            <div className="revision-filter-controls">
+              <PrefectureCombobox value={prefecture} options={availablePrefectures} />
+              <FilterSelect label="事業" name="businessType" value={businessType} options={availableBusinesses} />
+              <div className="revision-filter-submit">
+                <button type="submit" className="button-primary">絞り込む</button>
+              </div>
+            </div>
           </form>
           <div className="revision-source-links">
             <span>出典</span>
@@ -363,6 +368,7 @@ function YearbookChangeRow({ item }: { item: YearbookFeeChange }) {
     : null;
   const businessTariffChanges = item.tariffChanges.filter((change) => change.key !== "householdFee20m3Yen");
   const accountingChanged = item.accountingTypes.r5 !== item.accountingTypes.r6;
+  const householdFeeDelta = revisionFeeDeltaPresentation(item.householdFee20m3.delta);
 
   return (
     <article className="revision-comparison-row" aria-labelledby={businessHeadingId}>
@@ -409,12 +415,12 @@ function YearbookChangeRow({ item }: { item: YearbookFeeChange }) {
           <span>R5 {formatYen(item.householdFee20m3.r5)}</span>
           <ArrowRight size={16} aria-hidden="true" />
           <span>R6 {formatYen(item.householdFee20m3.r6)}</span>
-          <b>{formatYenDelta(item.householdFee20m3.delta)}</b>
+          <FeeDelta value={item.householdFee20m3.delta} />
         </div>
-        <div className="revision-simple-rate">
-          <span>20m³料金の単純変化率</span>
+        <div className="revision-simple-rate" data-tone={householdFeeDelta.tone}>
+          <span>20m³月額の前年比</span>
           <strong>{formatSimpleChangeRate(item.householdFee20m3.changeRate)}</strong>
-          <small>公式の実質使用料改定率とは異なる単純計算です。</small>
+          <small>第33表「実質使用料改定率」ではありません。R5・R6の表示月額から算定しています。</small>
         </div>
       </div>
 
@@ -431,7 +437,7 @@ function YearbookChangeRow({ item }: { item: YearbookFeeChange }) {
                 {businessTariffChanges.map((change) => (
                   <div key={change.key}>
                     <dt>{change.label}</dt>
-                    <dd>R5 {formatYen(change.r5)} <span aria-hidden="true">→</span> R6 {formatYen(change.r6)} <b>{formatYenDelta(change.delta)}</b></dd>
+                    <dd>R5 {formatYen(change.r5)} <span aria-hidden="true">→</span> R6 {formatYen(change.r6)} <FeeDelta value={change.delta} /></dd>
                   </div>
                 ))}
               </dl>
@@ -475,6 +481,7 @@ function PrefectureCombobox({ value, options }: { value: string; options: string
   const inputId = useId();
   const listboxId = `${inputId}-options`;
   const fieldRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState(value);
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -540,6 +547,7 @@ function PrefectureCombobox({ value, options }: { value: string; options: string
       <div className="revision-combobox-input-wrap">
         <Search size={16} aria-hidden="true" />
         <input
+          ref={inputRef}
           id={inputId}
           name="prefecture"
           type="text"
@@ -574,6 +582,7 @@ function PrefectureCombobox({ value, options }: { value: string; options: string
               setQuery("");
               setOpen(true);
               setActiveIndex(firstPrefectureOptionIndex(options));
+              inputRef.current?.focus();
             }}
           >
             <X size={15} aria-hidden="true" />
@@ -589,6 +598,7 @@ function PrefectureCombobox({ value, options }: { value: string; options: string
             const nextOpen = !open;
             setOpen(nextOpen);
             setActiveIndex(nextOpen ? firstPrefectureOptionIndex(filteredOptions) : -1);
+            if (nextOpen) inputRef.current?.focus();
           }}
         >
           <ChevronsUpDown size={16} aria-hidden="true" />
@@ -662,6 +672,19 @@ function SourceLink({ href, children }: { href: string; children: React.ReactNod
   return <a href={href} target="_blank" rel="noreferrer">{children}<ExternalLink size={12} aria-hidden="true" /></a>;
 }
 
+function FeeDelta({ value }: { value: number | null }) {
+  const presentation = revisionFeeDeltaPresentation(value);
+  return (
+    <b
+      className="revision-fee-delta"
+      data-tone={presentation.tone}
+      aria-label={presentation.ariaLabel}
+    >
+      {presentation.label}
+    </b>
+  );
+}
+
 function hasChangedEffectiveDateShape(item: YearbookFeeChange) {
   const dates = item?.currentUsageFeeEffectiveDate;
   return Boolean(
@@ -704,12 +727,6 @@ function formatSimpleChangeRate(value: number | null) {
 
 function formatYen(value: number | null) {
   return value == null || !Number.isFinite(value) ? "記載なし" : `${value.toLocaleString("ja-JP")}円`;
-}
-
-function formatYenDelta(value: number | null) {
-  if (value == null || !Number.isFinite(value)) return "差額算定不可";
-  if (value === 0) return "差額なし";
-  return `${value > 0 ? "+" : ""}${value.toLocaleString("ja-JP")}円`;
 }
 
 function formatTariffSystemSignal(key: string, value: string | number | boolean) {

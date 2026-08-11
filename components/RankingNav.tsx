@@ -1,7 +1,5 @@
 import type { LucideIcon } from "lucide-react";
 import {
-  ArrowDownWideNarrow,
-  ArrowUpNarrowWide,
   BadgeJapaneseYen,
   Check,
   Droplets,
@@ -46,15 +44,7 @@ function directionLabel(metric: RankingMetric, direction: RankingDirection) {
 
 export function RankingNav({ current }: { current: RankingType }) {
   const { metric: selectedMetric, direction } = rankingSelection(current);
-  const directions: Array<{
-    value: RankingDirection;
-    label: string;
-    helper: string;
-    icon: LucideIcon;
-  }> = [
-    { value: "high", label: "高い順", helper: "大きい値から", icon: ArrowDownWideNarrow },
-    { value: "low", label: "低い順", helper: "小さい値から", icon: ArrowUpNarrowWide }
-  ];
+  const directions: RankingDirection[] = ["high", "low"];
   const selectedDirectionLabel = directionLabel(selectedMetric.metric, direction);
   const selectedDirectionCompactLabel = selectedMetric.metric === "transfer-amount"
     ? direction === "high" ? "大きい順" : "小さい順"
@@ -117,25 +107,22 @@ export function RankingNav({ current }: { current: RankingType }) {
           <p className={styles.controlLabel}>並び順</p>
           <div className={styles.directionOptions}>
             {directions.map((item) => {
-              const type = selectedMetric.types[item.value];
-              const selected = direction === item.value;
-              const DirectionIcon = item.icon;
+              const type = selectedMetric.types[item];
+              const selected = direction === item;
               const label = selectedMetric.metric === "transfer-amount"
-                ? item.value === "high" ? "大きい順" : "小さい順"
-                : item.label;
+                ? item === "high" ? "大きい順" : "小さい順"
+                : item === "high" ? "高い順" : "低い順";
+              const accessibleDirection = directionLabel(selectedMetric.metric, item);
               return (
                 <Link
-                  key={item.value}
+                  key={item}
                   href={`/rankings/${type}`}
                   aria-current={selected ? "page" : undefined}
+                  aria-label={`${selectedMetric.label}を${accessibleDirection}で表示`}
                   className={`${styles.directionOption} ${selected ? styles.selected : ""}`}
                 >
-                  <DirectionIcon aria-hidden="true" />
-                  <span>
-                    <strong>{label}</strong>
-                    <small>{item.helper}</small>
-                  </span>
-                  {selected ? <Check className={styles.directionCheck} aria-label="選択中" /> : null}
+                  <strong>{label}</strong>
+                  {selected ? <Check className={styles.directionCheck} aria-hidden="true" /> : null}
                 </Link>
               );
             })}

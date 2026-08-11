@@ -59,7 +59,13 @@ describe("ranking basis and bidirectional comparison", () => {
         `/rankings/${selectedMetric.types.low}`
       ]);
       expect(markup.match(/aria-current="page"/g)).toHaveLength(2);
-      expect(markup.match(/aria-label="選択中"/g)).toHaveLength(2);
+      expect(markup.match(/aria-label="選択中"/g)).toHaveLength(1);
+      const highAccessible = selectedMetric.metric === "transfer-amount" ? "金額が大きい順" : "値が高い順";
+      const lowAccessible = selectedMetric.metric === "transfer-amount" ? "金額が小さい順" : "値が低い順";
+      expect(markup).toContain(`aria-label="${selectedMetric.label}を${highAccessible}で表示"`);
+      expect(markup).toContain(`aria-label="${selectedMetric.label}を${lowAccessible}で表示"`);
+      expect(markup).not.toContain("大きい値から");
+      expect(markup).not.toContain("小さい値から");
       expect(markup).toContain('aria-label="比較する指標"');
       expect(markup).toContain('aria-label="並び順"');
       expect(markup).toContain('aria-labelledby="ranking-condition-title"');
@@ -68,7 +74,7 @@ describe("ranking basis and bidirectional comparison", () => {
       expect(markup).not.toContain("<fieldset");
     }
 
-    expect(rankingPageSource).toContain("下の比較ビューから、見たい指標と並び順をすぐに切り替えられます");
+    expect(rankingPageSource).not.toContain("下の比較ビューから、見たい指標と並び順をすぐに切り替えられます");
     expect(rankingPageSource).not.toContain("使用料収入の必要増加率");
   });
 

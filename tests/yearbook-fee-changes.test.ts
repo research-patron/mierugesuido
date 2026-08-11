@@ -86,6 +86,34 @@ describe("R5-R6 yearbook fee comparison", () => {
     expect(result.counts.amountOnly).toEqual({ businessCount: 1, municipalityCount: 1 });
   });
 
+  it("keeps increase, decrease, equal, and unavailable amounts as reference states", () => {
+    const cases = [
+      { name: "increase", r5: 2000, r6: 2500, delta: 500, direction: "increase", rate: 0.25 },
+      { name: "decrease", r5: 2500, r6: 2000, delta: -500, direction: "decrease", rate: -0.2 },
+      { name: "equal", r5: 2000, r6: 2000, delta: 0, direction: "unchanged", rate: 0 },
+      { name: "unavailable", r5: null, r6: 2000, delta: null, direction: "unchanged", rate: null }
+    ] as const;
+
+    for (const feeCase of cases) {
+      const result = buildYearbookFeeComparison(pair(feeCase.name, {
+        currentR5: "2020-04-01",
+        currentR6: "2024-04-01",
+        r5Fee: feeCase.r5,
+        r6Fee: feeCase.r6
+      }));
+
+      expect(result.items).toHaveLength(1);
+      expect(result.items[0]).toMatchObject({
+        currentUsageFeeEffectiveDate: { changed: true },
+        direction: feeCase.direction,
+        householdFee20m3: {
+          delta: feeCase.delta,
+          changeRate: feeCase.rate
+        }
+      });
+    }
+  });
+
   it("pairs the same business across an accounting-basis transition", () => {
     const result = buildYearbookFeeComparison([
       snapshot({

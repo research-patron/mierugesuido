@@ -1802,3 +1802,94 @@ The detailed `Final superseding ranking-selector experience gate — 2026-08-11`
 - All eight direct routes, independent metric/direction preservation, keyboard focus and Enter, browser Back, 35 files / 231 tests, lint, production build with 1,652 pages, and protected-scope checks passed.
 
 final result: passed
+
+## Final superseding municipality comparison and Table 40 gate — 2026-08-11
+
+This gate is the current acceptance record for the municipality peer-list visualization, the R6 non-standard-transfer explanation, and the ranking direction control.
+
+### Municipality comparison visualization
+
+- The existing `市町村ごとの料金・財務比較` keeps every exact value and adds a compact horizontal bar for household 20m³ monthly tariff, expense recovery, and the official non-standard-transfer amount.
+- Household tariff and expense recovery use one linear prefecture-wide scale. The dark recovery tick is explicitly identified as 100%. Non-standard transfers alone use a stated `log1p` scale because the official amounts span several orders of magnitude.
+- Zero remains a valid `0円`; missing values remain `未取得` or `算定不可`. Excluded municipalities retain their reason and receive no inferred bar. Decorative bars are hidden from assistive technology while the exact numeric text stays exposed.
+- The desktop table remains a compact four-column comparison with its own bounded vertical scroll. At 390×844 it is replaced by one municipality card per row, with the same three values and no page-level horizontal overflow.
+- The non-standard-transfer note states that absolute amount also reflects business scale and that bar length alone is not a good/bad judgment.
+
+### Official non-standard-transfer audit
+
+- `営業収益−（営業費用−減価償却費）` is not used as a non-standard-transfer formula. It is a depreciation-excluded operating difference; subtracting all depreciation is also inappropriate because deferred-grant income corresponds only to the relevant subsidized portion.
+- The public value continues to come from the Ministry of Internal Affairs and Communications Table 40 `基準外繰入合計`. The R6 finance view now places that exact value before the financial story and states that it is not inferred from operating profit/loss.
+- New Niigata City regression: the proposed difference is 14,099,154 thousand yen, while the official Table 40 total is 196,466 thousand yen. Its disclosed principal components remain rainwater burden 0, other-account subsidy 36,466, and capital-account subsidy 160,000 thousand yen.
+- A read-only reconciliation joined every published R6 legal-applied record to the official Table 40 workbook by municipality and business key: 3,385 published records matched, with 0 missing official keys and 0 value mismatches. The official workbook contains another 69 keys that are not in the published municipality details; they were not counted as mismatches.
+- The R6 selector has a behavioral regression: an exact R6 zero remains zero, while a group containing only an older-year amount returns null instead of falling back.
+
+### Ranking direction hierarchy
+
+- The four indicator cards remain the primary decision. `並び順` is now a 196px, 44px, text-led two-option segment on desktop and a full-width two-option segment on mobile.
+- Redundant large sort icons and the duplicate helper copy `大きい値から` / `小さい値から` were intentionally removed. The visible choices remain `高い順` / `低い順`, or `大きい順` / `小さい順` for transfer amounts.
+- All eight metric/direction routes remain native links. Browser interaction changed fee unit high→low and then treatment cost while preserving low, producing `/rankings/fee-unit-low/` and `/rankings/treatment-cost-low/`.
+- Both direction controls measure 44px at the mobile viewport. Exact accessible names, `aria-current`, the visible selected check, and metric/direction independence are covered by regression tests.
+
+### Visual evidence
+
+- The supplied ranking-selector reference was inspected together with the final implementation. The direction control is now visibly subordinate to the indicator row without losing selection clarity.
+- The in-app browser capture was calibrated for its scrollbar/capture chrome: desktop override 1502×1063 produced an untouched 1491×1055 JPEG, and mobile override 401×868 produced an untouched 390×844 JPEG. The document content widths were 1491px and 390px respectively; no padding, cropping, or resampling was applied to these acceptance files.
+- Exact-size raw acceptance frames are stored in the ignored QA directory `artifacts/design-qa/municipality-comparison-2026-08-11/`:
+  - `raw-peer-desktop-1491x1055.jpg`
+  - `raw-peer-mobile-390x844.jpg`
+  - `raw-finance-desktop-1491x1055.jpg`
+  - `raw-finance-mobile-390x844.jpg`
+  - `raw-ranking-desktop-1491x1055.jpg`
+  - `raw-ranking-mobile-390x844.jpg`
+- Desktop and mobile inspection found a coherent reading order, readable exact values, distinct three-indicator bars, no clipped labels, and no page-level horizontal overflow. The finance disclosure expanded to 0 / 36,466 / 160,000 thousand yen without layout shift outside its section.
+
+### Verification and protected scope
+
+- `pnpm lint`: passed.
+- `pnpm test`: 35/35 files and 234/234 tests passed.
+- `pnpm build`: passed; 1,652 static pages generated.
+- Official R6 Table 40 reconciliation: 3,385/3,385 published legal-applied records matched; 0 mismatches.
+- `git diff --check`: passed.
+- No database, Prisma schema, migration, ETL mapping, imported workbook, static municipality data, official financial value, ranking formula, or route was changed.
+- Intentional subtraction is limited to the redundant ranking-direction icons/helper lines. Exact values, both sort directions, all comparison rows, finance diagrams, official Table 40 fields, and disclosure access remain available.
+
+final result: passed
+
+## Final superseding revision-filter and fee-change clarity gate — 2026-08-11
+
+This gate is the current acceptance record for the revision-page filter, municipality boundaries, and year-over-year fee-change presentation.
+
+### Filter layout and interaction
+
+- The previous desktop layout placed the business select 21 px and the action 19 px below the prefecture input because the grid bottom-aligned a field with helper text against fields without helper text. The controls now share one top-aligned grid: the input and select both start at 626.48 px, and the 44 px action starts at 627.48 px.
+- The filter panel now permits the combobox listbox to overflow above the results instead of clipping it to roughly two options. The open desktop list displayed a scrollable set of prefectures without being cut off by the panel.
+- Desktop uses one aligned prefecture / business / action row. At 390×844 the same controls stack in reading order, the action becomes full width, and the page measured 390 px content width with 390 px scroll width.
+- The reset action is shown only when a condition is active and has a 44 px mobile target. Opening or clearing the custom combobox returns focus to its input; Arrow keys, Enter, and Escape remain available.
+- Browser verification selected a prefecture with ArrowDown and Enter, submitted to a query-addressable URL, then confirmed browser Back, Forward, and the active `すべて表示に戻す` action.
+
+### Municipality grouping and fee differences
+
+- Municipality boundaries retain one uniform 1 px border on every side. Their header surface changed from near-white `#f5f8fa` to `#d3e6eb`, with a `#afc4cf` boundary and dark navy text, making each municipality unmistakable without a thick one-sided accent.
+- Household and business fee differences now have four semantic states: `増額 +○円`, `減額 -○円`, `料金差額なし 0円`, and `差額算定不可`. The visible wording and sign carry the meaning in addition to color.
+- Increases use dark red `#b42318` on a pale red surface; decreases use dark teal; unchanged and unavailable values remain neutral. The R5/R6 source amounts and the official Table 33 revision rates remain navy and are not colored as increases.
+- The household percentage is now labelled `20m³月額の前年比`, and the adjacent note states that it is calculated from the two displayed monthly amounts and is not the official Table 33 `実質使用料改定率`.
+- The current 138-business dataset contains 104 increases and 34 unchanged household amounts. Synthetic regression coverage also fixes the decrease and unavailable states without changing the effective-date-only list condition.
+
+### Visual evidence
+
+- Raw, unedited desktop and mobile acceptance screenshots are stored in the ignored QA directory `artifacts/design-qa/revisions-filter-2026-08-11/`.
+- `03-after-desktop.jpg` and `04-after-rows-desktop.jpg` are 1491×1055. `05-after-mobile.jpg`, `06-after-rows-mobile.jpg`, and `07-after-delta-mobile.jpg` are 390×844.
+- The supplied filter and municipality-list references were inspected in the same comparison pass as the final screenshots. The final desktop and mobile states show aligned controls, a fully visible option list, clearer municipality bands, readable red increase amounts, and no clipped labels or page-level horizontal overflow.
+- Runtime logs contained no warning or error entries; only development informational and Fast Refresh messages were present.
+
+### Verification and protected scope
+
+- `pnpm lint`: passed.
+- `pnpm test`: 36/36 files and 241/241 tests passed.
+- `pnpm build`: passed; 1,652 static pages generated.
+- Focused revision and design tests: 4/4 files and 25/25 tests passed.
+- `git diff --check`: passed.
+- No database, Prisma schema, migration, ETL, downloaded workbook, static source data, GIS, financial formula, official revision rate, or revision-list inclusion rule changed.
+- Intentional subtraction: the always-visible inactive reset link and the longer `この条件で表示` button copy were removed. The reset reappears whenever a filter is active, and the shorter `絞り込む` label improves scanning without removing any action.
+
+final result: passed

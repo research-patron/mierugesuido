@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { inlineComparisonBarWidth } from "@/components/municipality-detail/PrefecturePeerComparison";
 
 const root = process.cwd();
 const pageSource = readFileSync(path.join(root, "components/MunicipalityDetailClient.tsx"), "utf8");
@@ -98,7 +99,7 @@ describe("prefecture peer comparison UI", () => {
     expect(componentSource).toContain("他会計補助金");
     expect(componentSource).toContain("営業外収益");
     expect(componentSource.match(/formatMoneyThousandYen\(row\.nonStandardTransfer\)/g)).toHaveLength(2);
-    expect(componentSource).toContain("総務省の繰出基準に当たらない一般会計等からの繰入額");
+    expect(componentSource).toContain("第40表で基準外に区分された一般会計等からの繰入額");
     expect(componentSource).toContain("この表では基準外繰入金の代わりに使っていません");
     expect(componentSource).toContain("公費・繰入の内訳");
     expect(componentSource).toContain("雨水処理負担金");
@@ -109,14 +110,37 @@ describe("prefecture peer comparison UI", () => {
     expect(componentSource).toContain("基準外繰入金合計");
     expect(componentSource).toContain('`${Math.round(value).toLocaleString("ja-JP")}千円`');
     expect(componentSource).not.toContain("相当の規模");
-    expect(componentSource).not.toContain("scaleNote");
     expect(componentSource).not.toContain("補填率");
   });
 
-  it("pairs the possible non-standard support explanation with the official exceptions", () => {
-    expect(componentSource).toContain("使用料で賄うべき費用の不足を基準外繰入金で補っている可能性があります");
-    expect(componentSource).toContain("分流式下水道や高度処理など、公的便益を理由に基準内公費負担となる経費があります");
+  it("adds exact-value mini bars with one shared scale and a visible 100-percent reference", () => {
+    expect(componentSource).toContain("buildInlineComparisonScales(eligibleRows)");
+    expect(componentSource).toContain("<InlineComparisonMetric");
+    expect(componentSource).toContain("referenceValue={100}");
+    expect(componentSource).toContain("経費回収率の濃い縦線は100%を示します");
+    expect(componentSource).toContain("logarithmic");
+    expect(componentSource).toContain("基準外繰入金だけ対数目盛");
+    expect(componentSource).toContain("棒の長短だけで良否は判定できません");
+    expect(componentSource).toContain('className={styles.inlineBarTrack} aria-hidden="true"');
+    expect(cssSource).toContain(".inlineBarTrack");
+    expect(cssSource).toMatch(/\.inlineBarFill\s*\{[\s\S]*?background:\s*#4789a8;[\s\S]*?\}/);
+
+    expect(inlineComparisonBarWidth(null, 100)).toBe(0);
+    expect(inlineComparisonBarWidth(0, 100)).toBe(0);
+    expect(inlineComparisonBarWidth(50, 100)).toBe(50);
+    expect(inlineComparisonBarWidth(150, 100)).toBe(100);
+    expect(inlineComparisonBarWidth(100, 100, true)).toBe(100);
+    expect(inlineComparisonBarWidth(10, 100, true)).toBeGreaterThan(10);
+    expect(inlineComparisonBarWidth(10, 100, true)).toBeLessThan(100);
+  });
+
+  it("separates operating loss, official non-standard transfers, and fee recovery", () => {
+    expect(componentSource).toContain("営業収益が営業費用を下回ることは会計上の営業損失を示します");
+    expect(componentSource).toContain("その差額は基準外繰入金ではありません");
+    expect(componentSource).toContain("減価償却費に対応する長期前受金戻入");
     expect(componentSource).toContain("この比率だけで基準外繰入金の有無や金額は判定できません");
+    expect(componentSource).toContain("基準外繰入金は第40表の公式値");
+    expect(componentSource).toContain("使用料による汚水処理費の回収状況は経費回収率で確認します");
     expect(componentSource).toContain("基準内額は、実額と基準外額をともに正常取得でき");
     expect(componentSource).toContain("資本勘定や他会計借入金が含まれる場合があります");
     expect(componentSource).toContain("https://www.mlit.go.jp/mizukokudo/sewerage/crd_sewerage_tk_000140.html");
@@ -153,7 +177,7 @@ describe("prefecture peer comparison UI", () => {
     expect(componentSource).toContain("<caption>");
     expect(componentSource).toContain('scope="row"');
     expect(componentSource).toContain("20m³使用料（月額）");
-    expect(componentSource).toContain("<MobileCards model={model} />");
+    expect(componentSource).toContain("<MobileCards model={model} scales={comparisonScales} />");
     expect(cssSource).toMatch(/@media \(max-width: 720px\)[\s\S]*\.tableScroll\s*{\s*display:\s*none/s);
     expect(cssSource).toMatch(/@media \(max-width: 720px\)[\s\S]*\.mobileCards\s*{\s*display:\s*grid/s);
   });

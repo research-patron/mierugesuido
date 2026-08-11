@@ -2021,17 +2021,27 @@ body {
   gap: 16px;
 }
 
-.revision-filter-panel,
+.revision-filter-panel {
+  position: relative;
+  z-index: 2;
+  overflow: visible;
+}
+
 .revision-results-panel {
   overflow: hidden;
 }
 
 .revision-filter-form {
   display: grid;
-  grid-template-columns: minmax(280px, 1.4fr) minmax(220px, 1fr) auto;
-  gap: 13px;
-  align-items: end;
+  gap: 14px;
   padding: 16px 18px;
+}
+
+.revision-filter-controls {
+  display: grid;
+  grid-template-columns: minmax(280px, 1.3fr) minmax(230px, 0.9fr) minmax(132px, auto);
+  gap: 13px;
+  align-items: start;
 }
 
 .revision-filter-heading {
@@ -2056,7 +2066,10 @@ body {
 }
 
 .revision-filter-heading a {
+  display: inline-flex;
+  min-height: 36px;
   flex: 0 0 auto;
+  align-items: center;
   color: var(--ui-teal-hover);
   font-size: 11px;
   font-weight: 900;
@@ -2182,8 +2195,14 @@ body {
   font-weight: 650;
 }
 
-.revision-filter-form > .button-primary {
+.revision-filter-submit {
+  padding-top: 25px;
+}
+
+.revision-filter-submit > .button-primary {
+  width: 100%;
   min-height: 44px;
+  box-shadow: none;
   white-space: nowrap;
 }
 
@@ -2266,7 +2285,7 @@ body {
 
 .revision-municipality-group {
   overflow: hidden;
-  border: 1px solid #d7e2e9;
+  border: 1px solid #afc4cf;
   border-radius: 8px;
   background: #ffffff;
 }
@@ -2277,8 +2296,8 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  border-bottom: 1px solid #d7e2e9;
-  background: #f5f8fa;
+  border-bottom: 1px solid #afc4cf;
+  background: #d3e6eb;
   padding: 10px 14px;
 }
 
@@ -2347,9 +2366,9 @@ body {
 }
 
 .revision-location {
-  color: var(--ui-muted);
+  color: #405770;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .revision-row-header h4,
@@ -2515,10 +2534,35 @@ body {
   color: #6a7d91;
 }
 
-.revision-household-comparison b {
-  color: var(--ui-teal-hover);
+.revision-fee-delta {
+  display: inline-flex;
+  min-height: 24px;
+  align-items: center;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 3px 8px;
   font-size: 11px;
   font-weight: 900;
+  line-height: 1.25;
+}
+
+.revision-fee-delta[data-tone="increase"] {
+  border-color: #f0c6c2;
+  background: #fef3f2;
+  color: #b42318;
+}
+
+.revision-fee-delta[data-tone="decrease"] {
+  border-color: #abd7d0;
+  background: #eef9f6;
+  color: #006b75;
+}
+
+.revision-fee-delta[data-tone="unchanged"],
+.revision-fee-delta[data-tone="unavailable"] {
+  border-color: #d3dde5;
+  background: #f3f6f8;
+  color: #405770;
 }
 
 .revision-simple-rate {
@@ -2535,6 +2579,14 @@ body {
   color: #405770;
   font-size: 12px;
   font-weight: 900;
+}
+
+.revision-simple-rate[data-tone="increase"] strong {
+  color: #b42318;
+}
+
+.revision-simple-rate[data-tone="decrease"] strong {
+  color: #006b75;
 }
 
 .revision-simple-rate small {
@@ -2638,10 +2690,8 @@ body {
   font-weight: 800;
 }
 
-.revision-change-list dd b {
+.revision-change-list dd .revision-fee-delta {
   margin-left: 8px;
-  color: var(--ui-teal-hover);
-  font-weight: 900;
 }
 
 .revision-reason-list {
@@ -2788,13 +2838,13 @@ body {
     grid-template-columns: 1fr;
   }
 
-  .revision-filter-form {
+  .revision-filter-controls {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .revision-filter-form > .revision-filter-heading,
-  .revision-filter-form > button {
+  .revision-filter-submit {
     grid-column: 1 / -1;
+    padding-top: 0;
   }
 
   .revision-date-section {
@@ -2831,9 +2881,25 @@ body {
     padding: 0 6px;
   }
 
-  .revision-filter-form {
+  .revision-filter-controls {
     grid-template-columns: 1fr;
+  }
+
+  .revision-filter-form {
     padding: 14px;
+  }
+
+  .revision-filter-heading {
+    align-items: flex-start;
+  }
+
+  .revision-filter-heading p {
+    max-width: 31ch;
+  }
+
+  .revision-filter-heading a {
+    min-height: 44px;
+    text-align: right;
   }
 
   .revision-page h1 {
@@ -2965,8 +3031,9 @@ body {
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   }
 
-  .revision-household-comparison b {
+  .revision-household-comparison .revision-fee-delta {
     grid-column: 1 / -1;
+    justify-self: start;
   }
 
   .revision-simple-rate {

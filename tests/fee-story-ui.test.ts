@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { buildCurrentFundingContext } from "@/components/MunicipalityDetailClient";
 
 const detailSource = readFileSync(
   path.join(process.cwd(), "components/MunicipalityDetailClient.tsx"),
@@ -38,6 +39,40 @@ describe("household 20m3 fee and recovery-story UI", () => {
     expect(detailSource).not.toContain("formatSignedMonthlyDifference");
     expect(detailSource).not.toContain("calculateRequiredHouseholdFee20m3");
     expect(detailSource).not.toContain("改定リスクスコア");
+  });
+
+  it("shows the official R6 table 40 non-standard transfer without an income-statement proxy", () => {
+    expect(detailSource).toContain("<NonStandardTransferFinanceSummary");
+    expect(detailSource).toContain('findAnnual(group, 2024, group.latestBusiness.accountingType)');
+    expect(detailSource).toContain("基準外繰入金合計");
+    expect(detailSource).toContain("第40表の値をそのまま表示");
+    expect(detailSource).toContain("営業収益−（営業費用−減価償却費）");
+    expect(detailSource).toContain("基準外繰入金の定義・算式ではありません");
+    expect(detailSource).toContain("formatTransferExact(context.nonStandardTransfer)");
+    expect(detailSource).not.toContain("nonStandardTransfer: operatingRevenue");
+    expect(detailSource).not.toContain("nonStandardTransfer: operatingExpense");
+  });
+
+  it("selects the exact R6 transfer and never falls back to another fiscal year", () => {
+    const group = {
+      key: "17-1-000",
+      latestBusiness: {
+        accountingType: "legal_applied",
+        financialStory: { income: { operatingRevenue: 80, operatingExpense: 100, revenueBreakdown: [] } }
+      },
+      latest: { surveyYear: 2025, nonStandardTransfer: 999 },
+      businesses: [{
+        accountingType: "legal_applied",
+        annualFinancials: [
+          { surveyYear: 2023, nonStandardTransfer: 777 },
+          { surveyYear: 2024, nonStandardTransfer: 0 }
+        ]
+      }]
+    } as any;
+
+    expect(buildCurrentFundingContext(group).nonStandardTransfer).toBe(0);
+    group.businesses[0].annualFinancials = [{ surveyYear: 2023, nonStandardTransfer: 777 }];
+    expect(buildCurrentFundingContext(group).nonStandardTransfer).toBeNull();
   });
 
   it("removes the repeated reading note and misleading shorthand from every detail tab", () => {

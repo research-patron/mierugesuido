@@ -146,6 +146,7 @@ export function MunicipalityDetailClient({ municipalityCode }: { municipalityCod
   const evidenceEntries = latestBusiness.evidenceEntries ?? [];
   const financialStory = latestBusiness.financialStory;
   const financialStatementsReady = latestBusiness.financialStatementsReady;
+  const currentFundingContext = buildCurrentFundingContext(selectedGroup);
   const financeTabLabel = latestBusiness.accountingType === "non_legal_applied"
     ? "財務図 対象外"
     : financialStatementsReady ? "R6 財務を読む" : "R6 財務（未取得）";
@@ -336,6 +337,10 @@ export function MunicipalityDetailClient({ municipalityCode }: { municipalityCod
           </>
         ) : view === "finance" ? (
           <section className={styles.financeSection} aria-label="R6財務の読み解き">
+            <NonStandardTransferFinanceSummary
+              context={currentFundingContext}
+              accountingType={latestBusiness.accountingType}
+            />
             <FinancialStory {...financialStory} />
           </section>
         ) : view === "yearbook" ? (
@@ -810,8 +815,9 @@ function FeeRecoveryStory({
   );
 }
 
-function buildCurrentFundingContext(group: BusinessGroup): CurrentFundingContext {
+export function buildCurrentFundingContext(group: BusinessGroup): CurrentFundingContext {
   const income = group.latestBusiness.financialStory?.income;
+  const annual = findAnnual(group, 2024, group.latestBusiness.accountingType) ?? null;
   const operatingRevenue = finiteOrNull(income?.operatingRevenue);
   const operatingExpense = finiteOrNull(income?.operatingExpense);
   return {
@@ -822,9 +828,61 @@ function buildCurrentFundingContext(group: BusinessGroup): CurrentFundingContext
       : Math.max(operatingExpense - operatingRevenue, 0),
     rainwaterBurdenRevenue: revenueBreakdownValue(income, "rainwater-burden"),
     otherAccountSubsidyRevenue: revenueBreakdownValue(income, "other-account-subsidy"),
-    nonStandardTransfer: finiteOrNull(group.latest.nonStandardTransfer),
-    transferBasisBreakdown: transferBasisBreakdownFromAnnual(group.latest)
+    nonStandardTransfer: finiteOrNull(annual?.nonStandardTransfer),
+    transferBasisBreakdown: transferBasisBreakdownFromAnnual(annual)
   };
+}
+
+function NonStandardTransferFinanceSummary({
+  context,
+  accountingType
+}: {
+  context: CurrentFundingContext;
+  accountingType: string | null | undefined;
+}) {
+  const breakdown = context.transferBasisBreakdown;
+  const breakdownRows = [
+    ["雨水処理負担金", breakdown.rainwaterBurden.nonStandard],
+    ["他会計補助金", breakdown.otherAccountSubsidy.nonStandard],
+    ["資本勘定の他会計補助金", breakdown.capitalOtherAccountSubsidy.nonStandard]
+  ] as const;
+  const hasBreakdown = accountingType === "legal_applied"
+    && breakdownRows.some(([, value]) => value != null);
+
+  return (
+    <section className={styles.transferSummary} aria-labelledby="r6-non-standard-transfer-title">
+      <div className={styles.transferSummaryHeading}>
+        <span className={styles.transferSummaryIcon} aria-hidden="true"><Landmark size={20} /></span>
+        <div>
+          <span>R6 第40表｜繰入金に関する調</span>
+          <h2 id="r6-non-standard-transfer-title">基準外繰入金</h2>
+          <p>総務省「繰入金に関する調」第40表で基準外に区分された繰入額を、公式調査値で確認します。</p>
+        </div>
+      </div>
+      <div className={styles.transferSummaryBody}>
+        <div className={styles.transferSummaryAmount}>
+          <span>基準外繰入金合計</span>
+          <strong>{formatTransferExact(context.nonStandardTransfer)}</strong>
+          <small>{context.nonStandardTransfer == null ? "公式値を取得できません" : "第40表の値をそのまま表示"}</small>
+        </div>
+        <div className={styles.transferSummaryDefinition}>
+          <strong>損益計算書の差額からは推計しません</strong>
+          <p>営業収益−（営業費用−減価償却費）は、減価償却費を除いた営業差額であり、基準外繰入金の定義・算式ではありません。長期前受金戻入は補助金等に対応する部分だけであり、減価償却費の全額を一律に差し引くこともできません。また、基準外繰入金合計には資本勘定等も含まれ得るため、本サイトは第40表の公式値を使用します。</p>
+        </div>
+      </div>
+      {hasBreakdown ? (
+        <details className={styles.transferSummaryDetails}>
+          <summary>第40表で確認できる主な基準外内訳<ChevronDown size={16} aria-hidden="true" /></summary>
+          <dl>
+            {breakdownRows.map(([label, value]) => (
+              <div key={label}><dt>{label}</dt><dd>{formatTransferExact(value)}</dd></div>
+            ))}
+          </dl>
+          <p>この3科目は主な内訳です。基準外繰入金合計の全項目を表すとは限りません。</p>
+        </details>
+      ) : null}
+    </section>
+  );
 }
 
 function mergeFundingContext(row: any, context: CurrentFundingContext) {
@@ -839,23 +897,23 @@ function mergeFundingContext(row: any, context: CurrentFundingContext) {
   };
 }
 
-function transferBasisBreakdownFromAnnual(annual: DetailAnnual): TransferBasisBreakdown {
-  const capitalNonStandard = finiteOrNull(annual.table40CapitalOtherAccountSubsidyNonStandard);
+function transferBasisBreakdownFromAnnual(annual: DetailAnnual | null | undefined): TransferBasisBreakdown {
+  const capitalNonStandard = finiteOrNull(annual?.table40CapitalOtherAccountSubsidyNonStandard);
   return {
     rainwaterBurden: transferBasisAmount(
-      annual.table40RainwaterBurden,
-      annual.table40RainwaterBurdenNonStandard
+      annual?.table40RainwaterBurden,
+      annual?.table40RainwaterBurdenNonStandard
     ),
     otherAccountSubsidy: transferBasisAmount(
-      annual.table40OtherAccountSubsidy,
-      annual.table40OtherAccountSubsidyNonStandard
+      annual?.table40OtherAccountSubsidy,
+      annual?.table40OtherAccountSubsidyNonStandard
     ),
     capitalOtherAccountSubsidy: transferBasisAmount(
-      annual.table40CapitalOtherAccountSubsidy,
+      annual?.table40CapitalOtherAccountSubsidy,
       capitalNonStandard
     ),
     capitalOtherAccountSubsidyNonStandard: capitalNonStandard,
-    nonStandardTransferTotal: finiteOrNull(annual.nonStandardTransfer)
+    nonStandardTransferTotal: finiteOrNull(annual?.nonStandardTransfer)
   };
 }
 
@@ -875,6 +933,11 @@ function positiveFiniteOrNull(value: number | null | undefined) {
 }
 
 function formatThousandYenExact(value: number | null | undefined) {
+  if (value == null || !Number.isFinite(value)) return "未取得";
+  return `${Math.round(value).toLocaleString("ja-JP")}千円`;
+}
+
+function formatTransferExact(value: number | null | undefined) {
   if (value == null || !Number.isFinite(value)) return "未取得";
   return `${Math.round(value).toLocaleString("ja-JP")}千円`;
 }

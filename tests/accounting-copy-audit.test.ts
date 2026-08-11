@@ -29,6 +29,11 @@ describe("public-enterprise accounting copy audit", () => {
     expect(dataSourcesSource).toContain("https://www.mlit.go.jp/mizukokudo/sewerage/crd_sewerage_tk_000140.html");
     expect(dataSourcesSource).toContain("吹田市 公営企業の営業収支比率の解説");
     expect(dataSourcesSource).toContain("営業損失は基準外繰入金で補填された額ですか？");
+    expect(dataSourcesSource).toContain("基準外繰入金は減価償却費を除いて計算しますか？");
+    expect(dataSourcesSource).toContain("基準外繰入金の定義・算式ではありません");
+    expect(dataSourcesSource).toContain("第40表の公式値をそのまま使用します");
+    expect(copySource).toContain('title: "基準外繰入金"');
+    expect(copySource).toContain("営業収益−（営業費用−減価償却費）ではありません");
     expect(disclaimerSource).toContain("営業収支比率（簡易）の位置づけ");
   });
 

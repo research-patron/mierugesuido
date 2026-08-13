@@ -4,7 +4,6 @@ import {
   Check,
   Droplets,
   Gauge,
-  Landmark,
   SlidersHorizontal
 } from "lucide-react";
 import Link from "next/link";
@@ -30,15 +29,10 @@ const metricPresentation: Record<RankingMetric, { icon: LucideIcon; helper: stri
   "treatment-cost": {
     icon: Droplets,
     helper: "1m³あたりの汚水処理費"
-  },
-  "transfer-amount": {
-    icon: Landmark,
-    helper: "基準外繰入金の実額"
   }
 };
 
-function directionLabel(metric: RankingMetric, direction: RankingDirection) {
-  if (metric === "transfer-amount") return direction === "high" ? "金額が大きい順" : "金額が小さい順";
+function directionLabel(_metric: RankingMetric, direction: RankingDirection) {
   return direction === "high" ? "値が高い順" : "値が低い順";
 }
 
@@ -46,9 +40,7 @@ export function RankingNav({ current }: { current: RankingType }) {
   const { metric: selectedMetric, direction } = rankingSelection(current);
   const directions: RankingDirection[] = ["high", "low"];
   const selectedDirectionLabel = directionLabel(selectedMetric.metric, direction);
-  const selectedDirectionCompactLabel = selectedMetric.metric === "transfer-amount"
-    ? direction === "high" ? "大きい順" : "小さい順"
-    : direction === "high" ? "高い順" : "低い順";
+  const selectedDirectionCompactLabel = direction === "high" ? "高い順" : "低い順";
 
   return (
     <section
@@ -109,9 +101,7 @@ export function RankingNav({ current }: { current: RankingType }) {
             {directions.map((item) => {
               const type = selectedMetric.types[item];
               const selected = direction === item;
-              const label = selectedMetric.metric === "transfer-amount"
-                ? item === "high" ? "大きい順" : "小さい順"
-                : item === "high" ? "高い順" : "低い順";
+              const label = item === "high" ? "高い順" : "低い順";
               const accessibleDirection = directionLabel(selectedMetric.metric, item);
               return (
                 <Link

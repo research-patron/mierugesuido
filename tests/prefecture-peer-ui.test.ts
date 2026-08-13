@@ -28,8 +28,8 @@ describe("prefecture peer comparison UI", () => {
     expect(pageSource).toContain("/data/static/peers/");
     expect(pageSource).toContain("row.representedMunicipalityCodes.includes(municipality.municipalityCode)");
     expect(pageSource).toContain("buildCurrentFundingContext(selectedGroup)");
-    expect(pageSource).toContain('revenueBreakdownValue(income, "rainwater-burden")');
-    expect(pageSource).toContain('revenueBreakdownValue(income, "other-account-subsidy")');
+    expect(pageSource).toContain("operatingRevenue: context.operatingRevenue");
+    expect(pageSource).toContain("operatingExpense: context.operatingExpense");
   });
 
   it("shows fee and expense recovery first, with operating coverage behind disclosure", () => {
@@ -37,7 +37,7 @@ describe("prefecture peer comparison UI", () => {
     expect(componentSource).toContain("一般家庭用20m³の月額使用料");
     expect(componentSource).toContain("使用料で対象費用をどこまで賄えているか");
     expect(componentSource).toContain("下水道使用料収入を、公費負担分等を除く汚水処理費で割った公式指標");
-    expect(componentSource).toContain("営業収支と公費・繰入の内訳");
+    expect(componentSource).toContain("営業収支も確認する");
     expect(componentSource).toContain("<details className={styles.financialDetails}>");
     expect(componentSource).toContain("営業収益で営業費用をどこまで賄えているか");
     expect(componentSource).toContain('referenceLabel="100%（全額）"');
@@ -52,8 +52,8 @@ describe("prefecture peer comparison UI", () => {
     expect(componentSource).not.toContain("histogram");
     expect(cssSource).not.toContain("histogram");
     expect(componentSource.indexOf("使用料で対象費用をどこまで賄えているか"))
-      .toBeLessThan(componentSource.indexOf("営業収支と公費・繰入の内訳"));
-    expect(componentSource.indexOf("営業収支と公費・繰入の内訳"))
+      .toBeLessThan(componentSource.indexOf("営業収支も確認する"));
+    expect(componentSource.indexOf("営業収支も確認する"))
       .toBeLessThan(componentSource.indexOf("営業収益で営業費用をどこまで賄えているか"));
   });
 
@@ -67,9 +67,8 @@ describe("prefecture peer comparison UI", () => {
     expect(componentSource).toContain("経費回収率は100%以上ですが");
     expect(componentSource).toContain("50%以上・全額未達");
     expect(componentSource).toContain("全額を賄う");
-    expect(componentSource).toMatch(
-      /<th scope="col">経費回収率<\/th>\s*<th scope="col">基準外繰入金<\/th>/
-    );
+    expect(componentSource).toMatch(/<th scope="col">20m³使用料（月額）<\/th>\s*<th scope="col">経費回収率<\/th>/);
+    expect(componentSource).toContain("<td colSpan={2}");
     expect(componentSource).not.toContain('<th scope="col">営業収支比率（簡易）</th>');
     expect(cssSource).toContain(".financialDetails");
     expect(cssSource).not.toContain(".coverageStatusBadge");
@@ -94,23 +93,13 @@ describe("prefecture peer comparison UI", () => {
     expect(cssSource).not.toContain('.coverageValue[data-status="partial"]');
   });
 
-  it("uses the official non-standard transfer field instead of relabeling the income-statement subsidy", () => {
-    expect(componentSource).toContain("row.transferBasisBreakdown");
-    expect(componentSource).toContain("他会計補助金");
-    expect(componentSource).toContain("営業外収益");
-    expect(componentSource.match(/formatMoneyThousandYen\(row\.nonStandardTransfer\)/g)).toHaveLength(2);
-    expect(componentSource).toContain("第40表で基準外に区分された一般会計等からの繰入額");
-    expect(componentSource).toContain("この表では基準外繰入金の代わりに使っていません");
-    expect(componentSource).toContain("公費・繰入の内訳");
-    expect(componentSource).toContain("雨水処理負担金");
-    expect(componentSource).toContain("資本勘定の他会計補助金");
-    expect(componentSource).toContain("実額");
-    expect(componentSource).toContain("基準内");
-    expect(componentSource).toContain("基準外");
-    expect(componentSource).toContain("基準外繰入金合計");
-    expect(componentSource).toContain('`${Math.round(value).toLocaleString("ja-JP")}千円`');
-    expect(componentSource).not.toContain("相当の規模");
-    expect(componentSource).not.toContain("補填率");
+  it("keeps the public peer summary and table limited to the retained comparison measures", () => {
+    expect(componentSource.match(/<SummaryCard\b/g)).toHaveLength(2);
+    expect(componentSource).not.toContain("transferBasisBreakdown");
+    expect(componentSource).not.toContain("formatMoneyThousandYen");
+    expect(componentSource).not.toContain("OperatingFundingContext");
+    expect(componentSource).toContain("20m³使用料（月額）");
+    expect(componentSource).toContain("経費回収率");
   });
 
   it("adds exact-value mini bars with one shared scale and a visible 100-percent reference", () => {
@@ -118,9 +107,8 @@ describe("prefecture peer comparison UI", () => {
     expect(componentSource).toContain("<InlineComparisonMetric");
     expect(componentSource).toContain("referenceValue={100}");
     expect(componentSource).toContain("経費回収率の濃い縦線は100%を示します");
-    expect(componentSource).toContain("logarithmic");
-    expect(componentSource).toContain("基準外繰入金だけ対数目盛");
-    expect(componentSource).toContain("棒の長短だけで良否は判定できません");
+    expect(componentSource).not.toContain("logarithmic");
+    expect(componentSource).toContain("数値に加えて棒の長さでも比較できます");
     expect(componentSource).toContain('className={styles.inlineBarTrack} aria-hidden="true"');
     expect(cssSource).toContain(".inlineBarTrack");
     expect(cssSource).toMatch(/\.inlineBarFill\s*\{[\s\S]*?background:\s*#4789a8;[\s\S]*?\}/);
@@ -129,21 +117,14 @@ describe("prefecture peer comparison UI", () => {
     expect(inlineComparisonBarWidth(0, 100)).toBe(0);
     expect(inlineComparisonBarWidth(50, 100)).toBe(50);
     expect(inlineComparisonBarWidth(150, 100)).toBe(100);
-    expect(inlineComparisonBarWidth(100, 100, true)).toBe(100);
-    expect(inlineComparisonBarWidth(10, 100, true)).toBeGreaterThan(10);
-    expect(inlineComparisonBarWidth(10, 100, true)).toBeLessThan(100);
   });
 
-  it("separates operating loss, official non-standard transfers, and fee recovery", () => {
-    expect(componentSource).toContain("営業収益が営業費用を下回ることは会計上の営業損失を示します");
-    expect(componentSource).toContain("その差額は基準外繰入金ではありません");
-    expect(componentSource).toContain("減価償却費に対応する長期前受金戻入");
-    expect(componentSource).toContain("この比率だけで基準外繰入金の有無や金額は判定できません");
-    expect(componentSource).toContain("基準外繰入金は第40表の公式値");
-    expect(componentSource).toContain("使用料による汚水処理費の回収状況は経費回収率で確認します");
-    expect(componentSource).toContain("基準内額は、実額と基準外額をともに正常取得でき");
-    expect(componentSource).toContain("資本勘定や他会計借入金が含まれる場合があります");
-    expect(componentSource).toContain("https://www.mlit.go.jp/mizukokudo/sewerage/crd_sewerage_tk_000140.html");
+  it("separates operating results from fee recovery", () => {
+    expect(componentSource).toContain("営業損益を見る比率です");
+    expect(componentSource).toContain("料金表上の20m³月額とは別の決算指標です");
+    expect(componentSource).toContain("使用料による費用回収とは対象範囲が異なります");
+    expect(componentSource).toContain("営業収益には雨水処理負担金など正当な公費負担も含まれる");
+    expect(componentSource).toContain("両指標は対象範囲が異なります");
   });
 
   it("compares legal-applied public and special-environment businesses and labels each adopted type", () => {

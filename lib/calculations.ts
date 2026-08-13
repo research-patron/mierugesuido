@@ -14,7 +14,6 @@ export type AnnualFinancialInput = {
   realBalance?: number | null;
   revenueExpenditureRatio?: number | null;
   generalAccountTransfer?: number | null;
-  nonStandardTransfer?: number | null;
   bondRedemption?: number | null;
   treatedVolume?: number | null;
   servicePopulation?: number | null;
@@ -144,7 +143,7 @@ export function getRevisionRiskLabel(score: number): string {
   return "参考スコア30未満";
 }
 
-export function calculateDiagnosis(input: AnnualFinancialInput, trend: TrendInput = {}): DiagnosisCalculation {
+export function calculateDiagnosis<T extends AnnualFinancialInput>(input: T, trend: TrendInput = {}): DiagnosisCalculation {
   const feeUnitPriceYenPerM3 = calculateFeeUnitPrice(input.sewerFeeRevenue, input.annualBillableVolume);
   const treatmentCostYenPerM3 = calculateTreatmentCost(input.wastewaterTreatmentCost, input.annualBillableVolume);
   const expenseRecoveryRate = calculateExpenseRecoveryRate(input.sewerFeeRevenue, input.wastewaterTreatmentCost);
@@ -225,7 +224,6 @@ function calculateRiskScore(
   if (feeUnitPrice != null && feeUnitPrice < 150) score += 15;
   if (isIncreasingTrend(trend.treatmentCostYenPerM3)) score += 15;
   if (isDecreasingTrend(trend.annualBillableVolume)) score += 10;
-  if ((input.nonStandardTransfer ?? 0) > 0) score += 20;
   if ((input.accumulatedDeficit ?? 0) > 0) score += 15;
   return Math.min(score, 100);
 }

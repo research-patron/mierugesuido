@@ -126,6 +126,24 @@ describe("getPrefectureMapData", () => {
     });
   });
 
+  it("does not use a stored risk score to select among same-year businesses", async () => {
+    prismaMocks.municipalityFindMany.mockResolvedValue([
+      municipality("151009", "新潟市", [
+        business({ businessKey: "17-1-b", businessType: "高スコア事業", year: 2024, risk: 100, recovery: 45 }),
+        business({ businessKey: "17-1-a", businessType: "低スコア事業", year: 2024, risk: 0, recovery: 105 })
+      ])
+    ]);
+
+    const result = await getPrefectureMapData("15");
+
+    expect(result.municipalities).toHaveLength(1);
+    expect(result.municipalities[0]).toMatchObject({
+      businessKey: "17-1-a",
+      businessType: "低スコア事業",
+      expenseRecoveryRate: 105
+    });
+  });
+
   it("returns the unchanged empty public shape for an unknown prefecture code", async () => {
     await expect(getPrefectureMapData("99")).resolves.toEqual({
       prefecture: null,

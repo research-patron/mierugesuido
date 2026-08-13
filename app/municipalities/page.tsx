@@ -127,7 +127,7 @@ function MunicipalitiesContent() {
           </div>
           <div className="search-summary-footer">
             <p className="text-xs font-bold leading-6 text-slate-600">
-              一覧は自治体ごと1件です。複数事業がある場合、最新年度のうち診断上の注意度が最も高い事業を表示します。自治体全体の合算値ではありません。
+              一覧は自治体ごと1件です。複数事業がある場合は、最新年度とデータ品質を優先し、会計区分・事業コードの順で決定した1事業を表示します。自治体全体の合算値ではありません。
             </p>
             <div className="view-toggle" aria-label="表示形式">
               <Link

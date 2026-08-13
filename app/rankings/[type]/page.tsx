@@ -31,9 +31,7 @@ export default async function RankingTypePage({
               {metric.description} 異常値フラグがあるデータは注記対象とし、算定できないデータはランキングから除外します。
             </p>
             <p className="mt-1 max-w-4xl text-xs font-bold leading-6 text-slate-600">
-              {metric.metric === "transfer-amount"
-                ? "基準外繰入金額の比較は法適用事業に限定します。実額比較のため、事業規模の差には注意が必要です。"
-                : "全国単純比較であり、類似団体区分の差を調整していません。法非適用事業は、総務省調査の共通定義による料金指標だけを参考比較します。"}
+              全国単純比較であり、類似団体区分の差を調整していません。法非適用事業は、総務省調査の共通定義による料金指標だけを参考比較します。
             </p>
           </div>
           <RankingNav current={rankingType} />

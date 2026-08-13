@@ -1,9 +1,19 @@
 import type { Metadata } from "next";
+import { Kiwi_Maru } from "next/font/google";
 import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
 import "./globals.css";
 import "./ui-fidelity.css";
 import { footerDisclaimer, siteName } from "@/lib/copy";
+
+const kiwiMaru = Kiwi_Maru({
+  weight: ["400", "500"],
+  style: "normal",
+  display: "swap",
+  preload: false,
+  adjustFontFallback: false,
+  variable: "--font-kiwi-maru"
+});
 
 export const metadata: Metadata = {
   title: siteName,
@@ -12,7 +22,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ja" data-scroll-behavior="smooth">
+    <html lang="ja" data-scroll-behavior="smooth" className={kiwiMaru.variable}>
       <body>
         <a href="#main-content" className="skip-link">本文へ移動</a>
         <SiteHeader />

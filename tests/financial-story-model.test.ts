@@ -80,7 +80,7 @@ describe("buildFinancialStoryModel", () => {
     expect(valueOf(model.income?.revenueBreakdown, "other-account-subsidy")).toBe(30);
     expect(model.income?.revenueBreakdown.find((item) => item.id === "other-account-subsidy")).toMatchObject({
       label: "他会計補助金（営業外収益）",
-      note: "損益計算書上の科目。繰出基準内の補助も含むため、基準外繰入金とは一致しません"
+      note: "営業損益には含まれず、経常損益を構成する損益計算書上の科目"
     });
     expect(valueOf(model.income?.expenseBreakdown, "treatment-plant")).toBe(150);
     expect(model.balance?.priorNetAssets).toBe(2_800);

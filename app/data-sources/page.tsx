@@ -10,16 +10,16 @@ export default async function DataSourcesPage() {
   const sources = await getStaticDataSources();
 
   return (
-    <div>
+    <div className="min-w-0">
       <section className="water-band border-b border-line">
-        <div className="mx-auto grid max-w-[1500px] gap-4 px-4 py-6 sm:px-6 lg:grid-cols-[minmax(0,1fr)_520px] lg:px-8">
-          <div>
+        <div className="mx-auto grid w-full min-w-0 max-w-[1500px] gap-4 px-4 py-6 sm:px-6 lg:grid-cols-[minmax(0,1fr)_520px] lg:px-8">
+          <div className="min-w-0">
             <h1 className="text-3xl font-black text-ink sm:text-4xl">データの見方・出典</h1>
             <p className="mt-2 max-w-4xl text-sm font-medium leading-7 text-slate-700">
               本サービスで使用しているデータの概要、指標の計算方法、判定ロジック、出典を説明します。
             </p>
           </div>
-          <div className="rounded-md border border-teal/40 bg-white/90 p-4">
+          <div className="min-w-0 rounded-md border border-teal/40 bg-white/90 p-4">
             <div className="flex gap-3">
               <Info className="mt-0.5 text-teal" size={22} />
               <div className="text-sm font-bold leading-7 text-ink">
@@ -31,8 +31,8 @@ export default async function DataSourcesPage() {
         </div>
       </section>
 
-      <div className="mx-auto grid max-w-[1500px] gap-5 px-4 py-5 sm:px-6 lg:px-8">
-        <section className="panel p-4">
+      <div className="mx-auto grid w-full min-w-0 max-w-[1500px] gap-5 px-4 py-5 sm:px-6 lg:px-8">
+        <section className="panel min-w-0 p-4">
           <h2 className="text-xl font-black text-ink">1. 指標の見方</h2>
           <div className="mt-4 grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)_260px]">
             <InfoCard icon={Database} title="対象データ">
@@ -40,7 +40,7 @@ export default async function DataSourcesPage() {
                 <li>対象: 地方公共団体が経営する公共下水道・特定環境保全公共下水道等</li>
                 <li>対象年度: 取り込んだ公表年度の決算値</li>
                 <li>県内比較: 公共下水道と特環の横並びは本サイト独自。総務省の公式類似団体区分では別区分</li>
-                <li>地図・一覧: 複数事業がある自治体は、最新年度のうち診断上の注意度が最も高い1事業を表示。自治体全体の合算値ではない</li>
+                <li>地図・一覧: 複数事業がある自治体は、最新年度とデータ品質を優先し、会計区分・事業コードの順で決定した1事業を表示。自治体全体の合算値ではない</li>
               </ul>
             </InfoCard>
             <div className="rounded-md border border-line bg-white p-4">
@@ -72,7 +72,7 @@ export default async function DataSourcesPage() {
           </div>
         </section>
 
-        <section className="panel p-4">
+        <section className="panel min-w-0 p-4">
           <div className="flex items-center gap-2">
             <Scale size={21} className="text-teal" aria-hidden="true" />
             <h2 className="text-xl font-black text-ink">2. 損益計算書と営業収支の読み方</h2>
@@ -90,8 +90,8 @@ export default async function DataSourcesPage() {
               <p className="mt-2 text-sm font-medium leading-7 text-slate-700">「雨水公費・汚水私費」が基本です。雨水処理負担金は公費負担ですが、損益計算書では営業収益に含まれるため、営業収益は使用料収入だけを表しません。</p>
             </div>
             <div className="rounded-md border border-line bg-panel p-4">
-              <h3 className="font-black text-ink">営業損失と繰入金は同額ではない</h3>
-              <p className="mt-2 text-sm font-medium leading-7 text-slate-700">100%未満は会計上の営業損失を示します。一方、他会計補助金は営業外収益、基準外繰入金は「繰入金に関する調」の別項目です。金額を比較しても、営業損失への直接の補填割合とは断定できません。</p>
+              <h3 className="font-black text-ink">営業損益と経費回収率は範囲が異なる</h3>
+              <p className="mt-2 text-sm font-medium leading-7 text-slate-700">100%未満は会計上の営業損失を示します。営業収益には雨水処理負担金等も含まれるため、使用料による汚水処理費の回収状況は、別の指標である経費回収率で確認します。</p>
             </div>
           </div>
           <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm font-black">
@@ -114,7 +114,7 @@ export default async function DataSourcesPage() {
           </div>
         </section>
 
-        <section className="panel p-4">
+        <section className="panel min-w-0 p-4">
           <div className="flex items-center gap-2">
             <Scale size={21} className="text-teal" aria-hidden="true" />
             <h2 className="text-xl font-black text-ink">3. 法適用・法非適用の比較範囲</h2>
@@ -160,8 +160,8 @@ export default async function DataSourcesPage() {
           </div>
         </section>
 
-        <section className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_420px]">
-          <div className="panel overflow-hidden p-4">
+        <section className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_420px]">
+          <div className="panel min-w-0 overflow-hidden p-4">
             <h2 className="text-xl font-black text-ink">4. データの出典</h2>
             <div className="mt-4 rounded-md border border-teal/25 bg-teal/5 p-4">
               <h3 className="font-black text-ink">公的統計（e-Stat / 総務省）</h3>
@@ -205,7 +205,7 @@ export default async function DataSourcesPage() {
             {sources.length === 0 ? <div className="p-6 text-sm font-bold text-muted">データソースは未登録です。</div> : null}
           </div>
 
-          <section className="panel p-4">
+          <section className="panel min-w-0 p-4">
             <h2 className="text-xl font-black text-ink">5. よくあるご質問</h2>
             <div className="mt-4 grid gap-3">
               {[
@@ -215,8 +215,6 @@ export default async function DataSourcesPage() {
                 ["一般家庭用20m³／月使用料と使用料単価は同じですか？", "同じではありません。20m³月額は料金表上の税込標準額で、年鑑の『その1m³平均使用料』はその金額を20で割り、整数に丸めた表示です。一方、使用料単価は年間使用料収入÷年間有収水量で求める事業全体の決算実績です。使用料単価に20を掛けても家庭用20m³月額にはなりません。"],
                 ["料金改定はどの項目で確認しますか？", "本サイトのR5・R6変更一覧には、地方公営企業決算状況調査の第33表にある『現行使用料施行年月日』が年度間で変わった事業だけを掲載します。前回使用料改定年月日、実質使用料改定率、家庭用・業務用料金、料金体系は各行の関連情報として表示しますが、20m³月額などの金額差だけでは一覧に含めません。"],
                 ["営業費用は営業収益で賄うべきですか？", "一般会計等が負担すべき経費を除き、企業の経営に伴う収入で経費を賄うのが地方公営企業法上の原則です。ただし、下水道の営業収益には雨水処理負担金等の正当な公費負担も含まれます。営業収益÷営業費用は営業損益を見る補足指標で、使用料の十分性は経費回収率で確認します。"],
-                ["営業損失は基準外繰入金で補填された額ですか？", "同額とは限りません。他会計補助金は損益計算書の営業外収益で、基準内・基準外の双方を含み得ます。基準外繰入金の有無と金額は営業損失から推測せず、総務省「繰入金に関する調」第40表の項目別実額・基準外額・合計で確認します。"],
-                ["基準外繰入金は減価償却費を除いて計算しますか？", "計算しません。営業収益−（営業費用−減価償却費）は減価償却費を除いた営業差額ですが、基準外繰入金の定義・算式ではありません。長期前受金戻入は補助金等に対応する部分だけであり、減価償却費の全額を一律に差し引くこともできません。また、基準外繰入金合計には資本勘定等も含まれ得るため、本サイトは第40表の公式値をそのまま使用します。"],
                 ["ランキングの並び順はどう決まりますか？", "算定不可を除外し、選択した指標の昇順または降順で並べます。"],
               ].map(([question, answer]) => (
                 <details key={question} className="rounded-md border border-line bg-white p-3">
@@ -228,7 +226,7 @@ export default async function DataSourcesPage() {
           </section>
         </section>
 
-        <section className="panel p-4">
+        <section className="panel min-w-0 p-4">
           <h2 className="text-xl font-black text-ink">GIS地図データ</h2>
           <p className="mt-2 text-sm font-medium leading-7 text-slate-700">
             行政区域地図は、国土交通省 国土数値情報「行政区域データ N03」（2023年1月1日時点）の県別ZIP内GeoJSONをWeb表示用に簡略化して使用しています。境界は表示用途のため、厳密な境界確認には原典を参照してください。
@@ -242,7 +240,7 @@ export default async function DataSourcesPage() {
           </a>
         </section>
 
-        <section className="panel overflow-hidden p-4">
+        <section className="panel min-w-0 overflow-hidden p-4">
           <h2 className="text-xl font-black text-ink">根拠項目の意味</h2>
           <p className="mt-2 text-sm font-medium leading-7 text-slate-700">
             自治体詳細ページの「データ根拠」に表示する主な項目について、確認すべき意味と単位を整理しています。

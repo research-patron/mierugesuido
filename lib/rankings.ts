@@ -3,8 +3,7 @@ export type RankingDirection = "high" | "low";
 export type RankingMetric =
   | "expense-recovery"
   | "fee-unit"
-  | "treatment-cost"
-  | "transfer-amount";
+  | "treatment-cost";
 
 export type RankingType =
   | "expense-recovery-high"
@@ -12,9 +11,7 @@ export type RankingType =
   | "fee-unit-high"
   | "fee-unit-low"
   | "treatment-cost-high"
-  | "treatment-cost-low"
-  | "transfer-dependency-high"
-  | "transfer-dependency-low";
+  | "treatment-cost-low";
 
 type RankingMetricDefinition = {
   metric: RankingMetric;
@@ -50,15 +47,6 @@ export const rankingMetrics: readonly RankingMetricDefinition[] = [
       high: "treatment-cost-high",
       low: "treatment-cost-low"
     }
-  },
-  {
-    metric: "transfer-amount",
-    label: "基準外繰入金額",
-    description: "第40表の基準外繰入金合計額を比較します。事業規模で標準化していない実額のため、規模の違いに注意が必要です。",
-    types: {
-      high: "transfer-dependency-high",
-      low: "transfer-dependency-low"
-    }
   }
 ] as const;
 
@@ -68,9 +56,7 @@ export const rankingLabels: Record<RankingType, string> = {
   "fee-unit-high": "使用料単価が高い順",
   "fee-unit-low": "使用料単価が低い順",
   "treatment-cost-high": "汚水処理原価が高い順",
-  "treatment-cost-low": "汚水処理原価が低い順",
-  "transfer-dependency-high": "基準外繰入金額が大きい順",
-  "transfer-dependency-low": "基準外繰入金額が小さい順"
+  "treatment-cost-low": "汚水処理原価が低い順"
 };
 
 export const defaultRankingType: RankingType = "expense-recovery-low";

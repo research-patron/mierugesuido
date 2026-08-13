@@ -353,7 +353,7 @@ function buildIncome(index: ItemIndex): FinancialIncome {
         "他会計補助金（営業外収益）",
         amount(index, "otherAccountSubsidyRevenue"),
         "non-operating",
-        "損益計算書上の科目。繰出基準内の補助も含むため、基準外繰入金とは一致しません"
+        "営業損益には含まれず、経常損益を構成する損益計算書上の科目"
       ),
       breakdown("deferred-revenue-return", "長期前受金戻入", amount(index, "longTermDeferredRevenueReturn"), "non-operating", "過去の補助金等を減価償却に合わせて収益化した額"),
       breakdown("capital-cost-transfer", "資本費繰入収益", amount(index, "capitalCostTransferRevenue"), "non-operating"),

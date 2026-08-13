@@ -6,7 +6,6 @@ import {
   ChevronDown,
   CircleAlert,
   Info,
-  Landmark,
   MapPinned
 } from "lucide-react";
 import {
@@ -17,7 +16,7 @@ import {
   type PrefecturePeerComparisonResult,
   type PrefecturePeerComparisonRow
 } from "@/lib/prefecturePeerComparison";
-import { formatMoneyThousandYen, formatPercent } from "@/lib/format";
+import { formatPercent } from "@/lib/format";
 import styles from "./PrefecturePeerComparison.module.css";
 
 export function PrefecturePeerComparison({
@@ -67,13 +66,6 @@ export function PrefecturePeerComparison({
           label="経費回収率100%以上"
           value={`${model.summary.positiveCounts.expenseRecoveryAtLeast100}事業体`}
           note="下水道使用料 ÷ 汚水処理費"
-        />
-        <SummaryCard
-          icon={Landmark}
-          label="基準外繰入金あり"
-          value={`${model.summary.positiveCounts.nonStandardTransfer}事業体`}
-          note="第40表で基準外に区分された繰入"
-          tone="amber"
         />
       </section>
 
@@ -127,8 +119,8 @@ export function PrefecturePeerComparison({
           <summary>
             <span className={styles.detailsIcon} aria-hidden="true"><Info size={19} /></span>
             <span>
-              <strong>営業収支と公費・繰入の内訳</strong>
-              <small>経費回収率との違いと、第40表の公式値を確認</small>
+              <strong>営業収支も確認する</strong>
+              <small>経費回収率と会計上の営業損益の違い</small>
             </span>
             <ChevronDown className={styles.detailsChevron} size={20} aria-hidden="true" />
           </summary>
@@ -153,7 +145,6 @@ export function PrefecturePeerComparison({
               contextText={operatingCoverageContext(current)}
               formulaNote="営業収支比率は一般に（営業収益−受託工事収益等）÷（営業費用−受託工事費等）×100で分析します。本データでは受託工事収益を別掲できないため、営業収益÷営業費用×100の簡易比率です。値は改変せず、50%未満は赤、50%以上は緑で区別します。50%は表示上の注意区分で十分性の基準ではありません。"
             />
-            <OperatingFundingContext row={current} />
           </div>
         </details>
       ) : null}
@@ -163,7 +154,7 @@ export function PrefecturePeerComparison({
           <div>
             <p className={styles.eyebrow}>R6・法適用・自治体コード順</p>
             <h3 id="peer-table-title">市町村ごとの料金・財務比較</h3>
-            <p className={styles.tableScaleNote}>数値に加えて棒の長さでも比較できます。20m³月額と経費回収率は通常目盛で、経費回収率の濃い縦線は100%を示します。金額差が大きい基準外繰入金だけ対数目盛です。基準外繰入金は事業規模も反映するため、棒の長短だけで良否は判定できません。</p>
+            <p className={styles.tableScaleNote}>数値に加えて棒の長さでも比較できます。経費回収率の濃い縦線は100%を示します。</p>
           </div>
         </div>
         <DesktopTable model={model} scopeLabel={scopeLabel} scales={comparisonScales} />
@@ -173,9 +164,7 @@ export function PrefecturePeerComparison({
             <p><strong>組合運営</strong>は構成市町村を1行にまとめた組合全体の決算値です。市町村別に配分した金額ではなく、平均・合計にも1回だけ集計します。</p>
           ) : null}
           <p><strong>組合関係の収録範囲</strong>は、構成市町村と事業の公式根拠を確認できた関係に限ります。未確認の組合運営は比較に反映されない場合があります。</p>
-          <p><strong>基準外繰入金</strong>は、総務省「繰入金に関する調」第40表で基準外に区分された一般会計等からの繰入額です。</p>
-          <p>損益計算書の「他会計補助金」には繰出基準内の補助も含まれるため、この表では基準外繰入金の代わりに使っていません。</p>
-          <p>営業収支と一般会計からの収入・繰入の関係は、上の補足表示で項目を分けて確認できます。</p>
+          <p>営業収支は上の補足表示で確認できます。使用料による費用回収とは対象範囲が異なります。</p>
         </div>
       </section>
     </div>
@@ -186,17 +175,15 @@ function SummaryCard({
   icon: Icon,
   label,
   value,
-  note,
-  tone = "teal"
+  note
 }: {
   icon: typeof MapPinned;
   label: string;
   value: string;
   note: string;
-  tone?: "teal" | "amber" | "navy";
 }) {
   return (
-    <article className={styles.summaryCard} data-tone={tone}>
+    <article className={styles.summaryCard}>
       <span className={styles.summaryIcon} aria-hidden="true"><Icon size={19} /></span>
       <div><span>{label}</span><strong>{value}</strong><small>{note}</small></div>
     </article>
@@ -312,78 +299,9 @@ function MetricBar({
   );
 }
 
-function OperatingFundingContext({ row }: { row: PrefecturePeerComparisonRow }) {
-  const breakdown = row.transferBasisBreakdown;
-  const transferRows = [
-    {
-      label: "雨水処理負担金",
-      accountingClass: "営業収益",
-      values: breakdown.rainwaterBurden
-    },
-    {
-      label: "他会計補助金",
-      accountingClass: "営業外収益",
-      values: breakdown.otherAccountSubsidy
-    },
-    {
-      label: "資本勘定の他会計補助金",
-      accountingClass: "資本的収入",
-      values: breakdown.capitalOtherAccountSubsidy
-    }
-  ];
-  return (
-    <section className={styles.fundingCard} aria-labelledby="operating-funding-title">
-      <header className={styles.fundingHeading}>
-        <span className={styles.chartIcon} aria-hidden="true"><Landmark size={20} /></span>
-        <div>
-          <p className={styles.eyebrow}>R6 第40表｜公費・繰入を分けて見る</p>
-          <h3 id="operating-funding-title">公費・繰入の内訳</h3>
-          <p>営業収益が営業費用を下回ることは会計上の営業損失を示しますが、その差額は基準外繰入金ではありません。減価償却費に対応する長期前受金戻入が営業外収益に計上されるほか、雨水処理等の基準内公費負担や資本勘定の繰入もあるため、この比率だけで基準外繰入金の有無や金額は判定できません。基準外繰入金は第40表の公式値、使用料による汚水処理費の回収状況は経費回収率で確認します。</p>
-        </div>
-      </header>
-      <div className={styles.transferTableScroll}>
-        <table className={styles.transferTable}>
-          <caption>R6繰入金に関する調（第40表）の公費・繰入内訳</caption>
-          <thead>
-            <tr>
-              <th scope="col">科目</th>
-              <th scope="col">会計上の区分</th>
-              <th scope="col">実額</th>
-              <th scope="col">基準内</th>
-              <th scope="col">基準外</th>
-            </tr>
-          </thead>
-          <tbody>
-            {transferRows.map((item) => (
-              <tr key={item.label}>
-                <th scope="row">{item.label}</th>
-                <td>{item.accountingClass}</td>
-                <td>{formatTransferAmount(item.values.total)}</td>
-                <td>{formatTransferAmount(item.values.standard)}</td>
-                <td>{formatTransferAmount(item.values.nonStandard)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <div className={styles.transferTotal}>
-        <span>第40表｜基準外繰入金合計</span>
-        <strong>{formatTransferAmount(breakdown.nonStandardTransferTotal)}</strong>
-      </div>
-      <div className={styles.fundingNotes}>
-        <p><strong>他会計補助金</strong>は科目名であり、基準内・基準外の双方を含み得ます。<strong>基準外繰入金</strong>は、実繰入額が基準額を超える部分や、繰出基準にない事由による部分です。</p>
-        <p>基準内額は、実額と基準外額をともに正常取得でき、基準外額が実額以下の場合だけ差額で算定しています。「—」は判定に必要な値を取得できない場合です。</p>
-        <p>基準外繰入金合計には、収益勘定だけでなく資本勘定や他会計借入金が含まれる場合があります。営業損失と同額になるとは限りません。</p>
-        <p><a href="https://www.mlit.go.jp/mizukokudo/sewerage/crd_sewerage_tk_000140.html" target="_blank" rel="noreferrer">国土交通省「下水道事業の経営原則」</a>では「雨水公費・汚水私費」を原則としつつ、分流式下水道や高度処理などの一部を公費負担対象としています。</p>
-      </div>
-    </section>
-  );
-}
-
 type InlineComparisonScales = {
   householdFee: number;
   expenseRecovery: number;
-  nonStandardTransfer: number;
 };
 
 function DesktopTable({
@@ -403,7 +321,6 @@ function DesktopTable({
           <th scope="col">市町村</th>
           <th scope="col">20m³使用料（月額）</th>
           <th scope="col">経費回収率</th>
-          <th scope="col">基準外繰入金</th>
         </tr></thead>
         <tbody>{model.rows.map((row) => <DesktopRow key={`${row.municipalityCode}-${row.municipalityName}`} row={row} scales={scales} />)}</tbody>
       </table>
@@ -425,8 +342,7 @@ function DesktopRow({ row, scales }: { row: PrefecturePeerComparisonRow; scales:
       {row.eligible ? <>
         <td><InlineComparisonMetric value={row.householdFee20m3Yen} max={scales.householdFee} text={formatHouseholdFee(row.householdFee20m3Yen)} tone="fee" /></td>
         <td><InlineComparisonMetric value={row.expenseRecoveryRate} max={scales.expenseRecovery} text={formatPercent(row.expenseRecoveryRate)} tone="recovery" referenceValue={100} /></td>
-        <td><InlineComparisonMetric value={row.nonStandardTransfer} max={scales.nonStandardTransfer} text={formatMoneyThousandYen(row.nonStandardTransfer)} tone="transfer" logarithmic /></td>
-      </> : <td colSpan={3} className={styles.excludedCell}><span>比較対象外</span>{row.exclusionReason?.label ?? "R6法適用データなし"}</td>}
+      </> : <td colSpan={2} className={styles.excludedCell}><span>比較対象外</span>{row.exclusionReason?.label ?? "R6法適用データなし"}</td>}
     </tr>
   );
 }
@@ -449,7 +365,6 @@ function MobileCards({ model, scales }: { model: PrefecturePeerComparisonResult;
           {row.eligible ? <dl>
             <div className={styles.mobileWide}><dt>20m³使用料（月額）</dt><dd><InlineComparisonMetric value={row.householdFee20m3Yen} max={scales.householdFee} text={formatHouseholdFee(row.householdFee20m3Yen)} tone="fee" /></dd></div>
             <div className={styles.mobileWide}><dt>経費回収率</dt><dd><InlineComparisonMetric value={row.expenseRecoveryRate} max={scales.expenseRecovery} text={formatPercent(row.expenseRecoveryRate)} tone="recovery" referenceValue={100} /></dd></div>
-            <div className={styles.mobileWide}><dt>基準外繰入金</dt><dd><InlineComparisonMetric value={row.nonStandardTransfer} max={scales.nonStandardTransfer} text={formatMoneyThousandYen(row.nonStandardTransfer)} tone="transfer" logarithmic /></dd></div>
           </dl> : <p className={styles.mobileExcluded}><span>比較対象外</span>{row.exclusionReason?.label ?? "R6法適用データなし"}</p>}
         </article>
       ))}
@@ -462,20 +377,18 @@ function InlineComparisonMetric({
   max,
   text,
   tone,
-  logarithmic = false,
   referenceValue
 }: {
   value: number | null;
   max: number;
   text: string;
-  tone: "fee" | "recovery" | "transfer";
-  logarithmic?: boolean;
+  tone: "fee" | "recovery";
   referenceValue?: number;
 }) {
-  const width = inlineComparisonBarWidth(value, max, logarithmic);
+  const width = inlineComparisonBarWidth(value, max);
   const referencePosition = referenceValue == null
     ? null
-    : inlineComparisonBarWidth(referenceValue, max, logarithmic);
+    : inlineComparisonBarWidth(referenceValue, max);
   return (
     <span className={styles.inlineMetric} data-tone={tone}>
       <strong>{text}</strong>
@@ -494,23 +407,17 @@ function InlineComparisonMetric({
 
 export function inlineComparisonBarWidth(
   value: number | null | undefined,
-  max: number,
-  logarithmic = false
+  max: number
 ) {
   if (value == null || !Number.isFinite(value) || value <= 0 || !Number.isFinite(max) || max <= 0) return 0;
-  const ratio = logarithmic
-    ? Math.log1p(value) / Math.log1p(max)
-    : value / max;
+  const ratio = value / max;
   return Math.min(100, Math.max(0, ratio * 100));
 }
 
 function buildInlineComparisonScales(rows: PrefecturePeerComparisonRow[]): InlineComparisonScales {
   return {
     householdFee: comparisonScaleMax(rows.map((row) => row.householdFee20m3Yen), 1_000, 500),
-    expenseRecovery: comparisonScaleMax([...rows.map((row) => row.expenseRecoveryRate), 100], 120, 20),
-    nonStandardTransfer: Math.max(1, ...rows
-      .map((row) => row.nonStandardTransfer)
-      .filter((value): value is number => value != null && Number.isFinite(value) && value >= 0))
+    expenseRecovery: comparisonScaleMax([...rows.map((row) => row.expenseRecoveryRate), 100], 120, 20)
   };
 }
 
@@ -576,12 +483,6 @@ function expenseRecoveryContext(row: PrefecturePeerComparisonRow | null) {
   return `${rate}で、この年度の下水道使用料収入だけでは対象となる汚水処理費の全額に届いていません。`;
 }
 
-
-function formatTransferAmount(value: number | null) {
-  return value == null || !Number.isFinite(value)
-    ? "—"
-    : `${Math.round(value).toLocaleString("ja-JP")}千円`;
-}
 
 function hasRecoveryCoverageMismatch(row: PrefecturePeerComparisonRow) {
   return row.expenseRecoveryRate != null

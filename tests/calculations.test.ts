@@ -115,7 +115,6 @@ describe("calculation formulas", () => {
       ordinaryRevenue: 140000,
       ordinaryExpense: 145000,
       netIncome: -5000,
-      nonStandardTransfer: 10000,
       accumulatedDeficit: 12000
     });
 
@@ -123,7 +122,7 @@ describe("calculation formulas", () => {
     expect(result.requiredRevisionRateTo100).toBe(0.25);
     expect(result.accountingBalanceLabel).toContain("経常赤字");
     expect(result.feeAdequacyLabel).toBe("要注意");
-    expect(result.revisionRiskScore).toBeGreaterThanOrEqual(55);
+    expect(result.revisionRiskScore).toBe(35);
     expect(result.calculationTrace.officialInputs).toEqual({
       sewerFeeRevenueThousandYen: 80000,
       annualBillableVolumeM3: 500000,

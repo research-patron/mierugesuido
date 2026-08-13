@@ -90,11 +90,9 @@ MVPでは軽量なSVGまたはRechartsを使う。
 
 ### 5.1 ランキング種類
 
-- 経費回収率が低い順
-- 100％達成必要改定率が高い順
-- 使用料単価が低い順
-- 汚水処理原価が高い順
-- 基準外繰入金が大きい順
+- 経費回収率の高い順・低い順
+- 使用料単価の高い順・低い順
+- 汚水処理原価の高い順・低い順
 
 ### 5.2 表示ルール
 
@@ -157,7 +155,6 @@ Types:
 - `expense-recovery-high` / `expense-recovery-low`
 - `fee-unit-high` / `fee-unit-low`
 - `treatment-cost-high` / `treatment-cost-low`
-- `transfer-dependency-high` / `transfer-dependency-low`
 
 ### 6.5 `GET /api/data-sources`
 

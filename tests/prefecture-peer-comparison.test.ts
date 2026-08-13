@@ -48,20 +48,13 @@ describe("buildPrefecturePeerComparison", () => {
         municipality("012025", "比較対象市", [business({ annuals: [annual({
           recovery: 105,
           operatingRevenue: 600,
-          nonOperatingRevenue: 400,
-          operatingExpense: 1_000,
-          rainwaterBurdenRevenue: 150,
-          otherAccountSubsidy: 200,
-          nonStandardTransfer: 10
+          operatingExpense: 1_000
         })] })]),
         municipality("010000", "テスト県", []),
         municipality("011011", "余剰区", [business({ annuals: [annual({
           recovery: 105,
           operatingRevenue: 1_100,
-          nonOperatingRevenue: 100,
-          operatingExpense: 1_000,
-          otherAccountSubsidy: 0,
-          nonStandardTransfer: 0
+          operatingExpense: 1_000
         })] })]),
         municipality("014001", "同種事業なし町", [business({ businessKey: "17-5-000" })])
       ]
@@ -90,13 +83,9 @@ describe("buildPrefecturePeerComparison", () => {
       operatingRevenue: 600,
       operatingExpense: 1_000,
       operatingLoss: 400,
-      operatingCoverageRatio: 60,
-      rainwaterBurdenRevenue: 150,
-      otherAccountSubsidyRevenue: 200,
-      nonStandardTransfer: 10
+      operatingCoverageRatio: 60
     });
     expect(result.rows[0].operatingCoverageRatio).toBeCloseTo(110);
-    expect(result.rows[0].nonStandardTransfer).toBe(0);
 
     expect(result.summary).toMatchObject({
       totalMunicipalities: 5,
@@ -105,14 +94,10 @@ describe("buildPrefecturePeerComparison", () => {
       averages: {
         operatingCoverageRatio: 85
       },
-      totals: {
-        nonStandardTransfer: 10
-      },
       positiveCounts: {
         expenseRecoveryAtLeast100: 2,
         operatingCoverageBelow100: 1,
-        highRecoveryButOperatingCoverageBelow100: 1,
-        nonStandardTransfer: 1
+        highRecoveryButOperatingCoverageBelow100: 1
       }
     });
   });
@@ -126,9 +111,7 @@ describe("buildPrefecturePeerComparison", () => {
           recovery: null,
           householdFee20m3Yen: 0,
           operatingRevenue: 0,
-          nonOperatingRevenue: 0,
-          operatingExpense: 0,
-          otherAccountSubsidy: 0
+          operatingExpense: 0
         })] })])
       ]
     });
@@ -145,7 +128,7 @@ describe("buildPrefecturePeerComparison", () => {
     });
   });
 
-  it("keeps Niigata R6 operating coverage, expense recovery, and table 40 transfers distinct", () => {
+  it("keeps Niigata R6 operating coverage and expense recovery distinct", () => {
     const result = buildPrefecturePeerComparison({
       prefectureCode: "15",
       prefectureName: "新潟県",
@@ -154,16 +137,7 @@ describe("buildPrefecturePeerComparison", () => {
       municipalities: [municipality("151009", "新潟市", [business({ annuals: [annual({
         recovery: 103.9923,
         operatingRevenue: 20_603_730,
-        operatingExpense: 25_315_763,
-        rainwaterBurdenRevenue: 8_961_461,
-        otherAccountSubsidy: 2_235_741,
-        nonStandardTransfer: 196_466,
-        table40RainwaterBurden: 8_961_461,
-        table40OtherAccountSubsidy: 2_235_741,
-        table40CapitalOtherAccountSubsidy: 2_879_067,
-        table40RainwaterBurdenNonStandard: 0,
-        table40OtherAccountSubsidyNonStandard: 36_466,
-        table40CapitalOtherAccountSubsidyNonStandard: 160_000
+        operatingExpense: 25_315_763
       })] })])]
     });
 
@@ -171,39 +145,8 @@ describe("buildPrefecturePeerComparison", () => {
     expect(row.operatingCoverageRatio).toBeCloseTo(81.38696, 5);
     expect(row.expenseRecoveryRate).toBeCloseTo(103.9923, 4);
     expect(row.operatingLoss).toBe(4_712_033);
-    expect(row.transferBasisBreakdown).toEqual({
-      rainwaterBurden: { total: 8_961_461, standard: 8_961_461, nonStandard: 0 },
-      otherAccountSubsidy: { total: 2_235_741, standard: 2_199_275, nonStandard: 36_466 },
-      capitalOtherAccountSubsidy: { total: 2_879_067, standard: 2_719_067, nonStandard: 160_000 },
-      capitalOtherAccountSubsidyNonStandard: 160_000,
-      nonStandardTransferTotal: 196_466
-    });
     expect(row.expenseRecoveryRate).toBeGreaterThanOrEqual(100);
     expect(row.operatingCoverageRatio).toBeLessThan(100);
-  });
-
-  it("calculates standard amounts only from valid actual and non-standard pairs", () => {
-    const result = buildPrefecturePeerComparison({
-      prefectureName: "テスト県",
-      businessKey: "17-1-000",
-      municipalities: [municipality("012025", "不整合市", [business({ annuals: [annual({
-        table40RainwaterBurden: 100,
-        table40RainwaterBurdenNonStandard: 120,
-        table40OtherAccountSubsidy: 200,
-        table40OtherAccountSubsidyNonStandard: 20
-      })] })])]
-    });
-
-    expect(result.rows[0].transferBasisBreakdown.rainwaterBurden).toEqual({
-      total: 100,
-      standard: null,
-      nonStandard: 120
-    });
-    expect(result.rows[0].transferBasisBreakdown.otherAccountSubsidy).toEqual({
-      total: 200,
-      standard: 180,
-      nonStandard: 20
-    });
   });
 
   it("shows a joint operator once for all served municipalities without duplicating its financials", () => {
@@ -219,8 +162,7 @@ describe("buildPrefecturePeerComparison", () => {
           business({ businessKey: "17-1-000", annuals: [annual({
             recovery: 60.251,
             operatingRevenue: 114_839,
-            operatingExpense: 321_076,
-            nonStandardTransfer: 176_644
+            operatingExpense: 321_076
           })] }),
           business({ businessKey: "17-4-000", annuals: [annual({ operatingRevenue: 19_286 })] })
         ])
@@ -238,8 +180,7 @@ describe("buildPrefecturePeerComparison", () => {
           annuals: [annual({
             recovery: 60.251,
             operatingRevenue: 114_839,
-            operatingExpense: 321_076,
-            nonStandardTransfer: 176_644
+            operatingExpense: 321_076
           })]
         })],
         sourceUrl: "https://example.test/rules",
@@ -259,16 +200,14 @@ describe("buildPrefecturePeerComparison", () => {
       isJointOperation: true,
       isCurrent: true,
       eligible: true,
-      expenseRecoveryRate: 60.251,
-      nonStandardTransfer: 176_644
+      expenseRecoveryRate: 60.251
     });
     expect(result.rows[0].operatingCoverageRatio).toBeCloseTo(35.7669, 3);
     expect(result.summary).toMatchObject({
       totalMunicipalities: 2,
       eligibleMunicipalities: 2,
       eligibleComparisonUnits: 1,
-      excludedMunicipalities: 0,
-      totals: { nonStandardTransfer: 176_644 }
+      excludedMunicipalities: 0
     });
     expect(result.rows.some((row) => row.exclusionReason?.label.includes("公共下水道・特環なし"))).toBe(false);
   });
@@ -527,9 +466,7 @@ describe("getPrefecturePeerComparison", () => {
     });
     expect(PREFECTURE_PEER_INCOME_ITEM_CODES).toEqual([
       "operating_revenue",
-      "operating_expense",
-      "rainwater_burden_revenue",
-      "other_account_subsidy_revenue"
+      "operating_expense"
     ]);
     expect(result.rows[0]).toMatchObject({ municipalityCode: "012025", isCurrent: true, operatingCoverageRatio: 80 });
   });
@@ -652,56 +589,26 @@ function annual({
   recovery = 95,
   householdFee20m3Yen = 3_000,
   operatingRevenue = 800,
-  nonOperatingRevenue = 200,
-  operatingExpense = 1_000,
-  rainwaterBurdenRevenue = 120,
-  otherAccountSubsidy = 100,
-  nonStandardTransfer = 25,
-  table40RainwaterBurden = rainwaterBurdenRevenue,
-  table40OtherAccountSubsidy = otherAccountSubsidy,
-  table40CapitalOtherAccountSubsidy = 0,
-  table40RainwaterBurdenNonStandard = 0,
-  table40OtherAccountSubsidyNonStandard = 0,
-  table40CapitalOtherAccountSubsidyNonStandard = 0
+  operatingExpense = 1_000
 }: {
   year?: number;
   accountingType?: string;
   recovery?: number | null;
   householdFee20m3Yen?: number | null;
   operatingRevenue?: number;
-  nonOperatingRevenue?: number;
   operatingExpense?: number;
-  rainwaterBurdenRevenue?: number;
-  otherAccountSubsidy?: number;
-  nonStandardTransfer?: number;
-  table40RainwaterBurden?: number | null;
-  table40OtherAccountSubsidy?: number | null;
-  table40CapitalOtherAccountSubsidy?: number | null;
-  table40RainwaterBurdenNonStandard?: number | null;
-  table40OtherAccountSubsidyNonStandard?: number | null;
-  table40CapitalOtherAccountSubsidyNonStandard?: number | null;
 } = {}): PrefecturePeerAnnualInput {
   return {
     surveyYear: year,
     fiscalYearLabel: year === 2024 ? "R6" : "R5",
     accountingType,
     householdFee20m3Yen,
-    nonStandardTransfer,
-    table40RainwaterBurden,
-    table40OtherAccountSubsidy,
-    table40CapitalOtherAccountSubsidy,
-    table40RainwaterBurdenNonStandard,
-    table40OtherAccountSubsidyNonStandard,
-    table40CapitalOtherAccountSubsidyNonStandard,
     servicePopulation: 10_000,
     connectedPopulation: 9_000,
     diagnosisResult: { expenseRecoveryRate: recovery },
     financialStatementItems: [
       { itemCode: "operating_revenue", amount: operatingRevenue },
-      { itemCode: "non_operating_revenue", amount: nonOperatingRevenue },
-      { itemCode: "operating_expense", amount: operatingExpense },
-      { itemCode: "rainwater_burden_revenue", amount: rainwaterBurdenRevenue },
-      { itemCode: "other_account_subsidy_revenue", amount: otherAccountSubsidy }
+      { itemCode: "operating_expense", amount: operatingExpense }
     ]
   };
 }

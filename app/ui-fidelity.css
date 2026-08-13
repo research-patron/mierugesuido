@@ -533,7 +533,7 @@ body {
   fill: var(--ui-ink-deep);
   stroke: #fff;
   stroke-width: 3px;
-  font-family: "Noto Sans JP", "Hiragino Sans", "Yu Gothic", Meiryo, sans-serif;
+  font-family: var(--font-kiwi-maru), "Hiragino Sans", "Yu Gothic", Meiryo, sans-serif;
   font-weight: 800;
   text-shadow: none;
   vector-effect: non-scaling-stroke;

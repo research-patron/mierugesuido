@@ -629,9 +629,7 @@ export async function getRankings(type: RankingType, limit = 30) {
       .filter((item) => {
         if (metric.metric === "expense-recovery") return item.expenseRecoveryRate != null;
         if (metric.metric === "fee-unit") return item.feeUnitPriceYenPerM3 != null;
-        if (metric.metric === "treatment-cost") return item.treatmentCostYenPerM3 != null;
-        return item.sewerBusiness.accountingType === "legal_applied"
-          && item.annualFinancial.nonStandardTransfer != null;
+        return item.treatmentCostYenPerM3 != null;
       })
       .sort((a, b) => sortRanking(a, b, type))
       .slice(0, limit)
@@ -649,10 +647,7 @@ export async function getRankings(type: RankingType, limit = 30) {
         treatmentCostYenPerM3: item.treatmentCostYenPerM3,
         expenseRecoveryRate: item.expenseRecoveryRate,
         requiredRevisionRateTo100: item.requiredRevisionRateTo100,
-        nonStandardTransfer: item.annualFinancial.nonStandardTransfer,
         feeAdequacyLabel: item.feeAdequacyLabel,
-        revisionRiskScore: item.revisionRiskScore,
-        revisionRiskLabel: item.revisionRiskLabel,
         flags: parseJsonArray(item.annualFinancial.flagsJson)
       }));
   }, []);
@@ -738,8 +733,7 @@ function sortRanking(a: any, b: any, type: RankingType) {
   const order = direction === "high" ? "desc" : "asc";
   if (metric.metric === "expense-recovery") return nullsLast(a.expenseRecoveryRate, b.expenseRecoveryRate, order);
   if (metric.metric === "fee-unit") return nullsLast(a.feeUnitPriceYenPerM3, b.feeUnitPriceYenPerM3, order);
-  if (metric.metric === "treatment-cost") return nullsLast(a.treatmentCostYenPerM3, b.treatmentCostYenPerM3, order);
-  return nullsLast(a.annualFinancial.nonStandardTransfer, b.annualFinancial.nonStandardTransfer, order);
+  return nullsLast(a.treatmentCostYenPerM3, b.treatmentCostYenPerM3, order);
 }
 
 function selectMapMunicipalityRepresentative(municipality: any, scope?: MapBusinessScope) {
@@ -818,9 +812,22 @@ function compareRepresentativeCandidates(a: any, b: any) {
   const qualityA = hasAmbiguousZeroFlag(a.annual?.flagsJson) ? 0 : 1;
   const qualityB = hasAmbiguousZeroFlag(b.annual?.flagsJson) ? 0 : 1;
   if (qualityA !== qualityB) return qualityB - qualityA;
-  const scoreA = a.diagnosis?.revisionRiskScore ?? -1;
-  const scoreB = b.diagnosis?.revisionRiskScore ?? -1;
-  return scoreB - scoreA;
+  const accountingA = representativeAccountingPriority(a.business?.accountingType);
+  const accountingB = representativeAccountingPriority(b.business?.accountingType);
+  if (accountingA !== accountingB) return accountingB - accountingA;
+  const businessKeyOrder = String(a.business?.businessKey ?? "")
+    .localeCompare(String(b.business?.businessKey ?? ""), "ja");
+  if (businessKeyOrder !== 0) return businessKeyOrder;
+  const businessNameOrder = String(a.business?.businessName ?? a.business?.businessType ?? "")
+    .localeCompare(String(b.business?.businessName ?? b.business?.businessType ?? ""), "ja");
+  if (businessNameOrder !== 0) return businessNameOrder;
+  return String(a.annual?.id ?? "").localeCompare(String(b.annual?.id ?? ""), "ja");
+}
+
+function representativeAccountingPriority(value?: string | null) {
+  if (value === "legal_applied") return 2;
+  if (value === "non_legal_applied") return 1;
+  return 0;
 }
 
 function hasAmbiguousZeroFlag(flagsJson?: string | null) {

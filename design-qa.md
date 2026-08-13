@@ -1893,3 +1893,43 @@ This gate is the current acceptance record for the revision-page filter, municip
 - Intentional subtraction: the always-visible inactive reset link and the longer `この条件で表示` button copy were removed. The reset reappears whenever a filter is active, and the shorter `絞り込む` label improves scanning without removing any action.
 
 final result: passed
+
+## Final superseding non-standard-transfer retirement and Kiwi Maru gate — 2026-08-13
+
+This gate supersedes every earlier acceptance statement that treated non-standard transfers as a public indicator. The service no longer adopts or publishes that item.
+
+### Retirement boundary
+
+- The finance view, prefecture peer comparison, field glossary, explanatory copy, CSV/static payloads, ranking navigation, and ranking output no longer expose the retired item, its Table 40 breakdown, or related dependency wording.
+- The two retired ranking directions were removed. The ranking tool now contains three retained indicators—expense recovery, fee unit price, and wastewater-treatment cost—with six high/low URL-addressable routes.
+- The retired value no longer contributes to the diagnostic risk score or representative-business selection. No substitute value is inferred from operating revenue, operating expense, or depreciation.
+- Compact municipality, prefecture, peer, evidence, diagnosis, and ranking payloads omit the retired fields and public risk-score fields. The former ranking URLs redirect permanently to the ranking index.
+- Official source workbooks and dormant internal import/database fields remain unchanged for source preservation. They are not serialized, ranked, calculated, or displayed by the service.
+
+### Typography and layout balance
+
+- `Kiwi Maru` is applied through `next/font` at its native 400 and 500 weights, with `swap`, no synthetic bolding, and one shared CSS variable for body, controls, tables, and SVG labels.
+- The production export self-hosts the font: 246 WOFF2 subsets are present and referenced locally, with no runtime Google Fonts request or CSS `@import`.
+- The softer typeface preserves the existing navy/teal hierarchy and exact numeric values. No clipped heading, control, table cell, map label, or page-level horizontal overflow was found in the accepted desktop/mobile set.
+- A mobile min-content overflow found on `data-sources` was corrected with bounded grid and panel children; wide source tables remain intentionally scrollable inside their own containers.
+
+### Visual evidence
+
+- Eighteen raw, unedited acceptance screenshots are stored in the ignored QA directory `artifacts/design-qa/kiwi-removal-2026-08-11/after/`: home, municipality search, municipality detail, finance, prefecture comparison, ranking, prefecture map, revisions, and data sources at both 1491×1055 and 390×844.
+- The in-app browser was calibrated so the raw JPEG dimensions exactly match those viewports. Every accepted capture began at `scrollX=0` and `scrollY=0`; document/body width matched the viewport, the Kiwi Maru face was loaded, retired text was absent, and browser errors were zero.
+- Independent visual review passed all 18 frames. The finance and prefecture-comparison subtraction leaves a balanced two-metric layout; the ranking selector remains clear with three metrics; the previously observed left-edge capture crop is absent.
+
+### Verification and protected scope
+
+- `pnpm static:data`: passed against 86 official workbooks; 1,318,745 source rows, 1,586 municipality detail payloads, and 312 comparison payloads.
+- Public JSON audit: 7,031 JSON files parsed successfully across source, public, and production-export trees; retired terms/keys and public risk-score keys had zero matches.
+- Ranking manifest and output: exactly six retained routes; retired ranking JSON and exported route directories are absent; compatibility redirects are present.
+- `pnpm lint`: passed.
+- `pnpm test`: 38/38 files and 246/246 tests passed.
+- `pnpm build`: passed; 1,650 static pages generated.
+- Kiwi Maru export audit: 246/246 local font files referenced, zero missing files, and zero external font-runtime references.
+- `git diff --check`: passed.
+- The database checksum remains `8c7bf571586fc9f40d3feed9f9b18131aa04d13f87004fa647d6c1171a0f449b`. No Prisma schema, migration, ETL, imported/raw workbook, source GIS record, or official accounting value changed.
+- Intentional subtraction: the public non-standard-transfer cards, peer-table column and mini-bars, Table 40 disclosure, two ranking directions, public payload fields, related glossary/copy, and diagnostic-risk contribution were removed because the service no longer adopts the item.
+
+final result: passed

@@ -1373,7 +1373,7 @@ function RankingPair({ items }: { items: MapMunicipality[] }) {
         <div className="flex items-center gap-1">
           <h2>使用料水準ランキング（経費回収率）</h2>
           <InfoDisclosure label="ランキングの算出条件">
-            流域下水道を除き、複数事業がある市区町村は最新年度のうち診断上の注意度が最も高い1事業を掲載します。合算値ではありません。法非適用は共通定義の料金指標のみ参考比較します。
+            流域下水道を除き、複数事業がある市区町村は、最新年度とデータ品質を優先し、会計区分・事業コードの順で決定した1事業を掲載します。合算値ではありません。法非適用は共通定義の料金指標のみ参考比較します。
           </InfoDisclosure>
         </div>
         <Link href="/rankings/expense-recovery-low" className="text-xs font-black text-ink hover:text-teal">もっと見る →</Link>

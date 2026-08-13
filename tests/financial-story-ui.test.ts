@@ -42,9 +42,9 @@ describe("financial statement accounting-box UI", () => {
     expect(cssSource).not.toMatch(/\.legend\s*\{/);
   });
 
-  it("distinguishes the income-statement subsidy from non-standard transfers", () => {
+  it("places the income-statement subsidy in non-operating revenue", () => {
     expect(componentSource).toContain("他会計補助金（営業外収益）");
-    expect(componentSource).toContain("基準外繰入金とは一致しません");
+    expect(componentSource).toContain("営業損益には含まれず、経常損益を構成する");
     expect(componentSource).toContain("styles.accountingTermNote");
     expect(cssSource).toContain(".accountingTermNote");
   });

@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import { RankingNav } from "@/components/RankingNav";
 import { rankingMetricValue } from "@/lib/rankingDisplay";
 import {
+  isRankingType,
   rankingLabels,
   rankingMetrics,
   rankingSelection,
@@ -18,18 +19,25 @@ const rankingPageSource = readFileSync(path.join(root, "app/rankings/page.tsx"),
 const searchFilterSource = readFileSync(path.join(root, "components/MunicipalitySearchFilters.tsx"), "utf8");
 const searchPageSource = readFileSync(path.join(root, "app/municipalities/page.tsx"), "utf8");
 const prefectureSelectorSource = readFileSync(path.join(root, "components/JapanMapSelector.tsx"), "utf8");
+const rankingDataSource = dataSource.slice(
+  dataSource.indexOf("export async function getRankings"),
+  dataSource.indexOf("export async function getDataSources")
+);
+const representativeSelectorSource = dataSource.slice(
+  dataSource.indexOf("function compareRepresentativeCandidates"),
+  dataSource.indexOf("function hasAmbiguousZeroFlag")
+);
 
 describe("ranking basis and bidirectional comparison", () => {
-  it("publishes four retained metrics in both directions and no required-increase ranking", () => {
+  it("publishes three retained metrics in both directions and excludes withdrawn rankings", () => {
     const types = Object.keys(rankingLabels) as RankingType[];
 
     expect(rankingMetrics.map((item) => item.metric)).toEqual([
       "expense-recovery",
       "fee-unit",
-      "treatment-cost",
-      "transfer-amount"
+      "treatment-cost"
     ]);
-    expect(types).toHaveLength(8);
+    expect(types).toHaveLength(6);
     for (const metric of rankingMetrics) {
       expect(types).toContain(metric.types.high);
       expect(types).toContain(metric.types.low);
@@ -37,15 +45,24 @@ describe("ranking basis and bidirectional comparison", () => {
       expect(rankingSelection(metric.types.low)).toMatchObject({ direction: "low", metric: { metric: metric.metric } });
     }
     expect(types.join(" ")).not.toContain("required-revision");
+    expect(types.join(" ")).not.toContain("transfer-dependency");
+    expect(isRankingType("transfer-dependency-high")).toBe(false);
+    expect(isRankingType("transfer-dependency-low")).toBe(false);
     expect(dataSource).not.toContain("highRevision");
+    expect(rankingDataSource).not.toContain("nonStandardTransfer");
+    expect(rankingDataSource).not.toContain("revisionRiskScore");
+    expect(rankingDataSource).not.toContain("revisionRiskLabel");
+    expect(representativeSelectorSource).not.toContain("revisionRiskScore");
+    expect(representativeSelectorSource).not.toContain("nonStandardTransfer");
+    expect(representativeSelectorSource).toContain("representativeAccountingPriority");
   });
 
   it("renders a compact URL-addressable selector that preserves metric and direction independently", () => {
     const types = Object.keys(rankingLabels) as RankingType[];
     const destinations = rankingMetrics.flatMap((metric) => [metric.types.high, metric.types.low]);
 
-    expect(destinations).toHaveLength(8);
-    expect(new Set(destinations).size).toBe(8);
+    expect(destinations).toHaveLength(6);
+    expect(new Set(destinations).size).toBe(6);
     expect([...destinations].sort()).toEqual([...types].sort());
 
     for (const current of types) {
@@ -60,8 +77,8 @@ describe("ranking basis and bidirectional comparison", () => {
       ]);
       expect(markup.match(/aria-current="page"/g)).toHaveLength(2);
       expect(markup.match(/aria-label="選択中"/g)).toHaveLength(1);
-      const highAccessible = selectedMetric.metric === "transfer-amount" ? "金額が大きい順" : "値が高い順";
-      const lowAccessible = selectedMetric.metric === "transfer-amount" ? "金額が小さい順" : "値が低い順";
+      const highAccessible = "値が高い順";
+      const lowAccessible = "値が低い順";
       expect(markup).toContain(`aria-label="${selectedMetric.label}を${highAccessible}で表示"`);
       expect(markup).toContain(`aria-label="${selectedMetric.label}を${lowAccessible}で表示"`);
       expect(markup).not.toContain("大きい値から");
@@ -76,6 +93,7 @@ describe("ranking basis and bidirectional comparison", () => {
 
     expect(rankingPageSource).not.toContain("下の比較ビューから、見たい指標と並び順をすぐに切り替えられます");
     expect(rankingPageSource).not.toContain("使用料収入の必要増加率");
+    expect(rankingPageSource).not.toContain("基準外");
   });
 
   it("offers symmetric official-indicator sorts in search surfaces", () => {
@@ -102,6 +120,8 @@ describe("ranking basis and bidirectional comparison", () => {
 
     expect(manifest.rankingTypes).toEqual(types);
     expect(existsSync(path.join(root, "data/static/rankings/required-revision-high.json"))).toBe(false);
+    expect(existsSync(path.join(root, "data/static/rankings/transfer-dependency-high.json"))).toBe(false);
+    expect(existsSync(path.join(root, "data/static/rankings/transfer-dependency-low.json"))).toBe(false);
     expect(home.overview).not.toHaveProperty("highRevision");
     expect(home.mapScopes.public.overview).not.toHaveProperty("highRevision");
     expect(home.mapScopes.tokkan.overview).not.toHaveProperty("highRevision");
@@ -115,6 +135,14 @@ describe("ranking basis and bidirectional comparison", () => {
         if (direction === "high") expect(values[index - 1]).toBeGreaterThanOrEqual(values[index]);
         else expect(values[index - 1]).toBeLessThanOrEqual(values[index]);
       }
+    }
+  });
+
+  it("redirects both withdrawn ranking URLs to the ranking overview", () => {
+    const redirects = readFileSync(path.join(root, "public/_redirects"), "utf8");
+    for (const direction of ["high", "low"]) {
+      expect(redirects).toContain(`/rankings/transfer-dependency-${direction} /rankings/ 301`);
+      expect(redirects).toContain(`/rankings/transfer-dependency-${direction}/* /rankings/ 301`);
     }
   });
 });

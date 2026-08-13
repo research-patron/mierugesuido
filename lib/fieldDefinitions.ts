@@ -72,7 +72,7 @@ export const fieldDefinitions: Record<string, FieldDefinition> = {
   },
   otherAccountSubsidyRevenue: {
     label: "他会計補助金（営業外収益）",
-    meaning: "損益計算書の営業外収益に計上される他会計からの補助金です。繰出基準内の補助も含み得るため、基準外繰入金や営業損失の直接の補填額とは一致しません。",
+    meaning: "損益計算書の営業外収益に計上される他会計からの補助金です。営業損益には含まれず、経常損益を構成します。",
     unit: "千円",
     sourceTable: "損益計算書",
     role: "会計収益"
@@ -150,55 +150,6 @@ export const fieldDefinitions: Record<string, FieldDefinition> = {
   standardTransfer: {
     label: "基準内繰入金",
     meaning: "総務省の繰出基準に基づく一般会計繰入金です。",
-    unit: "千円",
-    sourceTable: "繰入金に関する調",
-    role: "繰入金"
-  },
-  nonStandardTransfer: {
-    label: "基準外繰入金",
-    meaning: "総務省「繰入金に関する調」で基準外に区分された一般会計等からの繰入金です。使用料収入の不足額、営業損失、損益計算書の他会計補助金とは範囲が異なります。",
-    unit: "千円",
-    sourceTable: "繰入金に関する調",
-    role: "繰入金"
-  },
-  table40RainwaterBurden: {
-    label: "雨水処理負担金（第40表・実額）",
-    meaning: "総務省『繰入金に関する調』第40表の雨水処理負担金の実繰入額です。",
-    unit: "千円",
-    sourceTable: "繰入金に関する調",
-    role: "繰入金"
-  },
-  table40OtherAccountSubsidy: {
-    label: "他会計補助金（第40表・実額）",
-    meaning: "第40表の収益勘定における他会計補助金の実繰入額です。基準内・基準外の双方を含み得ます。",
-    unit: "千円",
-    sourceTable: "繰入金に関する調",
-    role: "繰入金"
-  },
-  table40CapitalOtherAccountSubsidy: {
-    label: "資本勘定の他会計補助金（第40表・実額）",
-    meaning: "第40表の資本勘定における他会計補助金の実繰入額です。",
-    unit: "千円",
-    sourceTable: "繰入金に関する調",
-    role: "繰入金"
-  },
-  table40RainwaterBurdenNonStandard: {
-    label: "雨水処理負担金（第40表・基準外）",
-    meaning: "第40表で雨水処理負担金に区分された基準外繰入額です。",
-    unit: "千円",
-    sourceTable: "繰入金に関する調",
-    role: "繰入金"
-  },
-  table40OtherAccountSubsidyNonStandard: {
-    label: "他会計補助金（第40表・基準外）",
-    meaning: "第40表で収益勘定の他会計補助金に区分された基準外繰入額です。",
-    unit: "千円",
-    sourceTable: "繰入金に関する調",
-    role: "繰入金"
-  },
-  table40CapitalOtherAccountSubsidyNonStandard: {
-    label: "資本勘定の他会計補助金（第40表・基準外）",
-    meaning: "第40表で資本勘定の他会計補助金に区分された基準外繰入額です。",
     unit: "千円",
     sourceTable: "繰入金に関する調",
     role: "繰入金"

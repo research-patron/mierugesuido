@@ -1,5 +1,16 @@
 # Current Goal: R2-R6 Accounting Eligibility, Data Completion, and Financial Storytelling
 
+## Goal Extension (2026-08-11 — remove non-standard transfers and apply Kiwi Maru)
+
+- Remove every user-facing and publicly exported item related to `基準外繰入金` because this service will no longer adopt that concept as a comparison or explanatory field. This includes cards, tables, charts, map popups, municipality search, CSV, rankings, ranking navigation and routes, field definitions, data-source copy, and compact public static payloads.
+- Do not reinterpret, replace, or relabel the removed field with an operating-loss proxy or another inferred amount. Preserve official source workbooks, database values, Prisma schema, migrations, and ETL mappings unless a public-output guard must stop emitting the field.
+- Remove the two non-standard-transfer ranking directions from generated routes and navigation. Old direct ranking URLs must not continue rendering the removed metric; route them to the remaining ranking entry experience or return a clear not-found result without exposing the retired value.
+- Apply `Kiwi Maru` as the site-wide product font through the existing Next.js font pipeline. Preserve Japanese readability, numeric clarity, form usability, accessible fallback fonts, and stable loading without adding a runtime third-party font request.
+- Rebalance typography, line height, control height, and responsive wrapping only where rendered evidence shows that the new font disrupts the established navy/teal information hierarchy. Do not introduce decorative cards, gradients, thick one-sided accents, or unrelated visual changes.
+- Capture and inspect the main home, municipality search, municipality detail, ranking, map, revision, and data-source surfaces at 1491×1055 and representative 390×844 mobile states. Verify keyboard focus, navigation, tables, map labels, numeric columns, no horizontal overflow, and absence of the retired field from public UI, CSV, static JSON, generated routes, and source copy.
+- Run static generation, lint, the full test suite, and the production build. Append a superseding `design-qa.md` gate ending in exact `final result: passed` only after removal and typography checks pass.
+- The user explicitly authorized production publication for this exact scope. Before commit and push, still perform the mandatory complete-diff, file-size, remote/branch, authorship, and secret scans. Publish by normal fast-forward to Cloudflare Pages production branch `main`, wait for the check on the new SHA to succeed, and verify expected production markers before reporting completion.
+
 ## Goal Extension (2026-08-11 — inviting ranking comparison selector)
 
 - Redesign the ranking page's comparison-condition area so it feels like a compact, inviting comparison tool rather than a numbered settings form. Make the current metric and direction immediately understandable before the user reaches the results.

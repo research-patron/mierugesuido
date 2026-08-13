@@ -14,27 +14,24 @@ describe("public-enterprise accounting copy audit", () => {
     expect(copySource).toContain("一般会計等が負担すべき経費を除き");
     expect(copySource).toContain("雨水公費・汚水私費");
     expect(copySource).toContain("100%未満は営業損失、100%以上は営業利益または収支均衡を示します");
-    expect(copySource).toContain("この比率だけで基準外繰入金の有無や金額は判定できません");
+    expect(copySource).toContain("使用料の十分性とは分けて読む必要があります");
+    expect(copySource).toContain("使用料による汚水処理費の回収状況は経費回収率で確認します");
     expect(copySource).toContain("受託工事収益・費用等を除いて算定する場合があるため");
     expect(copySource).toContain('title: "営業収支比率（簡易）"');
     expect(copySource).not.toContain("営業収益÷営業費用（サイト算定）");
   });
 
-  it("documents the separate meanings of operating loss and transfers with official public sources", () => {
+  it("documents operating loss and fee recovery as different scopes with official public sources", () => {
     expect(dataSourcesSource).toContain("すべての経費を使用料だけで賄う、という規定ではありません");
-    expect(dataSourcesSource).toContain("営業損失と繰入金は同額ではない");
-    expect(dataSourcesSource).toContain("営業損失への直接の補填割合とは断定できません");
+    expect(dataSourcesSource).toContain("営業損益と経費回収率は範囲が異なる");
+    expect(dataSourcesSource).toContain("使用料による汚水処理費の回収状況は、別の指標である経費回収率で確認します");
     expect(dataSourcesSource).toContain("https://laws.e-gov.go.jp/law/327AC0000000292");
     expect(dataSourcesSource).toContain("https://laws.e-gov.go.jp/law/327M50000002073/");
     expect(dataSourcesSource).toContain("https://www.mlit.go.jp/mizukokudo/sewerage/crd_sewerage_tk_000140.html");
     expect(dataSourcesSource).toContain("吹田市 公営企業の営業収支比率の解説");
-    expect(dataSourcesSource).toContain("営業損失は基準外繰入金で補填された額ですか？");
-    expect(dataSourcesSource).toContain("基準外繰入金は減価償却費を除いて計算しますか？");
-    expect(dataSourcesSource).toContain("基準外繰入金の定義・算式ではありません");
-    expect(dataSourcesSource).toContain("第40表の公式値をそのまま使用します");
-    expect(copySource).toContain('title: "基準外繰入金"');
-    expect(copySource).toContain("営業収益−（営業費用−減価償却費）ではありません");
     expect(disclaimerSource).toContain("営業収支比率（簡易）の位置づけ");
+    expect(copySource).not.toContain("基準外");
+    expect(dataSourcesSource).not.toContain("基準外");
   });
 
   it("limits nationwide map colors to expense recovery and confines the fee-unit split to prefecture context", () => {
@@ -61,7 +58,8 @@ describe("public-enterprise accounting copy audit", () => {
     expect(fieldDefinitionsSource).toContain("正当な公費負担である雨水処理負担金等も含み");
     expect(fieldDefinitionsSource).toContain("使用料で賄うべき汚水処理費とは範囲が異なります");
     expect(fieldDefinitionsSource).toContain("損益計算書では営業収益に含まれます");
-    expect(fieldDefinitionsSource).toContain("営業損失の直接の補填額とは一致しません");
-    expect(fieldDefinitionsSource).toContain("使用料収入の不足額、営業損失、損益計算書の他会計補助金とは範囲が異なります");
+    expect(fieldDefinitionsSource).toContain("営業損益には含まれず");
+    expect(fieldDefinitionsSource).toContain("経常損益を構成します");
+    expect(fieldDefinitionsSource).not.toContain("基準外");
   });
 });

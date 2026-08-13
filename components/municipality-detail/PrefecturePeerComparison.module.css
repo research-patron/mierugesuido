@@ -64,7 +64,7 @@
 
 .summaryGrid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 9px;
 }
 
@@ -90,9 +90,6 @@
   background: var(--ui-aqua);
   color: var(--ui-teal-hover);
 }
-
-.summaryCard[data-tone="amber"] .summaryIcon { background: #fff4dc; color: #ae6c00; }
-.summaryCard[data-tone="navy"] .summaryIcon { background: #edf3fb; color: var(--ui-ink-deep); }
 
 .summaryCard div { min-width: 0; }
 .summaryCard div > span,
@@ -160,7 +157,7 @@
 .financialDetails[open] .detailsChevron { transform: rotate(180deg); }
 .financialDetailsBody {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 9px;
   padding: 14px;
   background: #f7fafb;
@@ -253,44 +250,6 @@
 .axisReference { position: absolute; transform: translateX(-50%); color: #526670; white-space: nowrap; }
 .formulaNote { margin: 10px 0 0; border-top: 1px solid #e2ecee; padding-top: 8px; color: var(--ui-muted); font-size: 9px; font-weight: 700; line-height: 1.55; }
 
-.fundingCard {
-  display: grid;
-  align-content: start;
-  gap: 13px;
-  border: 1px solid var(--ui-border);
-  border-radius: 8px;
-  background: #fff;
-  padding: 15px;
-}
-
-.fundingHeading {
-  display: grid;
-  grid-template-columns: 38px minmax(0, 1fr);
-  gap: 11px;
-  align-items: start;
-}
-
-.fundingHeading h3 { margin: 0; color: var(--ui-ink-deep); font-size: 17px; font-weight: 850; line-height: 1.35; }
-.fundingHeading > div > p:last-child { margin: 5px 0 0; color: var(--ui-muted); font-size: 11.5px; font-weight: 650; line-height: 1.65; }
-.transferTableScroll { overflow-x: auto; }
-.transferTable { width: 100%; min-width: 560px; border-collapse: collapse; background: #fff; }
-.transferTable caption { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
-.transferTable th,
-.transferTable td { border-bottom: 1px solid #e2eaec; padding: 8px 7px; text-align: right; vertical-align: middle; }
-.transferTable thead th { background: #f5f8f9; color: var(--ui-muted); font-size: 8.5px; font-weight: 850; white-space: nowrap; }
-.transferTable thead th:first-child,
-.transferTable tbody th { text-align: left; }
-.transferTable tbody th { color: var(--ui-ink-deep); font-size: 9.5px; font-weight: 850; line-height: 1.4; }
-.transferTable tbody td { color: var(--ui-ink); font-size: 9.5px; font-weight: 750; white-space: nowrap; }
-.transferTable tbody td:nth-child(2) { color: var(--ui-muted); font-size: 8.5px; }
-.transferTotal { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; border-top: 1px solid #ccdadd; border-bottom: 1px solid #ccdadd; padding: 10px 7px; }
-.transferTotal span { color: var(--ui-muted); font-size: 9.5px; font-weight: 800; }
-.transferTotal strong { color: var(--ui-ink-deep); font-size: 15px; font-weight: 900; white-space: nowrap; }
-.fundingNotes { display: grid; gap: 5px; border-top: 1px solid #e2ecee; padding-top: 9px; color: var(--ui-muted); font-size: 9.5px; font-weight: 650; line-height: 1.6; }
-.fundingNotes p { margin: 0; }
-.fundingNotes strong { color: var(--ui-ink-deep); }
-.fundingNotes a { color: var(--ui-teal-hover); font-weight: 800; text-underline-offset: 2px; }
-
 .tableSection { display: grid; gap: 10px; }
 .tableHeading { display: block; }
 .tableScaleNote {
@@ -302,7 +261,7 @@
   line-height: 1.55;
 }
 .tableScroll { overflow-x: auto; border: 1px solid var(--ui-border); border-radius: 8px; }
-.table { width: 100%; min-width: 940px; border-collapse: collapse; background: #fff; }
+.table { width: 100%; min-width: 720px; border-collapse: collapse; background: #fff; }
 .table caption { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
 .table th,
 .table td { border-bottom: 1px solid #e4ecee; padding: 10px 11px; text-align: right; vertical-align: middle; }
@@ -383,7 +342,6 @@
   background: #4789a8;
 }
 .inlineMetric[data-tone="recovery"] .inlineBarFill { background: #268f83; }
-.inlineMetric[data-tone="transfer"] .inlineBarFill { background: #6e7f94; }
 .inlineBarReference {
   z-index: 2;
   width: 2px;
@@ -414,10 +372,6 @@
   .table thead th { position: sticky; top: 0; z-index: 2; box-shadow: 0 1px 0 var(--ui-border); }
 }
 
-@media (max-width: 980px) {
-  .summaryGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-
 @media (max-width: 720px) {
   .root { gap: 13px; }
   .heading,
@@ -425,7 +379,6 @@
   .conditions { justify-content: flex-start; }
   .heading h2 { font-size: 19px; }
   .summaryGrid { gap: 7px; }
-  .summaryCard:last-child { grid-column: 1 / -1; min-height: 88px; }
   .summaryCard { min-height: 106px; grid-template-columns: 29px minmax(0, 1fr); padding: 10px; }
   .summaryIcon { width: 29px; height: 29px; }
   .summaryCard strong { font-size: 17px; }
@@ -439,11 +392,6 @@
   .financialDetails > summary { min-height: 68px; grid-template-columns: 34px minmax(0, 1fr) 18px; gap: 9px; padding: 11px 12px; }
   .detailsIcon { width: 34px; height: 34px; }
   .financialDetailsBody { grid-template-columns: 1fr; padding: 10px; }
-  .fundingCard { padding: 12px; }
-  .fundingHeading { grid-template-columns: 34px minmax(0, 1fr); gap: 9px; }
-  .fundingHeading h3 { font-size: 15px; }
-  .transferTable { min-width: 520px; }
-  .transferTotal { align-items: flex-start; }
   .axis[data-reference] > span:last-child { display: none; }
   .metricBar[data-emphasized] div > span { font-size: 16px; }
   .tableScroll { display: none; }

@@ -173,7 +173,7 @@ function IncomeStatement({
             <span className={styles.equalsMark} aria-hidden="true">＝</span>
             <EquationColumn title={rightTitle} total={equationTotal} items={rightItems} scale={analysis.scale} detailed frameHeights={detailedFrameHeights} />
           </div>
-          <p className={styles.accountingTermNote}><strong>用語の区別</strong>「他会計補助金（営業外収益）」には繰出基準内の補助も含まれます。基準外繰入金とは一致しません。</p>
+          <p className={styles.accountingTermNote}><strong>用語の区別</strong>「他会計補助金（営業外収益）」は、営業損益には含まれず、経常損益を構成する損益計算書上の科目です。</p>
         </figure>
       )}
 

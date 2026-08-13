@@ -105,14 +105,11 @@ describe("municipality fee revision comparison", () => {
     expect(missingCodes).toEqual(["089192"]);
     expect(index.get("089192")?.changedBusinessCount).toBe(2);
 
-    const katagami = municipalities.items.find((item: any) => item.municipalityCode === "052116");
-    expect(katagami.businessKey).toBe("18-0-000");
-    expect(index.get("052116")).toMatchObject({
-      changedBusinessCount: 2,
-      changes: [
-        { businessKey: "17-1-000", businessName: "公共下水道" },
-        { businessKey: "17-4-000", businessName: "特定環境保全公共下水道" }
-      ]
+    const matsue = municipalities.items.find((item: any) => item.municipalityCode === "322016");
+    expect(matsue.businessKey).toBe("17-1-000");
+    expect(index.get("322016")).toMatchObject({
+      changedBusinessCount: 1,
+      changes: [{ businessKey: "17-4-000", businessName: "特定環境保全公共下水道" }]
     });
   });
 });

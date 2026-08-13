@@ -364,27 +364,19 @@ function compactAnnual(annual: any) {
     sourceTraceJson: _sourceTraceJson,
     financialStatementItems: _financialStatementItems,
     generalAccountTransfer,
-    table40RainwaterBurden,
-    table40OtherAccountSubsidy,
-    table40CapitalOtherAccountSubsidy,
-    table40RainwaterBurdenNonStandard,
-    table40OtherAccountSubsidyNonStandard,
-    table40CapitalOtherAccountSubsidyNonStandard,
+    nonStandardTransfer: _nonStandardTransfer,
+    table40RainwaterBurden: _table40RainwaterBurden,
+    table40OtherAccountSubsidy: _table40OtherAccountSubsidy,
+    table40CapitalOtherAccountSubsidy: _table40CapitalOtherAccountSubsidy,
+    table40RainwaterBurdenNonStandard: _table40RainwaterBurdenNonStandard,
+    table40OtherAccountSubsidyNonStandard: _table40OtherAccountSubsidyNonStandard,
+    table40CapitalOtherAccountSubsidyNonStandard: _table40CapitalOtherAccountSubsidyNonStandard,
     diagnosisResult,
     ...values
   } = annual;
-  const table40BreakdownValues = Object.fromEntries(Object.entries({
-    table40RainwaterBurden,
-    table40OtherAccountSubsidy,
-    table40CapitalOtherAccountSubsidy,
-    table40RainwaterBurdenNonStandard,
-    table40OtherAccountSubsidyNonStandard,
-    table40CapitalOtherAccountSubsidyNonStandard
-  }).filter(([, value]) => value != null));
   return {
     ...values,
     ...(annual.accountingType === "legal_applied" ? {} : { generalAccountTransfer }),
-    ...table40BreakdownValues,
     diagnosisResult: compactDiagnosis(diagnosisResult)
   };
 }
@@ -398,6 +390,8 @@ function compactDiagnosis(diagnosis: any) {
     createdAt: _createdAt,
     updatedAt: _updatedAt,
     calculationTraceJson: _calculationTraceJson,
+    revisionRiskScore: _revisionRiskScore,
+    revisionRiskLabel: _revisionRiskLabel,
     ...values
   } = diagnosis;
   return {
@@ -446,6 +440,7 @@ function compactEvidence(
   return Object.entries(trace)
     .filter(([, item]: [string, any]) => item?.value != null)
     .filter(([field]) => accountingType !== "legal_applied" || field !== "generalAccountTransfer")
+    .filter(([field]) => field !== "nonStandardTransfer" && !field.startsWith("table40"))
     .sort(([a], [b]) => evidenceOrder(a) - evidenceOrder(b))
     .slice(0, 14)
     .map(([field, item]: [string, any]) => [field, {
@@ -493,9 +488,7 @@ function evidenceOrder(field: string) {
   const order = [
     "householdFee20m3Yen", "sewerFeeRevenue", "annualBillableVolume", "wastewaterTreatmentCost", "opexComponent", "capitalCostComponent",
     "ordinaryRevenue", "ordinaryExpense", "ordinaryProfitLoss", "netIncome", "totalRevenueNonLegal",
-    "totalExpenseNonLegal", "realBalance", "generalAccountTransfer", "standardTransfer", "nonStandardTransfer",
-    "table40RainwaterBurden", "table40OtherAccountSubsidy", "table40CapitalOtherAccountSubsidy",
-    "table40RainwaterBurdenNonStandard", "table40OtherAccountSubsidyNonStandard", "table40CapitalOtherAccountSubsidyNonStandard",
+    "totalExpenseNonLegal", "realBalance", "generalAccountTransfer", "standardTransfer",
     "bondBalance", "servicePopulation", "connectedPopulation", "treatedVolume"
   ];
   const index = order.indexOf(field);

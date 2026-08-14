@@ -491,6 +491,99 @@ body {
   background: #fff;
 }
 
+.gis-map-surface--home-national[data-pannable="true"] {
+  cursor: grab;
+  touch-action: none;
+}
+
+.gis-map-surface--home-national[data-pannable="true"] .gis-region {
+  cursor: grab;
+}
+
+.gis-map-surface--home-national[data-panning="true"],
+.gis-map-surface--home-national[data-panning="true"] .gis-region {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.mobile-national-map-guide {
+  margin: 9px 2px 0;
+  color: var(--ui-muted);
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.55;
+}
+
+.mobile-national-map-confirmation {
+  display: grid;
+  min-height: 62px;
+  margin-top: 7px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--ui-divider);
+  border-radius: 7px;
+  background: #f8fbfc;
+  padding: 8px 9px 8px 12px;
+}
+
+.mobile-national-map-confirmation[data-has-selection="false"] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.mobile-national-map-confirmation > div {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+
+.mobile-national-map-confirmation > div span {
+  color: var(--ui-muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.mobile-national-map-confirmation > div strong {
+  overflow: hidden;
+  color: var(--ui-ink-deep);
+  font-size: 14px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mobile-national-map-confirmation > p {
+  color: var(--ui-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.mobile-national-map-confirmation > a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 1px solid var(--ui-teal);
+  border-radius: 6px;
+  background: #fff;
+  padding: 0 11px;
+  color: var(--ui-teal-hover);
+  font-size: 11.5px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.mobile-national-map-confirmation > a:hover {
+  background: var(--ui-aqua);
+}
+
+.mobile-national-map-confirmation > a:focus-visible {
+  outline: 3px solid rgba(7, 153, 168, 0.3);
+  outline-offset: 2px;
+}
+
 .home-national-map-legend {
   top: 6px;
   left: 4px;
@@ -598,10 +691,15 @@ body {
   box-shadow: 0 2px 7px rgba(1, 33, 64, 0.08);
 }
 
-.map-control-stack--home button:hover {
+.map-control-stack--home button:not(:disabled):hover {
   border-color: var(--ui-teal);
   background: var(--ui-aqua);
   color: var(--ui-teal-hover);
+}
+
+.map-control-stack--home button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 
 .map-control-stack--home .map-reset-button {
@@ -1717,8 +1815,8 @@ body {
   }
 
   .national-map-panel .gis-map-surface--home-national {
-    min-height: 360px;
-    height: 360px;
+    min-height: 440px;
+    height: clamp(440px, 60vh, 480px);
   }
 
   .home-national-map-legend {
@@ -1897,6 +1995,10 @@ body {
   .prefecture-region-tabs,
   .prefecture-button-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .prefecture-region-tabs button {
+    min-height: 44px;
   }
 
   .prefecture-selector-panel {

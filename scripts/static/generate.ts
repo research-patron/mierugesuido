@@ -15,6 +15,7 @@ import {
 } from "@/lib/data";
 import { mapBusinessScopes, type MapBusinessScope } from "@/lib/data";
 import { buildFinancialStoryModel } from "@/lib/financialStoryModel";
+import { separateCostCompositionFromDetail } from "@/lib/costCompositionStatic";
 import { municipalitiesToCsv } from "@/lib/municipalityCsv";
 import {
   addComparableUnchangedMunicipalities,
@@ -24,7 +25,7 @@ import {
 import { getPrefectureCode, prefectures } from "@/lib/prefectures";
 import { prisma } from "@/lib/prisma";
 import { rankingLabels, type RankingType } from "@/lib/rankings";
-import { assertMappedEvidenceMatchesOfficial } from "@/lib/yearbookEvidence";
+import { assertCostCompositionMatchesOfficial, assertMappedEvidenceMatchesOfficial } from "@/lib/yearbookEvidence";
 import { buildYearbookFeeComparison } from "@/lib/yearbookFeeChanges";
 import { loadYearbookFeeSnapshots } from "@/scripts/static/yearbookFeeRevisionData";
 import {
@@ -259,14 +260,19 @@ async function main() {
       if (business.annualFinancials.length === 0 || isFlowSewerBusiness(business)) continue;
       peerPairs.add(`${detail.prefectureName}\t${business.businessKey}`);
     }
-    await writeJson(
-      path.join(publicRoot, "municipalities", `${item.municipalityCode}.json`),
-      compactMunicipalityDetail(detail, yearbookData)
-    );
-    await writeJson(
-      path.join(publicRoot, "yearbook", `${item.municipalityCode}.json`),
-      yearbookData
-    );
+    const compacted = compactMunicipalityDetail(detail, yearbookData);
+    const { detail: publicDetail, costCompositionBundle } = separateCostCompositionFromDetail(compacted);
+    const writes = [
+      writeJson(path.join(publicRoot, "municipalities", `${item.municipalityCode}.json`), publicDetail),
+      writeJson(path.join(publicRoot, "yearbook", `${item.municipalityCode}.json`), yearbookData)
+    ];
+    if (costCompositionBundle) {
+      writes.push(writeJson(
+        path.join(publicRoot, "cost-composition", `${item.municipalityCode}.json`),
+        costCompositionBundle
+      ));
+    }
+    await Promise.all(writes);
     if ((index + 1) % 100 === 0 || index + 1 === mapMunicipalities.length) {
       process.stdout.write(`static details: ${index + 1}/${mapMunicipalities.length}\n`);
     }
@@ -319,19 +325,30 @@ function compactMunicipalityDetail(detail: any, yearbookData: YearbookIndividual
         );
       }
     }
+    const financialStory = buildFinancialStoryModel(financialAnnual ?? {
+      businessKey: business.businessKey,
+      surveyYear: 2024,
+      fiscalYearLabel: "R6",
+      accountingType: business.accountingType,
+      financialStatementItems: []
+    }, previousFinancialAnnual);
+    if (financialStory.costComposition && officialBusiness?.accountingType === "legal_applied") {
+      const verification = assertCostCompositionMatchesOfficial(officialBusiness, financialStory.costComposition);
+      if (verification) {
+        financialStory.costComposition.officialSource = {
+          label: `地方公営企業年鑑 個表（2）${verification.sheetName}`,
+          sourceUrl: verification.workbookUrl,
+          note: `13費目と費用合計の全${verification.checked}項目を第21表と照合済み`
+        };
+      }
+    }
     return {
       businessKey: business.businessKey,
       businessName: business.businessName,
       businessType: business.businessType,
       estatBusinessCategory: business.estatBusinessCategory,
       accountingType: business.accountingType,
-      financialStory: buildFinancialStoryModel(financialAnnual ?? {
-        businessKey: business.businessKey,
-        surveyYear: 2024,
-        fiscalYearLabel: "R6",
-        accountingType: business.accountingType,
-        financialStatementItems: []
-      }, previousFinancialAnnual),
+      financialStory,
       financialStatementsReady: Boolean(financialAnnual?.financialStatementItems.length),
       evidenceEntries,
       annualFinancials: business.annualFinancials.map(compactAnnual)

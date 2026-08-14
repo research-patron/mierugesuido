@@ -30,6 +30,7 @@ import { YearbookOriginalData } from "@/components/municipality-detail/YearbookO
 import { TrendChart, type TrendPoint } from "@/components/TrendChart";
 import { accountingTypeLabel, businessCategoryCode, displayBusinessName } from "@/lib/businessDisplay";
 import { detailDisclaimer, formulaCopy } from "@/lib/copy";
+import { mergeCostCompositionIntoDetail, type StaticCostCompositionBundle } from "@/lib/costCompositionStatic";
 import {
   formatMoneyThousandYen,
   formatSettlementFiscalLabel,
@@ -63,12 +64,18 @@ export function MunicipalityDetailClient({ municipalityCode }: { municipalityCod
   useEffect(() => {
     let cancelled = false;
     setLoadFailed(false);
-    fetch(`/data/static/municipalities/${municipalityCode}.json`)
+    const detailRequest = fetch(`/data/static/municipalities/${municipalityCode}.json`)
       .then((response) => {
         if (!response.ok) throw new Error("Municipality detail unavailable");
         return response.json();
+      });
+    const costCompositionRequest = fetch(`/data/static/cost-composition/${municipalityCode}.json`)
+      .then((response) => response.ok ? response.json() as Promise<StaticCostCompositionBundle> : null)
+      .catch(() => null);
+    Promise.all([detailRequest, costCompositionRequest])
+      .then(([detail, costComposition]) => {
+        if (!cancelled) setMunicipality(mergeCostCompositionIntoDetail(detail, costComposition));
       })
-      .then((json) => { if (!cancelled) setMunicipality(json); })
       .catch(() => { if (!cancelled) setLoadFailed(true); });
     return () => { cancelled = true; };
   }, [municipalityCode]);

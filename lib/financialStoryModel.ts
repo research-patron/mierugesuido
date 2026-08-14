@@ -1,10 +1,13 @@
 import type {
   FinancialBalance,
   FinancialBreakdownItem,
+  FinancialCostComposition,
+  FinancialCostCompositionItem,
   FinancialIncome,
   FinancialStoryDisplayModel,
   FinancialTraceItem
 } from "@/lib/financialStory";
+import { COST_COMPOSITION_ITEM_DEFINITIONS } from "@/lib/costCompositionDefinition";
 import { FINANCIAL_STATEMENT_ITEM_CODES as ETL_ITEM_CODES } from "@/scripts/etl/statementMappings";
 
 export const FINANCIAL_STATEMENT_ITEM_CODES = {
@@ -255,6 +258,7 @@ export function buildFinancialStoryModel(
       year: "最新",
       accountingType: null,
       income: null,
+      costComposition: null,
       balance: null,
       status: {
         state: "unavailable",
@@ -274,6 +278,7 @@ export function buildFinancialStoryModel(
       year,
       accountingType,
       income: null,
+      costComposition: null,
       balance: null,
       status: {
         state: "unavailable",
@@ -286,6 +291,7 @@ export function buildFinancialStoryModel(
 
   const index = indexItems(current.financialStatementItems);
   const income = buildIncome(index);
+  const costComposition = buildCostComposition(index);
   const matchingPrevious = isMatchingPrevious(current, previous) ? previous : null;
   const priorIndex = matchingPrevious ? indexItems(matchingPrevious.financialStatementItems) : null;
   const balance = buildBalance(index, priorIndex);
@@ -325,9 +331,22 @@ export function buildFinancialStoryModel(
     year,
     accountingType,
     income,
+    costComposition,
     balance,
     status,
     trace
+  };
+}
+
+function buildCostComposition(index: ItemIndex): FinancialCostComposition {
+  return {
+    total: amount(index, "costTotal"),
+    items: COST_COMPOSITION_ITEM_DEFINITIONS.map((item) => costItem(
+      item.id,
+      item.label,
+      amount(index, item.sourceKey),
+      item.note
+    ))
   };
 }
 
@@ -442,6 +461,15 @@ function breakdown(
   note?: string
 ): FinancialBreakdownItem {
   return { id, label, value, group, note };
+}
+
+function costItem(
+  id: string,
+  label: string,
+  value: number | null,
+  note: string
+): FinancialCostCompositionItem {
+  return { id, label, value, note };
 }
 
 function isMatchingPrevious(

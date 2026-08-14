@@ -264,7 +264,7 @@ describe("national map UI guardrails", () => {
     expect(explorer).toContain("activeRegion={focusedRegion}");
     expect(explorer).toContain("onRegionChange={focusRegion}");
     expect(explorer).not.toContain("onShowNational");
-    expect(explorer).toContain("setFocusedRegion((current) => current === region ? null : region);");
+    expect(explorer).toContain("setFocusedRegion(nextFocusedRegion);");
     expect(explorer).toContain("setFocusedRegion(null);");
     expect(explorer).toContain('className="map-control-stack map-control-stack--home"');
     expect(explorer.match(/aria-label="拡大"/g)).toHaveLength(1);
@@ -292,6 +292,52 @@ describe("national map UI guardrails", () => {
     expect(insetRenderer).not.toContain("home-map-inset-frame");
     expect(insetRenderer).not.toContain("home-map-inset-plus");
     expect(fidelityCssSource).toContain(".home-map-layout--atlas");
+  });
+
+  it("provides a real compact camera, deliberate tap confirmation, and thresholded pan", () => {
+    const explorer = componentFunctionBlock("NationalMapExplorer");
+    const homeRenderer = componentFunctionBlock("HomeNationalMap");
+    const insetRenderer = componentFunctionBlock("HomeInsetMap");
+    const atlasLayer = componentFunctionBlock("AtlasRegionLayer");
+    const panStart = explorer.slice(
+      explorer.indexOf("function startNationalPan"),
+      explorer.indexOf("function moveNationalPan")
+    );
+    const panMove = explorer.slice(
+      explorer.indexOf("function moveNationalPan"),
+      explorer.indexOf("function endNationalPan")
+    );
+
+    expect(componentSource).toContain("const MOBILE_NATIONAL_INITIAL_ZOOM = 1.5;");
+    expect(componentSource).toContain("const MOBILE_NATIONAL_REGION_ZOOM = 1.25;");
+    expect(componentSource).toContain("const MOBILE_NATIONAL_MAX_ZOOM = 4.5;");
+    expect(componentSource).toContain("const NATIONAL_DRAG_CLICK_SUPPRESSION_MS = 800;");
+    expect(explorer).toContain("setManualZoom(MOBILE_NATIONAL_INITIAL_ZOOM);");
+    expect(explorer).toContain("nextFocusedRegion ? MOBILE_NATIONAL_REGION_ZOOM : MOBILE_NATIONAL_INITIAL_ZOOM");
+    expect(explorer).toContain("setManualZoom(1);");
+    expect(explorer).toContain("setMapPan({ x: 0, y: 0 });");
+    expect(homeRenderer).toContain("pannedZoomViewBox(renderedBaseViewBox, manualZoom, pan)");
+    expect(homeRenderer).toContain("compact || desktopHomeZoom === 1");
+
+    expect(explorer).toContain('data-pannable={compactAtlas && manualZoom > 1 ? "true" : "false"}');
+    expect(explorer).toContain('data-panning={isPanning ? "true" : "false"}');
+    expect(explorer).toContain("data-map-zoom={manualZoom.toFixed(2)}");
+    expect(panStart).toContain("!event.isPrimary");
+    expect(panStart).not.toContain("setPointerCapture");
+    expect(panMove).toContain("hasExceededDragThreshold(deltaX, deltaY, drag.pointerType)");
+    expect(panMove.indexOf("hasExceededDragThreshold")).toBeLessThan(panMove.indexOf("setPointerCapture"));
+    expect(panMove).toContain("panFromPointerDelta({");
+    expect(explorer).toContain("suppressMapClickRef.current = true;");
+
+    expect(explorer).toContain("setSelectedMobilePrefecture(feature);");
+    expect(explorer).toContain('className="mobile-national-map-confirmation"');
+    expect(explorer).toContain("地図を上下左右にスワイプ");
+    expect(explorer).toContain("<Link href={`/map/${selectedMobilePrefecture.code}`}>");
+    expect(insetRenderer).toContain("onKeyboardOpen(feature);");
+    expect(atlasLayer).toContain("handleAtlasRegionKey(event, feature, onKeyboardOpen);");
+    expect(fidelityCssBlock('.gis-map-surface--home-national[data-pannable="true"]')).toContain("touch-action: none");
+    expect(fidelityCssBlock(".mobile-national-map-confirmation > a")).toContain("min-height: 44px");
+    expect(fidelityCssSource).toMatch(/@media \(max-width: 900px\)[\s\S]*?\.national-map-panel \.gis-map-surface--home-national\s*\{[^}]*min-height:\s*440px;[^}]*height:\s*clamp\(440px, 60vh, 480px\);/);
   });
 
   it("focuses every selector region while keeping the default national composition", () => {

@@ -83,6 +83,10 @@ describe("buildFinancialStoryModel", () => {
       note: "営業損益には含まれず、経常損益を構成する損益計算書上の科目"
     });
     expect(valueOf(model.income?.expenseBreakdown, "treatment-plant")).toBe(150);
+    expect(model.costComposition?.total).toBe(1_050);
+    expect(model.costComposition?.items).toHaveLength(13);
+    expect(valueOf(model.costComposition?.items, "depreciation")).toBe(300);
+    expect(model.costComposition?.items.find((item) => item.id === "utilities")?.label).toBe("光熱水費");
     expect(model.balance?.priorNetAssets).toBe(2_800);
   });
 
@@ -109,6 +113,22 @@ describe("buildFinancialStoryModel", () => {
     expect(valueOf(model.income?.revenueBreakdown, "other-account-subsidy")).toBe(30);
     expect(valueOf(model.income?.revenueBreakdown, "deferred-revenue-return")).toBe(120);
     expect(valueOf(model.income?.expenseBreakdown, "treatment-plant")).toBe(150);
+    expect(model.costComposition).toMatchObject({ total: 1_050 });
+    expect(model.costComposition?.items.map((item) => item.id)).toEqual([
+      "personnel",
+      "interest",
+      "depreciation",
+      "power",
+      "utilities",
+      "communications",
+      "repair",
+      "materials",
+      "chemicals",
+      "road-restoration",
+      "outsourcing",
+      "regional-sewerage-contribution",
+      "other"
+    ]);
     expect(model.balance).toEqual({
       fixedAssets: 8_000,
       currentAssets: 2_000,
@@ -147,6 +167,7 @@ describe("buildFinancialStoryModel", () => {
 
     expect(model.accountingType).toBe("non_legal_applied");
     expect(model.income).toBeNull();
+    expect(model.costComposition).toBeNull();
     expect(model.balance).toBeNull();
     expect(model.status).toMatchObject({ state: "unavailable", label: "法非適用は財務図の対象外" });
   });

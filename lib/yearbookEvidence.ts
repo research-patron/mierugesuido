@@ -1,3 +1,5 @@
+import type { FinancialCostComposition } from "@/lib/financialStory";
+
 export type OfficialYearbookRow = {
   rowNumber: number;
   labelCells: string[];
@@ -95,6 +97,26 @@ const LEGAL_APPLIED_ROW_RULES: Record<string, RowRule> = {
   }
 };
 
+const COST_COMPOSITION_ROW_RULES: Record<string, RowRule> = {
+  personnel: { groupNumber: 2, pattern: /^\(6\)計\(千円\)$/ },
+  interest: { groupNumber: 2, pattern: /^2\.支払利息\(千円\)$/ },
+  depreciation: { groupNumber: 2, pattern: /^3\.減価償却費\(千円\)$/ },
+  power: { groupNumber: 2, pattern: /^4\.動力費\(千円\)$/ },
+  utilities: { groupNumber: 2, pattern: /^5\.光熱水費\(千円\)$/ },
+  communications: { groupNumber: 2, pattern: /^6\.通信運搬費\(千円\)$/ },
+  repair: { groupNumber: 2, pattern: /^7\.修繕費\(千円\)$/ },
+  materials: { groupNumber: 2, pattern: /^8\.材料費\(千円\)$/ },
+  chemicals: { groupNumber: 2, pattern: /^9\.薬品費\(千円\)$/ },
+  "road-restoration": { groupNumber: 2, pattern: /^10\.路面復旧費\(千円\)$/ },
+  outsourcing: { groupNumber: 2, pattern: /^11\.委託料\(千円\)$/ },
+  "regional-sewerage-contribution": {
+    groupNumber: 2,
+    pattern: /^12\.流域下水道管理運営費負担金\(千円\)$/
+  },
+  other: { groupNumber: 2, pattern: /^13\.その他\(千円\)$/ },
+  total: { groupNumber: 2, pattern: /^14\.費用合計\(千円\)$/ }
+};
+
 export function resolveOfficialRowReference(
   business: OfficialYearbookBusiness | null | undefined,
   field: string
@@ -117,6 +139,65 @@ export function resolveOfficialRowReference(
     label: row.labelCells.filter(Boolean).join("　"),
     valueText: row.valueText
   };
+}
+
+export function resolveOfficialCostCompositionReference(
+  business: OfficialYearbookBusiness | null | undefined,
+  itemId: string
+): OfficialRowReference | null {
+  if (!business || business.accountingType !== "legal_applied") return null;
+  const rule = COST_COMPOSITION_ROW_RULES[itemId];
+  if (!rule) return null;
+  const group = business.groups.find((candidate) => groupNumber(candidate.id) === rule.groupNumber);
+  if (!group) return null;
+  const matches = group.rows.filter((row) => rule.pattern.test(normalizedLabel(row)));
+  const row = selectOccurrence(matches, rule.occurrence);
+  if (!row) return null;
+  return {
+    groupId: group.id,
+    groupNumber: rule.groupNumber,
+    groupTitle: group.title,
+    workbookUrl: group.workbookUrl,
+    sheetName: group.sheetName,
+    rowNumber: row.rowNumber,
+    label: row.labelCells.filter(Boolean).join("　"),
+    valueText: row.valueText
+  };
+}
+
+export function assertCostCompositionMatchesOfficial(
+  business: OfficialYearbookBusiness | null | undefined,
+  composition: FinancialCostComposition
+) {
+  if (!business || business.accountingType !== "legal_applied") return null;
+  const values = [
+    ...composition.items.map((item) => ({ id: item.id, value: item.value })),
+    { id: "total", value: composition.total }
+  ];
+  if (values.length !== 14 || new Set(values.map((item) => item.id)).size !== 14) {
+    throw new Error("費用構成の13費目と費用合計が揃っていません");
+  }
+
+  let firstReference: OfficialRowReference | null = null;
+  for (const item of values) {
+    const reference = resolveOfficialCostCompositionReference(business, item.id);
+    if (!reference) return null;
+    const comparison = compareOfficialValue(item.value, reference, 0);
+    if (comparison === "mismatch" || comparison === "not_comparable") {
+      throw new Error(
+        `${item.id}: 第21表の値と公式個表が一致しません `
+          + `(第21表=${String(item.value)}, 個表=${reference.valueText}, 個表（2）${reference.rowNumber}行)`
+      );
+    }
+    firstReference ??= reference;
+  }
+
+  return firstReference ? {
+    checked: values.length,
+    groupTitle: firstReference.groupTitle,
+    workbookUrl: firstReference.workbookUrl,
+    sheetName: firstReference.sheetName
+  } : null;
 }
 
 export function resolvePublishedCalculationReference(

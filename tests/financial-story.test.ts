@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   analyzeBalance,
+  analyzeCostComposition,
   analyzeIncome,
   analyzeNetAssetsChange,
   chooseMoneyScale,
@@ -11,6 +12,45 @@ describe("financial story analysis", () => {
   it("uses the source thousand-yen unit and scales large values to oku yen", () => {
     expect(chooseMoneyScale([99_999])).toMatchObject({ divisor: 1_000, unit: "百万円" });
     expect(chooseMoneyScale([100_000])).toEqual({ divisor: 100_000, unit: "億円", maximumFractionDigits: 1 });
+  });
+
+  it("finds the largest R6 cost items only when all 13 items reconcile to the Table 21 total", () => {
+    const result = analyzeCostComposition(costComposition());
+
+    expect(result).toMatchObject({
+      available: true,
+      visualizable: true,
+      state: "ready",
+      total: 1_000,
+      knownTotal: 1_000,
+      difference: 0,
+      reconciled: true,
+      topShare: 0.6
+    });
+    expect(result.topItems.map(({ id, value, share }) => ({ id, value, share }))).toEqual([
+      { id: "depreciation", value: 300, share: 0.3 },
+      { id: "outsourcing", value: 200, share: 0.2 },
+      { id: "personnel", value: 100, share: 0.1 }
+    ]);
+  });
+
+  it("does not rank a partial, zero-total, or unreconciled cost composition", () => {
+    const partial = analyzeCostComposition({
+      ...costComposition(),
+      items: costComposition().items.map((item) => item.id === "repair" ? { ...item, value: null } : item)
+    });
+    const zero = analyzeCostComposition({
+      total: 0,
+      items: costComposition().items.map((item) => ({ ...item, value: 0 }))
+    });
+    const unreconciled = analyzeCostComposition({ ...costComposition(), total: 999 });
+
+    expect(partial).toMatchObject({ state: "partial", visualizable: false, reconciled: null, topItems: [] });
+    expect(partial.messages.join(" ")).toContain("未取得の費目を0円とは扱わず");
+    expect(zero).toMatchObject({ state: "limited", visualizable: false, reconciled: true, topItems: [] });
+    expect(zero.messages.join(" ")).toContain("費用合計が0千円");
+    expect(unreconciled).toMatchObject({ state: "invalid", visualizable: false, reconciled: false, topItems: [] });
+    expect(unreconciled.messages.join(" ")).toContain("13費目の合計と費用合計が一致しない");
   });
 
   it("reconciles profit and derives only the unclassified remainder", () => {
@@ -340,3 +380,24 @@ describe("financial story analysis", () => {
     expect(result.messages.join(" ")).toContain("債務超過");
   });
 });
+
+function costComposition() {
+  return {
+    total: 1_000,
+    items: [
+      { id: "personnel", label: "職員給与費", value: 100 },
+      { id: "interest", label: "支払利息", value: 50 },
+      { id: "depreciation", label: "減価償却費", value: 300 },
+      { id: "power", label: "動力費", value: 100 },
+      { id: "utilities", label: "光熱水費", value: 10 },
+      { id: "communications", label: "通信運搬費", value: 10 },
+      { id: "repair", label: "修繕費", value: 50 },
+      { id: "materials", label: "材料費", value: 10 },
+      { id: "chemicals", label: "薬品費", value: 10 },
+      { id: "road-restoration", label: "路面復旧費", value: 10 },
+      { id: "outsourcing", label: "委託料", value: 200 },
+      { id: "regional-sewerage-contribution", label: "流域下水道管理運営費負担金", value: 100 },
+      { id: "other", label: "その他", value: 50 }
+    ]
+  };
+}

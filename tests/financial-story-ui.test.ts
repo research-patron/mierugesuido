@@ -12,6 +12,19 @@ const cssSource = readFileSync(
 );
 
 describe("financial statement accounting-box UI", () => {
+  it("puts the user-facing cost conclusion before the statements and keeps the full source table progressive", () => {
+    expect(componentSource).toContain("費用構成｜何に費用がかかっているか");
+    expect(componentSource).toContain("費用の中心");
+    expect(componentSource).toContain("費用合計を構成する上位3項目");
+    expect(componentSource).toContain("13費目の公式値と構成比を見る");
+    expect(componentSource).toContain("効率の良し悪しを直接判定するものではありません");
+    expect(componentSource.indexOf("<CostComposition")).toBeLessThan(componentSource.indexOf("<IncomeStatement"));
+    expect(componentSource).toContain('aria-hidden="true">{index + 1}</span>');
+    expect(cssSource).toMatch(/\.summaryGrid\s*{[^}]*grid-template-columns:\s*repeat\(4,/s);
+    expect(cssSource).toMatch(/\.costRankingItem\s*{[^}]*grid-template-columns:\s*28px minmax\(0, 1fr\) auto/s);
+    expect(cssSource).toContain(".costTable tbody td::before");
+  });
+
   it("uses the conventional debit-left and credit-right income equation", () => {
     expect(componentSource).toContain('const leftTitle = analysis.equation.resultSide === "left" ? "費用＋純利益" : "費用"');
     expect(componentSource).toContain('const rightTitle = analysis.equation.resultSide === "right" ? "収益＋純損失" : "収益"');

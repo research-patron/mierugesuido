@@ -148,6 +148,24 @@
   overflow-wrap: anywhere;
 }
 
+.mobileMapFinder,
+.mobileSelection {
+  display: none;
+}
+
+.mapInteractionNote {
+  display: none;
+  margin: 0;
+  border: 1px solid #e1eaf0;
+  border-radius: 6px;
+  background: #f8fbfc;
+  padding: 8px 10px;
+  color: #52647a;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.6;
+}
+
 .mapSurface {
   position: relative;
   min-width: 0;
@@ -468,6 +486,7 @@
   }
 
   .mapPanel {
+    grid-template-rows: none;
     padding: 12px;
   }
 
@@ -502,9 +521,113 @@
     min-height: 34px;
   }
 
+  .mobileMapFinder {
+    display: grid;
+    gap: 6px;
+  }
+
+  .mobileMapFinder label {
+    color: #173754;
+    font-size: 12px;
+    font-weight: 900;
+    line-height: 1.5;
+  }
+
+  .mobileMapFinder select {
+    width: 100%;
+    min-height: 48px;
+    border: 1px solid #b9ced9;
+    border-radius: 7px;
+    background: #fff;
+    padding: 0 38px 0 12px;
+    color: #10264c;
+    font: inherit;
+    font-size: 16px;
+    font-weight: 800;
+  }
+
+  .mobileMapFinder select:focus-visible {
+    border-color: #078891;
+    outline: 3px solid rgba(11, 154, 163, 0.2);
+    outline-offset: 2px;
+  }
+
+  .mobileMapFinder select:disabled {
+    background: #f3f6f8;
+    color: #8998a8;
+  }
+
+  .mapInteractionNote {
+    display: block;
+    padding: 9px 10px;
+    font-size: 11px;
+  }
+
   .mapSurface {
     min-height: 380px;
     height: min(64vh, 470px);
+  }
+
+  .mobileSelection {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid #c9dbe5;
+    border-radius: 7px;
+    background: #f7fbfc;
+    padding: 10px;
+  }
+
+  .mobileSelection > div {
+    display: grid;
+    min-width: 0;
+    gap: 2px;
+  }
+
+  .mobileSelection span {
+    color: #617488;
+    font-size: 9px;
+    font-weight: 900;
+    line-height: 1.4;
+  }
+
+  .mobileSelection strong {
+    color: #0b1f4d;
+    font-size: 16px;
+    font-weight: 900;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+  }
+
+  .mobileSelection small {
+    color: #52647a;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+
+  .mobileSelection > a {
+    display: inline-flex;
+    min-height: 48px;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    border: 1px solid #078891;
+    border-radius: 6px;
+    background: #078891;
+    padding: 8px 12px;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 900;
+    line-height: 1.4;
+    text-align: center;
+  }
+
+  .mobileSelection > a:focus-visible {
+    outline: 3px solid rgba(11, 154, 163, 0.25);
+    outline-offset: 2px;
   }
 
   .comparisonPanel > header {
@@ -522,6 +645,14 @@
   .mapSurface {
     min-height: 360px;
     height: min(58vh, 420px);
+  }
+
+  .mobileSelection {
+    grid-template-columns: 1fr;
+  }
+
+  .mobileSelection > a {
+    width: 100%;
   }
 
   .comparisonPanel > header {

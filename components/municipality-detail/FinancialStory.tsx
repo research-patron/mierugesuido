@@ -2,9 +2,11 @@ import React, { useId, type CSSProperties, type ReactNode } from "react";
 import {
   AlertCircle,
   Banknote,
+  ChartNoAxesColumnIncreasing,
   CheckCircle2,
   ChevronDown,
   Database,
+  Info,
   Landmark,
   Minus,
   Scale,
@@ -18,6 +20,7 @@ import {
   formatFinancialPercent,
   prepareBreakdown,
   type BalanceAnalysis,
+  type CostCompositionAnalysis,
   type FinancialBreakdownItem,
   type FinancialBreakdownGroup,
   type FinancialStoryDisplayModel,
@@ -78,31 +81,42 @@ export function FinancialStory(props: FinancialStoryProps) {
     );
   }
 
-  const overallState = storyState(analysis.income, analysis.balance, analysis.netAssetsChange, props.status?.state);
+  const overallState = storyState(
+    analysis.income,
+    analysis.costComposition,
+    analysis.balance,
+    analysis.netAssetsChange,
+    props.status?.state
+  );
   const statusLabel = overallState === "limited" && (analysis.balance.totalNetAssets ?? 0) < 0
     ? "純資産がマイナス"
     : overallState === props.status?.state
       ? props.status?.label
       : undefined;
-  const summaries = buildSummaries(analysis.income, analysis.balance, analysis.netAssetsChange);
+  const summaries = buildSummaries(
+    analysis.costComposition,
+    analysis.income,
+    analysis.balance,
+    analysis.netAssetsChange
+  );
 
   return (
     <section className={styles.root} aria-labelledby={titleId}>
       <div className={styles.headingRow}>
         <div className={styles.headingCopy}>
           <p className={styles.eyebrow}>{year} 決算構造</p>
-          <h2 id={titleId}>{year}の決算を、3つの要点で理解する</h2>
-          <p>家庭用料金や経費回収率とは分けて、事業全体の収益・費用と資産の支え方を見ます。</p>
+          <h2 id={titleId}>{year}の財務を、4つの要点で読む</h2>
+          <p>費用の中心、1年間の損益、年度末の財源、純資産の変化を順に確認します。</p>
         </div>
         <StoryStatus state={overallState} label={statusLabel} />
       </div>
 
       {props.status?.message ? <p className={styles.statusMessage}>{props.status.message}</p> : null}
 
-      <ol className={styles.summaryGrid} aria-label={`${year}決算の3つの要点`}>
+      <ol className={styles.summaryGrid} aria-label={`${year}決算の4つの要点`}>
         {summaries.map((summary, index) => (
           <li key={summary.label} className={styles.summaryCard}>
-            <span className={styles.summaryNumber}>{index + 1}</span>
+            <span className={styles.summaryNumber} aria-hidden="true">{index + 1}</span>
             <div>
               <span className={styles.summaryLabel}>{summary.label}</span>
               <strong>{summary.value}</strong>
@@ -111,6 +125,13 @@ export function FinancialStory(props: FinancialStoryProps) {
           </li>
         ))}
       </ol>
+
+      <CostComposition
+        year={year}
+        composition={props.costComposition}
+        analysis={analysis.costComposition}
+        trace={props.trace}
+      />
 
       <div className={styles.statementGrid}>
         <IncomeStatement year={year} income={props.income} analysis={analysis.income} />
@@ -121,6 +142,136 @@ export function FinancialStory(props: FinancialStoryProps) {
 
       <TraceDetails trace={props.trace} />
     </section>
+  );
+}
+
+function CostComposition({
+  year,
+  composition,
+  analysis,
+  trace
+}: {
+  year: string;
+  composition: FinancialStoryProps["costComposition"];
+  analysis: CostCompositionAnalysis;
+  trace: FinancialStoryProps["trace"];
+}) {
+  const titleId = useId();
+  const topItem = analysis.topItems[0];
+  const table21Trace = trace?.find((item) => item.table?.includes("第21表") || item.table?.startsWith("21"));
+  const verifiedYearbookSource = composition?.officialSource;
+  const costSourceUrl = verifiedYearbookSource?.sourceUrl ?? table21Trace?.sourceUrl;
+
+  return (
+    <article className={classNames(styles.statementCard, styles.costCompositionCard)} aria-labelledby={titleId}>
+      <CardHeading
+        icon={<ChartNoAxesColumnIncreasing size={21} aria-hidden="true" />}
+        titleId={titleId}
+        title="費用構成｜何に費用がかかっているか"
+        description="第21表の費用合計を100%として、費目ごとの金額と割合を見ます。"
+      />
+
+      {!analysis.visualizable || !topItem ? (
+        <InlineState title="費用構成の評価を表示していません" messages={analysis.messages} />
+      ) : (
+        <>
+          <div className={styles.costLead}>
+            <div className={styles.costLeadCopy}>
+              <span>費用の中心</span>
+              <strong>{topItem.label}が最も大きい費用です</strong>
+              <p>
+                {formatFinancialAmount(topItem.value, analysis.scale)}で、費用合計の
+                {formatCostShare(topItem.share)}を占めます。
+              </p>
+            </div>
+            <dl className={styles.costLeadMetrics}>
+              <div>
+                <dt>費用合計</dt>
+                <dd>{formatFinancialAmount(analysis.total, analysis.scale)}</dd>
+              </div>
+              <div>
+                <dt>上位3費目の合計</dt>
+                <dd>{formatCostShare(analysis.topShare)}</dd>
+              </div>
+            </dl>
+          </div>
+
+          <div className={styles.costRankingHeading}>
+            <h4>費用合計を構成する上位3項目</h4>
+            <span>金額の大きい順</span>
+          </div>
+          <ol className={styles.costRanking} aria-label={`${year}の費用額が大きい上位3費目`}>
+            {analysis.topItems.map((item, index) => (
+              <li key={item.id} className={styles.costRankingItem}>
+                <span className={styles.costRank} aria-hidden="true">{index + 1}</span>
+                <div className={styles.costItemCopy}>
+                  <strong>{item.label}</strong>
+                  {item.note ? <p>{item.note}</p> : null}
+                </div>
+                <div className={styles.costItemValue}>
+                  <strong>{formatCostShare(item.share)}</strong>
+                  <span>{formatFinancialAmount(item.value, analysis.scale)}</span>
+                </div>
+                <div className={styles.costBar} aria-hidden="true">
+                  <span style={{ width: `${Math.min(100, item.share * 100)}%` }} />
+                </div>
+              </li>
+            ))}
+          </ol>
+        </>
+      )}
+
+      <p className={styles.costCaveat} role="note">
+        <Info size={17} aria-hidden="true" />
+        <span>
+          これは費用の集中先を示すもので、効率の良し悪しを直接判定するものではありません。
+          第21表の費用合計は、損益の総費用や経費回収率の汚水処理費とは集計範囲が異なります。
+        </span>
+      </p>
+
+      {analysis.items.length > 0 ? (
+        <details className={styles.cardDetails}>
+          <summary><span>13費目の公式値と構成比を見る</span><ChevronDown size={16} aria-hidden="true" /></summary>
+          <p className={styles.costSourceNote}>
+            {verifiedYearbookSource
+              ? "金額は総務省「地方公営企業年鑑」個表と第21表で一致を確認した値です。"
+              : "金額は総務省「地方公営企業決算状況調査」第21表の値です。"}
+            構成比は「各費目÷第21表費用合計」で本サイトが算定しています。
+            {costSourceUrl ? (
+              <a href={costSourceUrl}>{verifiedYearbookSource ? "年鑑個表の原資料を確認" : "第21表の原資料を確認"}</a>
+            ) : null}
+          </p>
+          <table className={styles.costTable}>
+            <caption>{year} 費用構成表</caption>
+            <thead>
+              <tr>
+                <th scope="col">費目</th>
+                <th scope="col">公式値</th>
+                <th scope="col">構成比<br /><small>本サイト算定</small></th>
+              </tr>
+            </thead>
+            <tbody>
+              {analysis.items.map((item) => (
+                <tr key={item.id}>
+                  <th scope="row">
+                    {item.label}
+                    {item.note ? <small>{item.note}</small> : null}
+                  </th>
+                  <td data-label="公式値">{formatSourceThousandYen(item.value)}</td>
+                  <td data-label="構成比">{formatCostShare(item.share)}</td>
+                </tr>
+              ))}
+              <tr className={styles.costTotalRow}>
+                <th scope="row">費用合計</th>
+                <td data-label="公式値">{formatSourceThousandYen(analysis.total)}</td>
+                <td data-label="構成比">{analysis.total != null && analysis.total > 0 ? "100.0%" : "算定できません"}</td>
+              </tr>
+            </tbody>
+          </table>
+          <IntegrityMessages messages={analysis.messages} />
+        </details>
+      ) : null}
+    </article>
   );
 }
 
@@ -900,12 +1051,18 @@ function FinancialStoryState({
   );
 }
 
-function InlineState({ messages }: { messages: string[] }) {
+function InlineState({
+  messages,
+  title = "決算構造図を表示していません"
+}: {
+  messages: string[];
+  title?: string;
+}) {
   return (
     <div className={styles.inlineState} role="note">
       <AlertCircle size={21} aria-hidden="true" />
       <div>
-        <strong>決算構造図を表示していません</strong>
+        <strong>{title}</strong>
         <p>{messages[0] ?? "必要な項目を確認できません。"}</p>
       </div>
     </div>
@@ -974,10 +1131,18 @@ function IntegrityMessages({ messages }: { messages: string[] }) {
 }
 
 function buildSummaries(
+  costComposition: CostCompositionAnalysis,
   income: IncomeAnalysis,
   balance: BalanceAnalysis,
   netAssets: ReturnType<typeof analyzeFinancialStory>["netAssetsChange"]
 ) {
+  const leadingCost = costComposition.topItems[0];
+  const costValue = leadingCost
+    ? `${leadingCost.label}が最大`
+    : "費用構成を判定できません";
+  const costNote = leadingCost
+    ? `費用合計の${formatCostShare(leadingCost.share)}・${formatFinancialAmount(leadingCost.value, costComposition.scale)}`
+    : costComposition.messages[0] ?? "第21表の取得待ち";
   const incomeCopy = incomeResultCopy(income);
   const netCopy = netAssetsDirectionCopy(netAssets);
   const balanceValue = !balance.available
@@ -994,6 +1159,7 @@ function buildSummaries(
     : "資産・負債・純資産の取得待ち";
 
   return [
+    { label: "費用の中心", value: costValue, note: costNote },
     { label: "1年間の損益", value: incomeCopy.title, note: incomeCopy.note },
     { label: "資産・負債・純資産", value: balanceValue, note: balanceNote },
     { label: "純資産の変化", value: netCopy.shortLabel, note: netCopy.longLabel }
@@ -1079,6 +1245,13 @@ function incomeVisualItems(
 
 function formatShare(value: number, total: number) {
   return total > 0 ? `${(value / total * 100).toFixed(1)}%` : "—";
+}
+
+function formatCostShare(value: number | null | undefined) {
+  if (value == null || !Number.isFinite(value)) return "算定できません";
+  const percent = value * 100;
+  if (percent > 0 && percent < 0.05) return "0.1%未満";
+  return `${percent.toFixed(1)}%`;
 }
 
 function balanceBreakdownDisplay(item: PreparedBreakdownItem) {
@@ -1256,14 +1429,25 @@ function segmentAriaLabel(item: VisualBoxItem, total: number) {
 
 function storyState(
   income: IncomeAnalysis,
+  costComposition: CostCompositionAnalysis,
   balance: BalanceAnalysis,
   netAssets: ReturnType<typeof analyzeFinancialStory>["netAssetsChange"],
   external?: "ready" | "partial" | "unavailable"
 ) {
   if (external === "unavailable") return "unavailable" as const;
-  if (income.state === "invalid" || balance.state === "invalid" || netAssets.componentsReconciled === false) return "invalid" as const;
-  if (income.state === "limited" || balance.state === "limited") return "limited" as const;
-  if (external === "partial" || income.state !== "ready" || balance.state !== "ready") return "partial" as const;
+  if (
+    income.state === "invalid"
+    || costComposition.state === "invalid"
+    || balance.state === "invalid"
+    || netAssets.componentsReconciled === false
+  ) return "invalid" as const;
+  if (income.state === "limited" || costComposition.state === "limited" || balance.state === "limited") return "limited" as const;
+  if (
+    external === "partial"
+    || income.state !== "ready"
+    || costComposition.state !== "ready"
+    || balance.state !== "ready"
+  ) return "partial" as const;
   return "ready" as const;
 }
 

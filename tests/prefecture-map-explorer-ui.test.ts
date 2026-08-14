@@ -41,6 +41,30 @@ describe("prefecture municipality map UI guardrails", () => {
     expect(componentSource).not.toContain('role="img"');
   });
 
+  it("separates a light tap from panning and keeps the current map center while zooming", () => {
+    expect(componentSource).toContain("hasExceededDragThreshold(deltaX, deltaY, drag.pointerType)");
+    expect(componentSource).toContain("event.currentTarget.setPointerCapture(event.pointerId)");
+    expect(componentSource.indexOf("hasExceededDragThreshold(deltaX, deltaY, drag.pointerType)"))
+      .toBeLessThan(componentSource.indexOf("event.currentTarget.setPointerCapture(event.pointerId)"));
+    expect(componentSource).toContain("suppressClickUntilRef.current = Date.now() + dragClickSuppressionMs");
+    expect(componentSource).toContain("preserveMapCenterAcrossZoom({");
+    expect(componentSource).toContain('data-pan-enabled={zoom > 1 ? "true" : "false"}');
+    expect(componentSource).toContain("data-map-zoom={zoom.toFixed(2)}");
+  });
+
+  it("lets mobile users find, confirm, and then open every municipality", () => {
+    expect(componentSource).toContain("自治体名から地図上の位置を探す");
+    expect(componentSource).toContain("municipalityFinderOptions.map");
+    expect(componentSource).toContain("focusMapFeature({");
+    expect(componentSource).toContain("if (isMobileViewport)");
+    expect(componentSource).toContain("selectAndFocusFeature(feature)");
+    expect(componentSource).toContain("選択中の自治体");
+    expect(componentSource).toContain("の詳細を見る");
+    expect(componentSource).toContain('data-tap-confirmation={isMobileViewport ? "true" : "false"}');
+    expect(componentSource).toContain('aria-describedby="prefecture-map-instructions"');
+    expect(cssSource).toContain("min-height: 48px;");
+  });
+
   it("omits the six Hokkaido geography records only at display time and keeps every current Tomari part", () => {
     const omittedCodes = ["01695", "01696", "01697", "01698", "01699", "01700"];
     const sourceFeatures = hokkaidoGisData.features.filter((item: any) => omittedCodes.includes(item.code));

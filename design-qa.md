@@ -1933,3 +1933,80 @@ This gate supersedes every earlier acceptance statement that treated non-standar
 - Intentional subtraction: the public non-standard-transfer cards, peer-table column and mini-bars, Table 40 disclosure, two ranking directions, public payload fields, related glossary/copy, and diagnostic-risk contribution were removed because the service no longer adopts the item.
 
 final result: passed
+
+## Final superseding R6 cost-composition storytelling gate — 2026-08-14
+
+This gate is the current acceptance record for adding the Local Public Enterprise Yearbook Table 21 cost-composition view to the R6 financial-story tab.
+
+### User question and reading order
+
+- The first question is now `何に費用が集中しているか`. The page answers it before the income statement, balance sheet, liabilities, and net-assets explanations.
+- The opening overview changed from three to four concise points: cost concentration, revenue sufficiency, asset funding, and liability burden. Each point links to one evidence section instead of duplicating charts.
+- The cost section shows the largest item, its amount and site-calculated share, the top-three combined share, and three restrained comparison bars. The complete 13-item official breakdown remains available in one native disclosure.
+- Mobile keeps the same reading order in one column. The complete breakdown becomes stacked label/value rows, with no page-level horizontal scrolling or vertically wrapped caption.
+
+### Official-accounting boundary and fail-closed behavior
+
+- Amounts come from R6 Table 21 `費用構成表`. Shares are calculated by this site using that table's `費用合計`; they are not presented as an official indicator or as the income-statement `総費用` denominator.
+- The model requires all 13 expected expense items, one positive total, unique item identifiers, non-negative amounts, and an exact item-sum/total match. Missing, duplicated, negative, zero-total, or inconsistent data does not produce a ranking.
+- The screen explicitly states that a high share means concentration, not waste or inefficiency. Depreciation is explained as an allocation of asset cost and not necessarily a current-period cash payment.
+- Static generation compares the 14 corresponding values (13 items plus total) with the official individual table when that business layout contains every matching row. A mismatch stops generation; an incomplete individual-table layout receives no verification claim and remains labelled as Table 21 source data.
+- The accepted R6 generation produced cost composition for 3,396 law-applied municipality/business records. Of these, 3,327 received full individual-table verification and 69 safely remained Table 21-only because the corresponding business-specific layout did not expose all 14 rows.
+- Of the 3,396 law-applied records, 3,380 reconcile to a positive total and render the ranked explanation. Five zero-total and eleven incomplete records stay in a limited/partial state; missing values are never converted to zero.
+- To preserve the existing municipality payloads, publication uses 1,565 small municipality-keyed cost-composition sidecars (826,183 bytes in total). The client joins them by municipality, business key, and accounting type; a missing sidecar fails back to the existing partial-state UI instead of blocking the rest of the municipality detail. No law-non-applied record is included.
+
+### Visual evidence
+
+- Raw, unedited acceptance screenshots are stored in the ignored QA directory `artifacts/design-qa/r6-cost-composition-2026-08-13/`.
+- `desktop-sidecar-1491x1055.png` is the exact 1491×1055 two-file production-data path. `mobile-sidecar-390x844.png`, `mobile-sidecar-card-390x844.png`, and `mobile-sidecar-official-390x844.png` are exact 390×844 states covering the same loaded path, the top-three explanation, and the complete official-value disclosure.
+- The accepted views use the existing Kiwi Maru, navy/teal hierarchy, thin neutral borders, non-color ranking numbers, and 44 px disclosure target. The two-file route rendered the verified source copy without an error state, and document/body width matched the viewport at both sizes.
+
+### Verification and protected scope
+
+- Isolated `pnpm static:data`: passed against 86 official workbooks; 1,318,745 source rows reconciled, 1,586 municipality detail payloads and 312 comparison payloads generated.
+- `pnpm lint`: passed.
+- Isolated full `pnpm test`: 40/40 files and 257/257 tests passed.
+- Isolated production `pnpm build`: passed; 1,650 static pages generated.
+- `git diff --check`: passed.
+- No database, Prisma schema, migration, ETL mapping, downloaded workbook, official accounting value, financial formula, GIS data, ranking, CSV, or existing navigation changed.
+- Intentional subtraction: no existing feature or value was removed. The 13-row breakdown is collapsed initially so the answer appears first; opening it reveals every source item without data loss.
+
+final result: passed
+
+## Final superseding mobile map interaction gate — 2026-08-14
+
+This gate is the current acceptance record for smartphone interaction on the shared home/national prefecture map and every prefecture municipality map.
+
+### Observed problem and interaction decision
+
+- At 390×844, the original home map surface was 332×360 px. Tokyo rendered at about 17×7 px, Osaka at 11×14 px, and Saga at 14×10 px; 45 of 47 prefectures had at least one side below a 44 px touch target. The former zoom control changed the visible map by only about 1.086× at its maximum and offered no pan.
+- Full-prefecture municipality maps were more severe: 61/62 Tokyo, 174/179 Hokkaido, and 39/41 Okinawa municipality shapes had a rendered short side below 24 px. After zooming, pointer capture began before tap-versus-drag intent was known, so a municipality click could fail.
+- Mobile interaction now separates selection from navigation. A short shape tap shows the exact prefecture or municipality name in a fixed confirmation area; its 44/48 px action opens that destination. This prevents an adjacent tiny shape from causing an immediate wrong-page transition.
+- A touch or pen movement of up to 8 px remains a tap; larger movement becomes one-finger pan. Mouse uses a 4 px threshold. Pointer capture begins only after that threshold, and a completed drag suppresses the trailing synthetic click for 800 ms.
+- Keyboard Enter/Space and desktop pointer behavior continue to open the destination directly. The confirmation step is therefore a mobile error-prevention layer, not a loss of keyboard or desktop navigation.
+
+### National and municipality map behavior
+
+- The shared home and `/map` national renderer starts at a real 1.5× mobile zoom, supports 1×–4.5× zoom and four-direction/diagonal pan, and returns to a true 1× full-country view. Regional focus, Hokkaido/Okinawa insets, both business scopes, map coloring, and all prefecture routes remain intact.
+- Municipality maps start at 1.5× on mobile, preserve the visible center while zooming, and support 1×–160× pan/zoom for very small administrative shapes. `全域表示` restores 1×, zero pan, and no selection.
+- A mobile-only municipality finder exposes every map municipality by name and focuses the selected geometry automatically. Verified focused sizes included approximately 90×90 px for Komae, 111×66 px for Chippubetsu, 180×128 px for Osaka City, and 111×86 px for Yonabaru.
+- Selection and action destinations were verified for Tokyo, Hokkaido, Osaka, Okinawa, Hokkaido/Okinawa national insets, and representative fallback search destinations. Four-direction pan changed the SVG viewBox while leaving the URL unchanged; the following confirmation action opened the selected route.
+
+### Visual and accessibility evidence
+
+- Raw 390×844 before/after captures cover the home national map, Tokyo full-prefecture map, and Tokyo municipality focus. Additional exact captures cover `/map`, Hokkaido, Osaka, and Okinawa focus, plus 360×800 mobile and 1491×1055 desktop states.
+- The source and final implementation were inspected together in two combined comparison images: `14-home-before-after-390x844.png` and `15-tokyo-before-after-focus-390x844.png` in the task's ignored visual-QA area.
+- At 360×800, national-map controls measured at least 44×44 px and the reset control 120×44 px. Municipality actions measured 48 px high. Mobile and desktop document widths matched their viewports with no page-level horizontal overflow.
+- Mobile shape labels expose the selected identity outside the dense SVG. Keyboard arrow navigation, focus, Enter/Space routing, visible focus treatment, accessible shape names, label toggling, and desktop hover cards remain available. Final browser logs contained zero warnings and zero errors.
+
+### Verification and protected scope
+
+- `pnpm lint`: passed.
+- Full `pnpm test`: 41/41 files and 284/284 tests passed.
+- Gesture and focused map regressions: 4/4 files and 55/55 tests passed; pure geometry coverage includes tap/drag thresholds, pointer cancellation inputs, all pan directions, edge clamps, center-preserving zoom, reset, and tiny-feature focus.
+- Isolated production `pnpm build`: passed after the permitted build-time font download; all 1,650 static pages generated.
+- `git diff --check`: passed.
+- No database, Prisma schema, migration, ETL, official workbook, compact static data, GIS source geometry, financial value, map formula, business scope, or route was changed.
+- Intentional subtraction: only mobile shape-tap immediate navigation was removed because it caused wrong-destination errors on tiny adjacent regions. It is replaced by a named confirmation action; desktop direct click, keyboard direct open, and every destination remain available.
+
+final result: passed

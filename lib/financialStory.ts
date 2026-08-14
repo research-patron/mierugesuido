@@ -24,6 +24,23 @@ export type FinancialIncome = {
   expenseBreakdown: FinancialBreakdownItem[];
 };
 
+export type FinancialCostCompositionItem = {
+  id: string;
+  label: string;
+  value: FinancialValue;
+  note?: string;
+};
+
+export type FinancialCostComposition = {
+  total: FinancialValue;
+  items: FinancialCostCompositionItem[];
+  officialSource?: {
+    label: string;
+    sourceUrl?: string;
+    note?: string;
+  };
+};
+
 export type FinancialBalance = {
   fixedAssets: FinancialValue;
   currentAssets: FinancialValue;
@@ -65,6 +82,7 @@ export type FinancialStoryDisplayModel = {
   year: string | number;
   accountingType: string | null;
   income: FinancialIncome | null;
+  costComposition?: FinancialCostComposition | null;
   balance: FinancialBalance | null;
   status?: FinancialStoryStatus | null;
   trace?: FinancialTraceItem[] | null;
@@ -126,6 +144,35 @@ export type IncomeAnalysis = {
   messages: string[];
 };
 
+export type CostCompositionItemAnalysis = {
+  id: string;
+  label: string;
+  value: number | null;
+  share: number | null;
+  note?: string;
+};
+
+export type RankedCostCompositionItem = CostCompositionItemAnalysis & {
+  value: number;
+  share: number;
+};
+
+export type CostCompositionAnalysis = {
+  available: boolean;
+  visualizable: boolean;
+  state: "ready" | "partial" | "limited" | "invalid" | "unavailable";
+  total: number | null;
+  knownTotal: number | null;
+  difference: number | null;
+  reconciled: boolean | null;
+  items: CostCompositionItemAnalysis[];
+  rankedItems: RankedCostCompositionItem[];
+  topItems: RankedCostCompositionItem[];
+  topShare: number | null;
+  scale: MoneyScale;
+  messages: string[];
+};
+
 export type BalanceAnalysis = {
   available: boolean;
   visualizable: boolean;
@@ -171,6 +218,7 @@ export type NetAssetsComponentChange = {
 
 export type FinancialStoryAnalysis = {
   income: IncomeAnalysis;
+  costComposition: CostCompositionAnalysis;
   balance: BalanceAnalysis;
   netAssetsChange: NetAssetsChangeAnalysis;
 };
@@ -183,9 +231,10 @@ const DEFAULT_SCALE: MoneyScale = {
 
 export function analyzeFinancialStory(model: FinancialStoryDisplayModel): FinancialStoryAnalysis {
   const income = analyzeIncome(model.income);
+  const costComposition = analyzeCostComposition(model.costComposition ?? null);
   const balance = analyzeBalance(model.balance);
   const netAssetsChange = analyzeNetAssetsChange(model.balance, model.income?.netIncome);
-  return { income, balance, netAssetsChange };
+  return { income, costComposition, balance, netAssetsChange };
 }
 
 export function chooseMoneyScale(values: FinancialValue[]): MoneyScale {
@@ -354,6 +403,105 @@ export function analyzeIncome(income: FinancialIncome | null): IncomeAnalysis {
     majorExpense,
     equation,
     scale,
+    messages: unique(messages)
+  };
+}
+
+export function analyzeCostComposition(
+  composition: FinancialCostComposition | null
+): CostCompositionAnalysis {
+  const expectedItemCount = 13;
+  const total = toFiniteNumber(composition?.total);
+  const sourceItems = composition?.items ?? [];
+  const items = sourceItems.map((item) => ({
+    id: item.id,
+    label: item.label,
+    value: toFiniteNumber(item.value),
+    share: null,
+    note: item.note
+  } satisfies CostCompositionItemAnalysis));
+  const available = total != null || items.some((item) => item.value != null);
+  const missingItems = items.filter((item) => item.value == null);
+  const negativeItems = items.filter((item) => (item.value ?? 0) < 0);
+  const hasExpectedItems = items.length === expectedItemCount
+    && new Set(items.map((item) => item.id)).size === expectedItemCount;
+  const knownTotal = items.length > 0
+    ? items.reduce((sum, item) => sum + (item.value ?? 0), 0)
+    : null;
+  const complete = hasExpectedItems && missingItems.length === 0;
+  const comparable = total != null && total >= 0 && complete && negativeItems.length === 0;
+  const difference = comparable && knownTotal != null ? knownTotal - total : null;
+  const reconciled = comparable ? difference === 0 : null;
+  const visualizable = Boolean(reconciled && total != null && total > 0);
+  const analyzedItems = items.map((item) => ({
+    ...item,
+    share: visualizable && item.value != null && total != null ? item.value / total : null
+  }));
+  const rankedItems: RankedCostCompositionItem[] = visualizable
+    ? analyzedItems
+        .flatMap((item) => item.value != null && item.share != null && item.value > 0
+          ? [{
+              id: item.id,
+              label: item.label,
+              value: item.value,
+              share: item.share,
+              ...(item.note ? { note: item.note } : {})
+            } satisfies RankedCostCompositionItem]
+          : [])
+        .sort((left, right) => right.value - left.value)
+    : [];
+  const topItems = rankedItems.slice(0, 3);
+  const topShare = topItems.length > 0
+    ? topItems.reduce((sum, item) => sum + item.share, 0)
+    : null;
+  const messages: string[] = [];
+
+  if (!available) {
+    messages.push("費用構成表が未取得のため、費用の中心を表示できません。");
+  } else {
+    if (total == null) messages.push("費用合計が未取得のため、構成比を表示していません。");
+    if (!hasExpectedItems) {
+      messages.push("第21表の13費目すべてを確認できないため、構成比と順位を表示していません。");
+    }
+    if (missingItems.length > 0) {
+      messages.push("未取得の費目を0円とは扱わず、構成比と順位を表示していません。");
+    }
+    if (negativeItems.length > 0) {
+      messages.push("マイナスの費目を含むため、構成比と順位を表示していません。");
+    }
+    if (total != null && total < 0) {
+      messages.push("費用合計がマイナスのため、構成比を表示していません。");
+    } else if (total === 0) {
+      messages.push("費用合計が0千円のため、構成比を算定できません。");
+    }
+    if (reconciled === false) {
+      messages.push("13費目の合計と費用合計が一致しないため、構成比と順位を表示していません。");
+    }
+  }
+
+  const state = !available
+    ? "unavailable"
+    : reconciled === false || negativeItems.length > 0 || (total != null && total < 0)
+      ? "invalid"
+      : total === 0
+        ? "limited"
+        : !visualizable
+          ? "partial"
+          : "ready";
+
+  return {
+    available,
+    visualizable,
+    state,
+    total,
+    knownTotal,
+    difference,
+    reconciled,
+    items: analyzedItems,
+    rankedItems,
+    topItems,
+    topShare,
+    scale: chooseMoneyScale([total, ...items.map((item) => item.value)]),
     messages: unique(messages)
   };
 }

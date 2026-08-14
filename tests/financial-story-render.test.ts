@@ -28,6 +28,29 @@ const BASE_PROPS: FinancialStoryProps = {
       { id: "interest", label: "支払利息", value: 200, group: "non-operating" }
     ]
   },
+  costComposition: {
+    total: 1_000,
+    officialSource: {
+      label: "地方公営企業年鑑 個表（2）№1",
+      sourceUrl: "https://www.soumu.go.jp/main_content/official.xls",
+      note: "14項目を第21表と照合済み"
+    },
+    items: [
+      { id: "personnel", label: "職員給与費", value: 100, note: "職員にかかる費用" },
+      { id: "interest", label: "支払利息", value: 50, note: "資金調達に伴う利息" },
+      { id: "depreciation", label: "減価償却費", value: 300, note: "施設・設備の取得額を使用年数に分けた費用" },
+      { id: "power", label: "動力費", value: 100, note: "設備を動かす費用" },
+      { id: "utilities", label: "光熱水費", value: 10 },
+      { id: "communications", label: "通信運搬費", value: 10 },
+      { id: "repair", label: "修繕費", value: 50 },
+      { id: "materials", label: "材料費", value: 10 },
+      { id: "chemicals", label: "薬品費", value: 10 },
+      { id: "road-restoration", label: "路面復旧費", value: 10 },
+      { id: "outsourcing", label: "委託料", value: 200, note: "維持管理などを外部へ委託した費用" },
+      { id: "regional-sewerage-contribution", label: "流域下水道管理運営費負担金", value: 100 },
+      { id: "other", label: "その他", value: 50 }
+    ]
+  },
   balance: {
     fixedAssets: 800,
     currentAssets: 200,
@@ -53,6 +76,41 @@ const BASE_PROPS: FinancialStoryProps = {
 };
 
 describe("FinancialStory rendered relationships", () => {
+  it("leads with the cost center, then discloses all official Table 21 values without judging efficiency", () => {
+    const markup = renderStory();
+
+    expect(markup).toContain("R6年度の財務を、4つの要点で読む");
+    expect(markup).toContain('aria-label="R6年度決算の4つの要点"');
+    expect(markup).toContain("費用の中心");
+    expect(markup).toContain("減価償却費が最も大きい費用です");
+    expect(markup).toContain("費用合計の30.0%を占めます");
+    expect(markup).toContain("上位3費目の合計");
+    expect(markup).toContain("60.0%");
+    expect(markup).toContain('aria-label="R6年度の費用額が大きい上位3費目"');
+    expect(markup.indexOf("減価償却費")).toBeLessThan(markup.indexOf("委託料"));
+    expect(markup).toContain("13費目の公式値と構成比を見る");
+    expect(markup).toContain("個表と第21表で一致を確認した値です");
+    expect(markup).toContain("本サイトが算定しています");
+    expect(markup).toContain("年鑑個表の原資料を確認");
+    expect(markup).toContain("流域下水道管理運営費負担金");
+    expect(markup).toContain("効率の良し悪しを直接判定するものではありません");
+    expect(markup).toContain("損益の総費用や経費回収率の汚水処理費とは集計範囲が異なります");
+  });
+
+  it("fails closed when a cost item is missing instead of treating it as zero", () => {
+    const markup = renderToStaticMarkup(createElement(FinancialStory, {
+      ...BASE_PROPS,
+      costComposition: {
+        ...BASE_PROPS.costComposition!,
+        items: BASE_PROPS.costComposition!.items.map((item) => item.id === "repair" ? { ...item, value: null } : item)
+      }
+    }));
+
+    expect(markup).toContain("費用構成の評価を表示していません");
+    expect(markup).toContain("未取得の費目を0円とは扱わず");
+    expect(markup).not.toContain("減価償却費が最も大きい費用です");
+  });
+
   it("renders one accessible three-box balance relationship and no repeated equation strip", () => {
     const markup = renderStory();
     const balanceFigure = extractFigure(markup, 'data-balance-relation="standard"');

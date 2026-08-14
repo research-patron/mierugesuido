@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { CSSProperties, KeyboardEvent, MouseEvent, PointerEvent } from "react";
+import type { CSSProperties, KeyboardEvent, MouseEvent, PointerEvent as ReactPointerEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -38,6 +38,13 @@ import {
   screenViewBox,
   type Bounds
 } from "@/lib/gisMapLayout";
+import {
+  clampMapPan,
+  hasExceededDragThreshold,
+  panFromPointerDelta,
+  pannedZoomViewBox,
+  type MapPan
+} from "@/lib/mapGesture";
 import {
   getPrefectureCode,
   getPrefectureName,
@@ -164,7 +171,29 @@ const NATIONAL_TOOLTIP_HOME_HEIGHT = 160;
 const NATIONAL_TOOLTIP_DETAIL_HEIGHT = 206;
 const NATIONAL_TOOLTIP_MARGIN = 12;
 const NATIONAL_TOOLTIP_OFFSET = 16;
-type NationalHoverEvent = MouseEvent<SVGGElement | HTMLAnchorElement> | PointerEvent<SVGGElement | HTMLAnchorElement>;
+const MOBILE_NATIONAL_INITIAL_ZOOM = 1.5;
+const MOBILE_NATIONAL_REGION_ZOOM = 1.25;
+const MOBILE_NATIONAL_MAX_ZOOM = 4.5;
+const MOBILE_NATIONAL_ZOOM_STEP = 0.5;
+const NATIONAL_DRAG_CLICK_SUPPRESSION_MS = 800;
+type NationalHoverEvent = MouseEvent<SVGGElement | HTMLAnchorElement> | ReactPointerEvent<SVGGElement | HTMLAnchorElement>;
+type NationalMapDrag = {
+  pointerId: number;
+  pointerType: string;
+  clientX: number;
+  clientY: number;
+  pan: MapPan;
+  dragging: boolean;
+};
+type NationalMapFrame = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  pad?: number;
+  viewBox?: string;
+  useOverviewPathBounds?: boolean;
+};
 
 export function JapanMapSelector({
   summaries,
@@ -229,9 +258,16 @@ export function NationalMapExplorer({
   const [activePrefectureCode, setActivePrefectureCode] = useState<string | null>(null);
   const [manualZoom, setManualZoom] = useState(1);
   const [focusedRegion, setFocusedRegion] = useState<RegionName | null>(null);
+  const [mapPan, setMapPan] = useState<MapPan>({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const [selectedMobilePrefecture, setSelectedMobilePrefecture] = useState<GisFeature | null>(null);
   const hoverDelayRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clickSuppressionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingHoverRef = useRef<HoverState | null>(null);
   const hoverTargetCodeRef = useRef<string | null>(null);
+  const mapDragRef = useRef<NationalMapDrag | null>(null);
+  const suppressMapClickRef = useRef(false);
+  const mobileInitialZoomAppliedRef = useRef(false);
   const mapSurfaceRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
   const compactAtlas = useMediaQuery("(max-width: 767px)");
@@ -251,10 +287,37 @@ export function NationalMapExplorer({
     if (!data) return new Map<string, GisFeature>();
     return new Map(data.prefectures.map((feature) => [displayPrefectureName(feature.name), feature]));
   }, [data]);
+  const panFeatures = useMemo(() => {
+    if (!focusedRegion) return atlasMainFeatures;
+    const focusedCodes = new Set(prefecturesByRegion(focusedRegion).map((prefecture) => prefecture.code));
+    return atlasMainFeatures.filter((feature) => focusedCodes.has(feature.code));
+  }, [atlasMainFeatures, focusedRegion]);
+  const panBaseViewBox = useMemo(
+    () => atlasOverviewScreenViewBox(panFeatures, focusedRegion ? 18 : 8),
+    [focusedRegion, panFeatures]
+  );
 
   useEffect(() => () => {
     if (hoverDelayRef.current) clearTimeout(hoverDelayRef.current);
+    if (clickSuppressionTimerRef.current) clearTimeout(clickSuppressionTimerRef.current);
   }, []);
+
+  useEffect(() => {
+    if (compactAtlas) {
+      if (!mobileInitialZoomAppliedRef.current) {
+        mobileInitialZoomAppliedRef.current = true;
+        setManualZoom(MOBILE_NATIONAL_INITIAL_ZOOM);
+        setMapPan({ x: 0, y: 0 });
+      }
+      return;
+    }
+
+    mobileInitialZoomAppliedRef.current = false;
+    setManualZoom(1);
+    setMapPan({ x: 0, y: 0 });
+    setIsPanning(false);
+    setSelectedMobilePrefecture(null);
+  }, [compactAtlas]);
 
   useEffect(() => {
     const clearWhenOutside = (event: globalThis.PointerEvent) => {
@@ -290,6 +353,7 @@ export function NationalMapExplorer({
     summary: PrefectureSummary | undefined,
     featureMunicipalities: MapMunicipality[] | undefined
   ) {
+    if (compactAtlas) return;
     const nextHover = hoverStateFromEvent(
       event,
       feature,
@@ -324,17 +388,109 @@ export function NationalMapExplorer({
   }
 
   function focusRegion(region: RegionName) {
+    const nextFocusedRegion = focusedRegion === region ? null : region;
     clearNationalHover();
     setActivePrefectureCode(null);
-    setManualZoom(1);
-    setFocusedRegion((current) => current === region ? null : region);
+    setSelectedMobilePrefecture(null);
+    setMapPan({ x: 0, y: 0 });
+    setManualZoom(compactAtlas
+      ? nextFocusedRegion ? MOBILE_NATIONAL_REGION_ZOOM : MOBILE_NATIONAL_INITIAL_ZOOM
+      : 1);
+    setFocusedRegion(nextFocusedRegion);
   }
 
   function showNationalView() {
     clearNationalHover();
     setActivePrefectureCode(null);
+    setSelectedMobilePrefecture(null);
+    setMapPan({ x: 0, y: 0 });
     setManualZoom(1);
     setFocusedRegion(null);
+  }
+
+  function changeNationalZoom(direction: -1 | 1) {
+    clearNationalHover();
+    setSelectedMobilePrefecture(null);
+    setActivePrefectureCode(null);
+    const step = compactAtlas ? MOBILE_NATIONAL_ZOOM_STEP : 0.18;
+    const maximum = compactAtlas ? MOBILE_NATIONAL_MAX_ZOOM : 1.72;
+    setManualZoom((current) => {
+      const next = clamp(current + direction * step, 1, maximum);
+      setMapPan((currentPan) => panBaseViewBox
+        ? clampMapPan(panBaseViewBox, next, currentPan)
+        : { x: 0, y: 0 });
+      return next;
+    });
+  }
+
+  function selectOrOpenPrefecture(feature: GisFeature) {
+    if (suppressMapClickRef.current) return;
+    if (!compactAtlas) {
+      router.push(`/map/${feature.code}`);
+      return;
+    }
+    clearNationalHover();
+    setSelectedMobilePrefecture(feature);
+    setActivePrefectureCode(feature.code);
+  }
+
+  function startNationalPan(event: ReactPointerEvent<HTMLDivElement>) {
+    if (!event.isPrimary || !compactAtlas || manualZoom <= 1 || event.button !== 0 || !panBaseViewBox) return;
+    const target = event.target;
+    if (target instanceof Element && target.closest(".map-control-stack, .home-map-inset")) return;
+    mapDragRef.current = {
+      pointerId: event.pointerId,
+      pointerType: event.pointerType,
+      clientX: event.clientX,
+      clientY: event.clientY,
+      pan: mapPan,
+      dragging: false
+    };
+  }
+
+  function moveNationalPan(event: ReactPointerEvent<HTMLDivElement>) {
+    const drag = mapDragRef.current;
+    const surface = mapSurfaceRef.current;
+    if (!drag || !surface || !panBaseViewBox || drag.pointerId !== event.pointerId) return;
+    const deltaX = event.clientX - drag.clientX;
+    const deltaY = event.clientY - drag.clientY;
+    if (!drag.dragging) {
+      if (!hasExceededDragThreshold(deltaX, deltaY, drag.pointerType)) return;
+      drag.dragging = true;
+      event.currentTarget.setPointerCapture(event.pointerId);
+      setIsPanning(true);
+      setSelectedMobilePrefecture(null);
+      setActivePrefectureCode(null);
+      clearNationalHover();
+    }
+    event.preventDefault();
+    const layerRect = surface.querySelector<SVGSVGElement>(".gis-atlas-region-layer")?.getBoundingClientRect()
+      ?? surface.getBoundingClientRect();
+    setMapPan(panFromPointerDelta({
+      baseViewBox: panBaseViewBox,
+      zoom: manualZoom,
+      startPan: drag.pan,
+      deltaX,
+      deltaY,
+      surfaceSize: { width: layerRect.width, height: layerRect.height }
+    }));
+  }
+
+  function endNationalPan(event: ReactPointerEvent<HTMLDivElement>) {
+    const drag = mapDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    mapDragRef.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    setIsPanning(false);
+    if (!drag.dragging) return;
+    suppressMapClickRef.current = true;
+    if (clickSuppressionTimerRef.current) clearTimeout(clickSuppressionTimerRef.current);
+    clickSuppressionTimerRef.current = setTimeout(() => {
+      suppressMapClickRef.current = false;
+      clickSuppressionTimerRef.current = null;
+    }, NATIONAL_DRAG_CLICK_SUPPRESSION_MS);
   }
 
   const MapHeading = variant === "home" ? "h1" : "h2";
@@ -385,6 +541,14 @@ export function NationalMapExplorer({
               "gis-map-surface relative overflow-hidden rounded-md border border-line bg-white",
               "gis-map-surface--home-national"
             )}
+            data-pannable={compactAtlas && manualZoom > 1 ? "true" : "false"}
+            data-panning={isPanning ? "true" : "false"}
+            data-map-zoom={manualZoom.toFixed(2)}
+            aria-describedby={compactAtlas ? "mobile-national-map-guide" : undefined}
+            onPointerDown={startNationalPan}
+            onPointerMove={moveNationalPan}
+            onPointerUp={endNationalPan}
+            onPointerCancel={endNationalPan}
             onMouseLeave={() => {
               clearNationalHover();
               setActivePrefectureCode(null);
@@ -406,11 +570,13 @@ export function NationalMapExplorer({
                   featureByPrefectureName={featureByPrefectureName}
                   summaryMap={summaryMap}
                   byPrefecture={byPrefecture}
-                  activePrefectureCode={activePrefectureCode}
+                  activePrefectureCode={selectedMobilePrefecture?.code ?? activePrefectureCode}
                   manualZoom={manualZoom}
+                  pan={mapPan}
                   focusedRegion={focusedRegion}
                   compact={compactAtlas}
-                  onOpen={(feature) => router.push(`/map/${feature.code}`)}
+                  onOpen={selectOrOpenPrefecture}
+                  onKeyboardOpen={(feature) => router.push(`/map/${feature.code}`)}
                   onActivate={setActivePrefectureCode}
                   onHover={scheduleNationalHover}
                 />
@@ -421,12 +587,12 @@ export function NationalMapExplorer({
                 </p>
               </>
             ) : null}
-            {hover ? <MapHoverCard hover={hover} showDetailLink={variant !== "home"} /> : null}
+            {hover && !compactAtlas ? <MapHoverCard hover={hover} showDetailLink={variant !== "home"} /> : null}
             <div className="map-control-stack map-control-stack--home" role="group" aria-label="地図操作">
-              <button type="button" onClick={() => setManualZoom((value) => clamp(value + 0.18, 1, 1.72))} aria-label="拡大">
+              <button type="button" onClick={() => changeNationalZoom(1)} disabled={manualZoom >= (compactAtlas ? MOBILE_NATIONAL_MAX_ZOOM : 1.72)} aria-label="拡大">
                 <Plus size={20} />
               </button>
-              <button type="button" onClick={() => setManualZoom((value) => clamp(value - 0.18, 1, 1.72))} aria-label="縮小">
+              <button type="button" onClick={() => changeNationalZoom(-1)} disabled={manualZoom <= 1} aria-label="縮小">
                 <Minus size={20} />
               </button>
               <button type="button" onClick={showNationalView} className="map-reset-button" aria-label="全国を表示">
@@ -435,6 +601,35 @@ export function NationalMapExplorer({
               </button>
             </div>
           </div>
+          {compactAtlas ? (
+            <>
+              <p id="mobile-national-map-guide" className="mobile-national-map-guide">
+                地図を上下左右にスワイプ。都道府県をタップし、名前を確認してから開いてください。
+              </p>
+              <div
+                className="mobile-national-map-confirmation"
+                data-has-selection={selectedMobilePrefecture ? "true" : "false"}
+                data-selected-prefecture={selectedMobilePrefecture?.code ?? ""}
+                role="region"
+                aria-label="都道府県の選択確認"
+              >
+                {selectedMobilePrefecture ? (
+                  <>
+                    <div role="status" aria-live="polite" aria-atomic="true">
+                      <span>選択中</span>
+                      <strong>{displayPrefectureName(selectedMobilePrefecture.name)}</strong>
+                    </div>
+                    <Link href={`/map/${selectedMobilePrefecture.code}`}>
+                      {displayPrefectureName(selectedMobilePrefecture.name)}を開く
+                      <ChevronRight size={17} aria-hidden="true" />
+                    </Link>
+                  </>
+                ) : (
+                  <p>都道府県をタップすると、ここに選択した名前が表示されます。</p>
+                )}
+              </div>
+            </>
+          ) : null}
         </div>
         <PrefectureSelectorPanel
           summaries={summaries}
@@ -458,9 +653,11 @@ function HomeNationalMap({
   byPrefecture,
   activePrefectureCode,
   manualZoom,
+  pan,
   focusedRegion,
   compact,
   onOpen,
+  onKeyboardOpen,
   onActivate,
   onHover
 }: {
@@ -470,9 +667,11 @@ function HomeNationalMap({
   byPrefecture: Map<string, MapMunicipality[]>;
   activePrefectureCode: string | null;
   manualZoom: number;
+  pan: MapPan;
   focusedRegion: RegionName | null;
   compact: boolean;
   onOpen: (feature: GisFeature) => void;
+  onKeyboardOpen: (feature: GisFeature) => void;
   onActivate: (code: string | null) => void;
   onHover: (
     event: NationalHoverEvent,
@@ -481,7 +680,7 @@ function HomeNationalMap({
     featureMunicipalities: MapMunicipality[] | undefined
   ) => void;
 }) {
-  const homeZoom = 1 + (manualZoom - 1) * 0.12;
+  const desktopHomeZoom = 1 + (manualZoom - 1) * 0.12;
   const viewBox = compact ? "0 0 390 440" : "0 0 980 500";
   const mainFrame = compact
     ? { x: 18, y: 132, width: 354, height: 236, pad: 8, useOverviewPathBounds: true }
@@ -517,12 +716,20 @@ function HomeNationalMap({
     ? atlasOverviewScreenViewBox(focusedMainFeatures, 18)
     : null;
   const activeFocusFrame = focusedRegion === "北海道・東北" ? northFocusFrame : focusFrame;
-  const renderedFrame = focusedRegion && focusedViewBox
+  const renderedFrame: NationalMapFrame = focusedRegion && focusedViewBox
     ? { ...activeFocusFrame, viewBox: focusedViewBox }
     : mainFrame;
   const renderedFeatures = focusedRegion && focusedMainFeatures.length > 0
     ? focusedMainFeatures
     : mainFeatures;
+  const renderedBaseViewBox = renderedFrame.viewBox ?? (
+    renderedFrame.useOverviewPathBounds
+      ? atlasOverviewScreenViewBox(renderedFeatures, renderedFrame.pad ?? 5)
+      : screenViewBox(renderedFeatures, renderedFrame.pad ?? 5)
+  );
+  const cameraFrame = compact && renderedBaseViewBox
+    ? { ...renderedFrame, viewBox: pannedZoomViewBox(renderedBaseViewBox, manualZoom, pan) }
+    : renderedFrame;
   const visibleInsets = focusedRegion === "北海道・東北"
     ? [compact
         ? { title: "北海道", name: "北海道", x: 14, y: 200, width: 190, height: 142 }
@@ -537,9 +744,9 @@ function HomeNationalMap({
   const transformCenter = focusedRegion
     ? { x: activeFocusFrame.x + activeFocusFrame.width / 2, y: activeFocusFrame.y + activeFocusFrame.height / 2 }
     : compact ? { x: 195, y: 244 } : { x: 520, y: 270 };
-  const homeTransform = homeZoom === 1
+  const homeTransform = compact || desktopHomeZoom === 1
     ? undefined
-    : `translate(${transformCenter.x} ${transformCenter.y}) scale(${homeZoom}) translate(-${transformCenter.x} -${transformCenter.y})`;
+    : `translate(${transformCenter.x} ${transformCenter.y}) scale(${desktopHomeZoom}) translate(-${transformCenter.x} -${transformCenter.y})`;
   const labelScale = focusedRegion && focusedViewBox
     ? nationalFocusLabelScale(focusedViewBox, activeFocusFrame, compact ? 11 : 13)
     : 1;
@@ -562,13 +769,14 @@ function HomeNationalMap({
         <g transform={homeTransform} data-manual-zoom={manualZoom.toFixed(2)}>
           <AtlasRegionLayer
             features={renderedFeatures}
-            frame={renderedFrame}
+            frame={cameraFrame}
             summaryMap={summaryMap}
             byPrefecture={byPrefecture}
             activePrefectureCode={activePrefectureCode}
             showLabels={Boolean(focusedRegion)}
             labelScale={labelScale}
             onOpen={onOpen}
+            onKeyboardOpen={onKeyboardOpen}
             onActivate={onActivate}
             onHover={onHover}
           />
@@ -585,6 +793,7 @@ function HomeNationalMap({
               byPrefecture={byPrefecture}
               activePrefectureCode={activePrefectureCode}
               onOpen={onOpen}
+              onKeyboardOpen={onKeyboardOpen}
               onActivate={onActivate}
               onHover={onHover}
             />
@@ -603,6 +812,7 @@ function HomeInsetMap({
   byPrefecture,
   activePrefectureCode,
   onOpen,
+  onKeyboardOpen,
   onActivate,
   onHover
 }: {
@@ -613,6 +823,7 @@ function HomeInsetMap({
   byPrefecture: Map<string, MapMunicipality[]>;
   activePrefectureCode: string | null;
   onOpen: (feature: GisFeature) => void;
+  onKeyboardOpen: (feature: GisFeature) => void;
   onActivate: (code: string | null) => void;
   onHover: (
     event: NationalHoverEvent,
@@ -647,7 +858,10 @@ function HomeInsetMap({
       aria-label={`${displayName}の詳細マップへ。経費回収率${formatPercent(recoveryRate)}、${diagnosisLabel}`}
       onClick={() => onOpen(feature)}
       onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") onOpen(feature);
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onKeyboardOpen(feature);
+        }
       }}
       onFocus={() => onActivate(feature.code)}
       onBlur={() => onActivate(null)}
@@ -699,6 +913,7 @@ function AtlasRegionLayer({
   showLabels = false,
   labelScale = 1,
   onOpen,
+  onKeyboardOpen,
   onActivate,
   onHover
 }: {
@@ -718,6 +933,7 @@ function AtlasRegionLayer({
   showLabels?: boolean;
   labelScale?: number;
   onOpen: (feature: GisFeature) => void;
+  onKeyboardOpen: (feature: GisFeature) => void;
   onActivate: (code: string | null) => void;
   onHover: (
     event: NationalHoverEvent,
@@ -755,6 +971,8 @@ function AtlasRegionLayer({
       height={frame.height}
       viewBox={viewBox}
       className="gis-atlas-region-layer"
+      role="group"
+      aria-label="都道府県"
       preserveAspectRatio="xMidYMid meet"
       overflow="visible"
     >
@@ -780,7 +998,7 @@ function AtlasRegionLayer({
             aria-label={`${displayName}: ${count.toLocaleString("ja-JP")}市区町村、経費回収率${formatPercent(recoveryRate)}、${diagnosisLabel}`}
             onClick={() => onOpen(feature)}
             onKeyDown={(event) => {
-              handleAtlasRegionKey(event, feature, onOpen);
+              handleAtlasRegionKey(event, feature, onKeyboardOpen);
             }}
             onFocus={() => onActivate(feature.code)}
             onBlur={() => onActivate(null)}
@@ -1557,7 +1775,7 @@ function setHoverFromEvent(
 }
 
 function hoverStateFromEvent(
-  event: MouseEvent<SVGGElement | HTMLAnchorElement> | PointerEvent<SVGGElement | HTMLAnchorElement>,
+  event: MouseEvent<SVGGElement | HTMLAnchorElement> | ReactPointerEvent<SVGGElement | HTMLAnchorElement>,
   feature: GisFeature,
   summary: PrefectureSummary | undefined,
   municipalities: MapMunicipality[] | undefined,

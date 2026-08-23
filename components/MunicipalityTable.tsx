@@ -19,7 +19,11 @@ export function MunicipalityTable({ items }: { items: any[] }) {
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <div className="text-xs font-bold text-muted">{item.prefectureName}</div>
-                <Link href={municipalityDetailHref(item.municipalityCode, item.businessKey)} className="mt-1 inline-flex items-center gap-1 text-lg font-black text-blue hover:underline">
+                <Link
+                  href={municipalityDetailHref(item.municipalityCode, item.businessKey)}
+                  className="mt-1 inline-flex items-center gap-1 text-lg font-black text-blue hover:underline"
+                  aria-label={`${item.prefectureName} ${item.municipalityName}のこのまちの診断を見る`}
+                >
                   {item.municipalityName}
                   <ChevronRight size={14} />
                 </Link>
@@ -73,7 +77,7 @@ export function MunicipalityTable({ items }: { items: any[] }) {
                 label="改定情報"
                 help="R5・R6第33表の現行使用料施行年月日を比較します。全事業を比較できて変化がない自治体は「改定情報なし」、欠損や片年度のみの事業がある自治体は「比較対象外」と表示します"
               />
-              <th scope="col"><span className="sr-only">詳細</span></th>
+              <th scope="col"><span className="sr-only">このまちの診断</span></th>
             </tr>
           </thead>
           <tbody>
@@ -83,14 +87,18 @@ export function MunicipalityTable({ items }: { items: any[] }) {
               <tr key={item.municipalityCode}>
                 <td className="text-slate-600">{item.prefectureName}</td>
                 <td>
-                  <Link href={municipalityDetailHref(item.municipalityCode, item.businessKey)} className="municipality-link">
+                  <Link
+                    href={municipalityDetailHref(item.municipalityCode, item.businessKey)}
+                    className="municipality-link"
+                    aria-label={`${item.prefectureName} ${item.municipalityName}のこのまちの診断を見る`}
+                  >
                     {item.municipalityName}
                   </Link>
                 </td>
                 <td className="text-sm text-slate-600">
                   <details className="business-type-cell">
                     <summary>{businessLabel}</summary>
-                    <span>{businessLabel}<small className="mt-1 block font-bold text-muted">{accountingTypeLabel(item.accountingType)}{item.accountingType === "non_legal_applied" ? "・料金指標は参考" : ""}{item.businessCount > 1 ? "・詳細で事業切替" : ""}{item.flags?.length ? `・データ要確認（${item.flags.length}）` : ""}</small></span>
+                    <span>{businessLabel}<small className="mt-1 block font-bold text-muted">{accountingTypeLabel(item.accountingType)}{item.accountingType === "non_legal_applied" ? "・料金指標は参考" : ""}{item.businessCount > 1 ? "・診断で事業切替" : ""}{item.flags?.length ? `・データ要確認（${item.flags.length}）` : ""}</small></span>
                   </details>
                 </td>
                 <td className={recoveryClass(item.diagnosis?.expenseRecoveryRate)}>
@@ -102,7 +110,7 @@ export function MunicipalityTable({ items }: { items: any[] }) {
                 <td><Badge>{compactRecoveryBand(item.diagnosis?.expenseRecoveryRate)}</Badge></td>
                 <td><MunicipalityFeeRevisionDisplay comparison={item.feeRevisionComparison} /></td>
                 <td>
-                  <Link href={municipalityDetailHref(item.municipalityCode, item.businessKey)} className="row-chevron" aria-label={`${item.municipalityName}の${businessLabel}の詳細へ`}>
+                  <Link href={municipalityDetailHref(item.municipalityCode, item.businessKey)} className="row-chevron" aria-label={`${item.municipalityName}・${businessLabel}のこのまちの診断を見る`}>
                     <ChevronRight size={20} />
                   </Link>
                 </td>

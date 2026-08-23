@@ -2010,3 +2010,196 @@ This gate is the current acceptance record for smartphone interaction on the sha
 - Intentional subtraction: only mobile shape-tap immediate navigation was removed because it caused wrong-destination errors on tiny adjacent regions. It is replaced by a named confirmation action; desktop direct click, keyboard direct open, and every destination remain available.
 
 final result: passed
+
+## Final superseding citizen-first municipality diagnosis gate — 2026-08-21
+
+This gate is the current acceptance record for the municipality-detail redesign, prefecture fee position, simple fee scenario, fund-shortage disclosure, and related citizen-facing navigation and source explanations.
+
+### Citizen question and reading order
+
+- The default municipality view now answers five questions in order: monthly household fee and prefectural rank, factors that can be checked from the data, evidence about sustainability, fee-pressure scenario, and the fund-shortage status of the containing account.
+- The four previous KPI cards and large per-business cards were replaced by one compact labelled business selector and one continuous diagnosis surface. Monthly fee and rank are the first numeric conclusion; finance, peer lists, and official rows remain available as evidence.
+- The four existing query-addressable views remain `fees`, `finance`, `prefecture`, and `yearbook`, with the citizen-facing labels `このまちの診断`, `財務の根拠`, `県内の位置`, and `公式データ`. Business selection, tab selection, browser Back, and Forward preserve the selected business key.
+- Prefecture comparison starts with competition rank, total comparison units, median gap, and the three closest fees. Technical scope and the complete municipality list are native disclosures after the conclusion.
+- Regional wording is localized to 道内, 都内, 府内, or 県内. First-use explanations clarify annual billable water volume and account-unit scope.
+
+### Calculation and official-data boundaries
+
+- Fee rank uses the existing R6 law-applied public-sewer and special-environment comparison universe, competitive ranking for exact ties, and one comparison unit per joint operation. Missing or out-of-scope values receive no rank.
+- Fee and treatment-cost relationships use a plus/minus 10% peer-median band; R2–R6 annual billable-volume change uses a plus/minus 5% approximately-flat band. Cost concentration shows top items and at most two items at least five percentage points above the peer median. These are possible factors, not causal findings.
+- Sustainability has no composite score or safe/danger label. It presents a conclusion, up to three separately sourced reasons, and an always-available limitation disclosure covering population, renewal investment, prices, and debt repayment planning.
+- The household fee illustration is hidden until requested. It applies the business-wide simple rate `max(wastewater treatment cost / sewer fee revenue - 1, 0)` uniformly to the displayed 20 m3 amount. It is expressly neither a forecast, an official indicator, a recommended revision rate, nor a statement of future timing.
+- Fund-shortage ratios come from the Ministry of Internal Affairs and Communications R6 final positive list and are attached to the matched account unit, not recalculated from Yearbook components or allocated to municipalities. `shortage`, `no_shortage`, and `unavailable` remain distinct; no shortage is not displayed as 0%.
+- The 20% threshold is described as the general management-improvement-plan threshold. Copy does not claim an automatic or blanket prohibition on municipal bonds.
+- The R5/R6 official effective-date comparison, registered municipality announcements, and the site simple scenario remain visibly separate.
+
+### Fail-closed and joint-operation corrections
+
+- The selected business key must exactly match the current peer row before rank or peer factors are adopted. A South Sanriku regression confirms that the law-non-applied public-sewer view does not inherit the 4,104-yen tariff, 599.1-yen treatment cost, or recovery result of its different special-environment business.
+- Joint-operation links are emitted only when the generated static municipality manifest contains the operator detail. Oishida no longer links to the ungenerated `069663` detail; the interface instead states that the operator-wide fee indicator is not published by this site.
+- The separate accounting scopes of the simple operating-revenue/expense ratio and the official expense-recovery ratio are explicit. The former 100% sentence was rewritten so it cannot be read as saying that an expense-recovery rate below 100% is automatically an operating loss.
+
+### Visual and interaction evidence
+
+- Current-run desktop frames at 1491×1055 cover Sapporo diagnosis, finance evidence, and Hokkaido peer position. Current-run mobile frames at 390×844 cover Sapporo initial diagnosis, the expanded household scenario, Hokkaido peer position, Yubari high-fee/high-scenario, Ube 128.5% fund shortage, and the data-source page.
+- The task visual-QA area contains the final frames `01-sapporo-diagnosis-desktop.png` through `09-data-sources-mobile.png`, plus combined comparisons `10-baseline-vs-final-desktop.png` and `11-baseline-vs-final-mobile.png`.
+- In the 390×844 Sapporo initial frame, the monthly fee occupies y=744–777 and the rank y=809–839, so both conclusions appear within the initial viewport. Document width and scroll width both equal 390 px; desktop width and scroll width both equal 1491 px.
+- The mobile business select, municipality-change action, evidence links, scenario disclosure, tabs, and detailed-evidence disclosure measure at least 44 px high. Native disclosure focus showed a visible 2 px teal outline.
+- Browser checks covered Sapporo business switching, all detail tabs, Back/Forward preservation, Yubari's 5,105-yen / second-place / +150.0% scenario, Asahikawa's no-current-gap state with future caveat, Ube's 128.5% account ratio, South Sanriku's fail-closed state, and Oishida's non-link fallback.
+
+### Static data, verification, and protected scope
+
+- Isolated full static generation passed against 86 official workbooks and 1,318,745 source rows, producing 1,586 municipality details and 312 peer-comparison payloads. The independently generated citizen supplemental set matched the full generator byte-for-byte.
+- The compact R6 fund-shortage derivative contains 1,993 matched sewer account units and the four official positive sewer accounts; independent reconstruction from the official sources matched every stored positive amount, ratio, account unit, and shared-business relation.
+- Isolated `pnpm lint` and TypeScript checking passed.
+- Isolated full `pnpm test`: 49/49 files and 328/328 tests passed.
+- Isolated production `pnpm build`: passed; all 1,650 static pages generated.
+- No database, Prisma schema, migration, downloaded official workbook, imported accounting value, GIS source, ranking formula, or route formula changed. Compact derived JSON contains public-source values and comparison fields only.
+- Intentional subtraction: four duplicate KPI cards, large business-choice cards, the always-expanded fee-evidence block, and the initially expanded full prefecture list were removed from the first reading path. Their values and actions remain available through the diagnosis, compact selector, and native disclosures.
+
+final result: passed
+
+## Final superseding citizen-diagnosis boundary re-audit gate — 2026-08-23
+
+This gate supersedes the 2026-08-21 citizen-first gate after the release-candidate boundary audit. It is the current acceptance record for the municipality diagnosis and its generated comparison data.
+
+### Comparison and fiscal-year boundaries
+
+- Prefectural rank, medians, treatment-cost factors, and cost-share medians now use only R6 law-applied public sewerage (`17-1-000`) and special-environment public sewerage (`17-4-000`). Other business keys may remain in generated payloads for an explicit unavailable state, but they are never eligible for rank or median calculations.
+- A selected row must match the selected municipality relationship and business key and must itself be eligible before any peer value is adopted. A law-non-applied business therefore does not inherit the fee, treatment cost, or recovery result of another business.
+- If the selected business has no R6 annual result, the diagnosis states that its older value is not substituted. It suppresses R6 rank, peer-factor wording, recovery assessment, and the simple fee scenario instead of mixing R2–R5 values with R6 comparisons or fund-shortage evidence.
+- Specific public sewerage (`17-2-000`) is marked outside the general-household 20 m3 tariff scope. A peer payload cannot restore its household amount, rank, or household fee illustration.
+
+### Evidence completeness and safe destinations
+
+- Cost-factor presentation always retains the current top three expense items. Up to two items at least five percentage points above the peer median are added separately, with duplicate items removed rather than replacing the top items.
+- Joint-operation destinations in both the municipality header and prefecture-comparison view are checked against the generated detail manifest. The absent `069663` page has no link; the interface gives a non-link explanation instead.
+- Ranking links include both municipality and business identity in their accessible names, so different businesses in one municipality no longer share a destination label.
+- Cost composition, income/expense, and balance-sheet figures each include a short `料金・持続可能性との関係` explanation. Each is framed as one decision input and names the additional plan or multi-year evidence required.
+- New municipality-detail links, disclosures, tabs, and selects measure at least 44 px high on mobile. Primary explanatory copy is at least 12 px while the first-screen diagnosis remains visible.
+
+### Current-run visual and interaction evidence
+
+- Final 1491×1055 and 390×844 screenshots are stored in the task visual-QA directory as `12-sapporo-diagnosis-mobile-final.png` through `18-baseline-vs-final-mobile.png`.
+- The updated combined desktop comparison shows the subtraction of the large business-card row, four duplicate KPI cards, and the evidence-first opening. The updated combined mobile comparison shows the fee and rank replacing those setup cards in the initial viewport.
+- At 390×844, Sapporo's fee is at y=746.3–779.3 and its rank at y=811.6–841.6. Document and scroll width are both 390 px. The business select and municipality-change action measure 44 px, the household-scenario disclosure 44 px, and the detailed-evidence disclosure 64 px.
+- At 1491×1055, document and scroll width are both 1491 px. Kiwi Maru is the computed product font at both viewports.
+- Browser checks cover Sapporo, Yubari, Ube, Misato, Kitakami, Tomioka, Oishida, ranking destinations, finance explanations, and the data-source page. They confirm the 17-2 and old-year unavailable states, no `069663` link, no cross-destination duplicate accessible label, Ube's 128.5% / 20%-threshold wording, and no automatic-bond-ban wording.
+
+### Generation, verification, and protected scope
+
+- The isolated full generator passed with an offline equivalent of the official landing-page index and the same 86 ignored official workbooks: 1,318,745 source rows, 1,586 municipality details, and 312 peer payloads. The citizen-peer, fund-shortage, and revision derivatives match the independently run supplemental generator byte-for-byte.
+- `pnpm lint`: passed.
+- Full `pnpm test`: 49/49 files passed, 346 tests passed, and one source-workbook-dependent test was skipped.
+- Production `pnpm build`: passed; all 1,650 static pages generated. The municipality route bundle is 57 kB with a 163 kB first load.
+- `git diff --check`: passed. All intended JSON files parse successfully.
+- No database, Prisma schema, migration, downloaded workbook, imported accounting value, GIS source, ranking formula, or existing URL contract changed.
+- Intentional subtraction remains limited to the four duplicate KPI cards, large per-business cards, always-expanded fee evidence, and initially expanded full prefecture list. Their underlying values and destinations remain available through the compact selector, diagnosis, and native disclosures.
+
+final result: passed
+
+## Final superseding municipality evidence simplification gate — 2026-08-23
+
+This gate supersedes the earlier municipality-detail gates for the finance lead-in, prefecture full-list presentation, and fund-shortage wording.
+
+### Requested subtraction and default visibility
+
+- The finance view now starts directly with `令和6年度の財務を、4つの要点で読む`. The separate `料金・持続可能性とのつながり` lead-in panel and its duplicate conclusion were removed.
+- The prefecture view renders the complete municipality/business comparison as a normal section on initial load. Its open/close disclosure, chevron, and close interaction were removed; rank, nearby peers, scope explanation, target rows, and excluded-municipality rows remain available.
+- The non-shortage state no longer appears among the top `将来も続けられる？` reasons. It remains once in the dedicated account-level evidence section so the official check is available without competing with expense recovery, billable-volume trend, or profit/loss evidence.
+
+### Fund-shortage evidence boundary
+
+- The Ministry of Internal Affairs and Communications R6 final workbook contains a dedicated `資金不足額がある公営企業会計の資金不足比率（団体別）` list with municipality, account, official shortage amount, and official ratio columns. The sewer rows in that positive list remain the only source of displayed positive amounts and ratios.
+- A matched account absent from that exhaustive positive list is now labelled `資金不足会計一覧に掲載なし（R6確報）`. It is not presented as a directly published 0-yen or 0-percent value and is not described as proof of long-term sustainability. Unmatched accounts remain unavailable.
+- The parser requires the formal positive-list heading and fails closed if a sewer shortage row appears in an unsupported prefecture or intermunicipal-union section. Regression coverage preserves the four published sewer shortage accounts, including Ube's 128.5% ratio and 25,461-thousand-yen amount.
+
+### Current-run visual and interaction evidence
+
+- Desktop and 390×844 mobile captures are stored as `01-sapporo-finance-desktop.png` through `05-sapporo-fund-source-mobile.png` in the current task visual-QA directory.
+- Browser checks confirm zero occurrences of the removed finance lead-in, immediate visibility of Sapporo, Hakodate, Otaru, and Yubari rows without a list-close control, and no horizontal overflow in the inspected desktop and mobile states.
+- In the Sapporo mobile diagnosis, the positive-list nonpublication statement occurs once in the dedicated evidence section and does not appear in the sustainability reasons. In Ube's relevant account, 128.5% remains the first sustainability reason and the 20% management-improvement-plan threshold remains explicit.
+
+### Verification and protected scope
+
+- `pnpm lint`: passed.
+- Full `pnpm test`: 49/49 files passed, 349 tests passed, and one source-workbook-dependent test was skipped.
+- Production `pnpm build`: passed; all 1,650 static pages generated. The municipality route bundle remains 56.9 kB with a 163 kB first load.
+- No database, Prisma schema, migration, downloaded official workbook, imported accounting value, GIS source, financial formula, ranking formula, or URL contract changed.
+- Intentional subtraction in this gate is limited to the duplicate finance lead-in, the full-list disclosure/close interaction, and the duplicate non-shortage sustainability reason. The financial story, complete comparison, official source link, positive shortage figures, and unavailable state remain intact.
+
+final result: passed
+
+## Final superseding business-selector and semantic-emphasis gate — 2026-08-23
+
+This gate supersedes the municipality-detail presentation evidence for the business selector and the five citizen-question accents.
+
+### Business selector subtraction
+
+- The sentence `処理区域や契約先を変える操作ではありません。` and its dedicated note styles were removed from every responsive state.
+- Removing the sentence also removes its former third desktop grid column. The selector now uses a balanced two-column desktop layout and a one-column mobile layout, without leaving an empty right-hand area.
+- The remaining explanation still says that fee, finance, and prefecture comparison change to the selected business's settlement, so the control's effect remains explicit. The selected business, accounting basis, and fiscal year remain visible inside the 44 px select control.
+
+### Semantic emphasis without alarmism
+
+- The five questions now have distinct, restrained accents on the icon, eyebrow, heading, and leading conclusion: fee position uses information blue, cost factors use analytical violet, ordinary improvement pressure uses amber, supporting evidence uses green, and unavailable or nonpublication states use neutral slate.
+- Red is reserved for the official 20%-or-higher fund-shortage management-improvement threshold. A positive fund shortage below 20% remains amber; a positive-list nonpublication result remains neutral rather than implying safety with green.
+- A changed R5/R6 effective date uses violet rather than red so it cannot be read as a future fee-increase warning. The site's simple current-cost scenario remains amber and retains its nonforecast caveat.
+- Each meaning remains written in headings, reason titles, values, and caveats. Color is not the only signal. No gradient, thick directional edge, decorative card layer, or whole-row tint was added.
+
+### Current-run visual evidence
+
+- Production-build captures at the requested responsive states are stored in the current visual-QA directory as `09-sapporo-desktop-build.png`, `10-sapporo-mobile-build.png`, and `11-ube-critical-mobile-build.png`.
+- The desktop capture uses the 1491×1055 viewport override and produces a 1480×1047 content image after the browser scrollbar. The mobile captures use 390×844 and produce 379 px content width after the scrollbar, with no visible horizontal clipping.
+- Browser DOM checks confirm Sapporo as `pressure / pressure / neutral`, Ube's 128.5% account as `critical / critical` with one critical reason, and Asahikawa as `supportive / supportive / neutral` for sustainability, simple scenario, and fund-list state respectively.
+- The removed business-selector sentence is absent in both production-build desktop and mobile output.
+
+### Verification and protected scope
+
+- `pnpm lint`: passed.
+- Full `pnpm test`: 49/49 files passed, 350 tests passed, and one source-workbook-dependent test was skipped.
+- Production `pnpm build`: passed; all 1,650 static pages generated. The municipality route bundle remains 57 kB with a 163 kB first load.
+- `git diff --check` and semantic-color guard tests pass. The principal foreground accents have at least approximately 5.9:1 contrast against white.
+- No database, Prisma schema, migration, downloaded workbook, imported value, static financial payload, ranking formula, or URL changed.
+- Intentional subtraction in this gate is limited to the redundant business-selector sentence, its CSS, and the now-unused third desktop grid column.
+
+final result: passed
+
+## Final superseding municipality support, peer-emphasis, and map-legend gate — 2026-08-23
+
+This gate supersedes the municipality-detail support-area and prefecture-comparison presentation evidence, and the national recovery-rate legend surface evidence.
+
+### Requested subtraction and persistent evidence
+
+- The municipality-detail `自治体の公式発表` card, announcement links, empty state, and related disclosure/card styles were removed from the shared bottom support area.
+- `指標の計算式` is now a normal labelled section, not a `details` disclosure. Its formulas are visible without opening an extra control on every municipality-detail tab.
+- Browser checks on the production build found zero occurrences of `自治体の公式発表` and one visible `指標の計算式` section in the inspected Sapporo detail.
+
+### Prefecture-position emphasis
+
+- The fee rank and median difference use separate pale blue and pale violet surfaces, while fee and recovery comparisons use pale blue and neutral teal. Recovery is not given a success-green surface merely because a value exists.
+- The full-list heading and metric columns use restrained light surfaces. The selected municipality has an explicit `表示中` badge on desktop and mobile, so selection does not depend on the row tint.
+- The mobile municipality list retains one outer card per business and removes the added inner bordered cards around each metric. Metric names and bars retain the blue/teal distinction without excessive nesting.
+- No gradient, high/low good-or-bad coloring, or thick directional accent was introduced.
+
+### National-map legend
+
+- The national recovery-rate legend container now has a transparent background in both the base and final fidelity CSS layers.
+- Category swatches, labels, map colors, public/special-environment scope switch, and map interaction remain unchanged.
+
+### Current-run visual evidence
+
+- Final production-build captures are stored in `municipality-additional-polish-2026-08-23` as `12-build-prefecture-desktop-full.png` through `16-build-national-map-legend-mobile.png`.
+- The final inspection covers 1491×1055 desktop and 390×844 mobile states for the prefecture comparison, always-visible formulas, and national map legend. No visible horizontal clipping appears in the inspected mobile states.
+- The long Hokkaido list was checked after removing inner metric cards; the current Sapporo record remains explicit and the list stays permanently visible.
+
+### Verification and protected scope
+
+- `pnpm lint`: passed.
+- Full `pnpm test`: 49/49 files passed, 353 tests passed, and one source-workbook-dependent test was skipped.
+- Production `pnpm build`: passed; all 1,650 static pages generated. The municipality route bundle is 56.8 kB with a 163 kB first load.
+- `git diff --check`: passed.
+- No database, Prisma schema, migration, downloaded workbook, imported value, financial formula, ranking formula, static financial payload, or URL contract changed.
+- Intentional subtraction in this gate is limited to the municipality announcement presentation, its now-unused styles, the formula disclosure interaction, and the temporary nested metric-card treatment rejected during visual review.
+
+final result: passed

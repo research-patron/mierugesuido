@@ -1,41 +1,45 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
-import type { LucideIcon } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
-  BarChart3,
   Building2,
   Calculator,
   ChartNoAxesCombined,
-  CheckCircle2,
   ChevronDown,
-  CircleDollarSign,
   Database,
-  Droplet,
   ExternalLink,
   FileChartColumnIncreasing,
   Landmark,
   MapPinned,
-  Scale,
   ShieldCheck
 } from "lucide-react";
+import { CitizenAssessmentPanel } from "@/components/municipality-detail/CitizenAssessmentPanel";
 import { FinancialStory } from "@/components/municipality-detail/FinancialStory";
 import { PrefecturePeerComparison } from "@/components/municipality-detail/PrefecturePeerComparison";
 import { YearbookOriginalData } from "@/components/municipality-detail/YearbookOriginalData";
 import { TrendChart, type TrendPoint } from "@/components/TrendChart";
 import { accountingTypeLabel, businessCategoryCode, displayBusinessName } from "@/lib/businessDisplay";
+import {
+  buildCitizenMunicipalityAssessment,
+  buildCitizenR6DataAvailability
+} from "@/lib/citizenMunicipalityAssessment";
 import { detailDisclaimer, formulaCopy } from "@/lib/copy";
 import { mergeCostCompositionIntoDetail, type StaticCostCompositionBundle } from "@/lib/costCompositionStatic";
+import { formatSettlementFiscalLabel } from "@/lib/format";
 import {
-  formatMoneyThousandYen,
-  formatSettlementFiscalLabel,
-  formatYenPerM3
-} from "@/lib/format";
+  fundShortageAssessmentSelectionKey,
+  type FundShortageAssessment
+} from "@/lib/fundShortage";
+import type { MunicipalityFeeRevisionComparison } from "@/lib/municipalityFeeRevision";
+import type {
+  PrefecturePeerComparisonResult,
+  PrefecturePeerComparisonRow
+} from "@/lib/prefecturePeerComparison";
 import styles from "@/app/municipalities/[municipalityCode]/page.module.css";
 
 type DetailView = "fees" | "finance" | "prefecture" | "yearbook";
@@ -56,7 +60,22 @@ type CurrentFundingContext = {
   operatingLoss: number | null;
 };
 
-export function MunicipalityDetailClient({ municipalityCode }: { municipalityCode: string }) {
+type MunicipalityDetailClientProps = {
+  municipalityCode: string;
+  fundShortageAssessments: Record<string, FundShortageAssessment>;
+  feeRevisionComparison: MunicipalityFeeRevisionComparison | null;
+  availableJointOperatorMunicipalityCodes: string[];
+  availableMunicipalityDetailCodes: string[];
+};
+
+export function MunicipalityDetailClient({
+  municipalityCode,
+  fundShortageAssessments,
+  feeRevisionComparison,
+  availableJointOperatorMunicipalityCodes,
+  availableMunicipalityDetailCodes
+}: MunicipalityDetailClientProps) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [municipality, setMunicipality] = useState<MunicipalityDetail | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -87,41 +106,41 @@ export function MunicipalityDetailClient({ municipalityCode }: { municipalityCod
   const requestedBusiness = searchParams.get("business") ?? undefined;
   const view = parseDetailView(searchParams.get("view") ?? undefined);
   const selectedGroup = selectBusinessGroup(groups, requestedBusiness);
-  const [prefecturePeerComparison, setPrefecturePeerComparison] = useState<any>(null);
+  const [prefecturePeerComparison, setPrefecturePeerComparison] = useState<PrefecturePeerComparisonResult | null>(null);
+  const [peerLoading, setPeerLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    if (!municipality || !selectedGroup || view !== "prefecture") {
+    if (!municipality || !selectedGroup) {
       setPrefecturePeerComparison(null);
+      setPeerLoading(false);
       return;
     }
     setPrefecturePeerComparison(null);
+    setPeerLoading(true);
     const currentFundingContext = buildCurrentFundingContext(selectedGroup);
-    fetch(`/data/static/peers/${municipality.prefectureCode}/${encodeURIComponent(selectedGroup.key)}.json`)
+    fetch(`/data/static/citizen-peers/${municipality.prefectureCode}/${encodeURIComponent(selectedGroup.key)}.json`)
       .then((response) => {
         if (!response.ok) throw new Error("Peer comparison unavailable");
-        return response.json();
+        return response.json() as Promise<PrefecturePeerComparisonResult>;
       })
       .then((model) => {
         if (cancelled) return;
-        setPrefecturePeerComparison({
-          ...model,
-          currentMunicipalityCode: municipality.municipalityCode,
-          rows: model.rows.map((row: any) => ({
-            ...row,
-            ...(row.detailMunicipalityCode === municipality.municipalityCode
-              && row.businessKey === selectedGroup.latestBusiness.businessKey
-              ? mergeFundingContext(row, currentFundingContext)
-              : {}),
-            isCurrent: row.detailMunicipalityCode === municipality.municipalityCode
-              || row.operatorMunicipalityCode === municipality.municipalityCode
-              || row.representedMunicipalityCodes.includes(municipality.municipalityCode)
-          }))
-        });
+        setPrefecturePeerComparison(bindPeerComparisonToSelectedBusiness({
+          model,
+          municipalityCode: municipality.municipalityCode,
+          businessKey: selectedGroup.latestBusiness.businessKey,
+          currentFundingContext
+        }));
       })
-      .catch(() => undefined);
+      .catch(() => {
+        if (!cancelled) setPrefecturePeerComparison(null);
+      })
+      .finally(() => {
+        if (!cancelled) setPeerLoading(false);
+      });
     return () => { cancelled = true; };
-  }, [municipality, selectedGroup, view]);
+  }, [municipality, selectedGroup]);
 
   if (loadFailed) {
     return <div className={styles.page}><div className={styles.container}><p className={styles.emptySupport}>自治体データを読み込めませんでした。</p></div></div>;
@@ -130,7 +149,12 @@ export function MunicipalityDetailClient({ municipalityCode }: { municipalityCod
     return <div className={styles.page}><div className={styles.container}><p className={styles.emptySupport}>自治体データを読み込んでいます…</p></div></div>;
   }
   if (!selectedGroup) {
-    return <EmptyMunicipality municipality={municipality} />;
+    return (
+      <EmptyMunicipality
+        municipality={municipality}
+        availableJointOperatorMunicipalityCodes={availableJointOperatorMunicipalityCodes}
+      />
+    );
   }
 
   const { latest, latestBusiness } = selectedGroup;
@@ -144,23 +168,61 @@ export function MunicipalityDetailClient({ municipalityCode }: { municipalityCod
     fiscalYearLabel: latest.fiscalYearLabel
   });
   const trendPoints = buildTrendPoints(selectedGroup);
-  const prior = trendPoints.find((point) => point.year === latest.surveyYear - 1);
   const evidenceEntries = latestBusiness.evidenceEntries ?? [];
   const financialStory = latestBusiness.financialStory;
   const financialStatementsReady = latestBusiness.financialStatementsReady;
-  const currentFundingContext = buildCurrentFundingContext(selectedGroup);
-  const financeTabLabel = latestBusiness.accountingType === "non_legal_applied"
+  const financeAvailabilityLabel = latestBusiness.accountingType === "non_legal_applied"
     ? "財務図 対象外"
     : financialStatementsReady ? "R6 財務を読む" : "R6 財務（未取得）";
   const categoryCode = businessCategoryCode(latestBusiness);
-  const householdFeeMetric = categoryCode === "17/2"
-    ? { value: "対象外" }
-    : latest.householdFee20m3Yen === 0
-      ? { value: "要確認" }
-      : yenPerMonthMetric(latest.householdFee20m3Yen);
-  const accounting = accountingMetric(latestBusiness.accountingType, latest);
+  const r6DataAvailability = buildCitizenR6DataAvailability(latest.surveyYear, fiscal);
+  const householdFee20m3Applicability = categoryCode === "17/2" ? "not_applicable" : "applicable";
   const localComparisonLabel = prefectureComparisonLabel(municipality.prefectureName);
-  const localComparisonShortLabel = prefectureComparisonShortLabel(municipality.prefectureName);
+  const areaLabel = prefectureAreaLabel(municipality.prefectureName);
+  const currentPeerRow = findCurrentPeerRow(
+    prefecturePeerComparison?.rows ?? [],
+    municipality.municipalityCode,
+    latestBusiness.businessKey
+  );
+  const selectedPeerComparison = r6DataAvailability.status === "available" && currentPeerRow
+    ? prefecturePeerComparison
+    : null;
+  const fundShortage = fundShortageAssessments[fundShortageAssessmentSelectionKey(latestBusiness)] ?? null;
+  const assessment = buildCitizenMunicipalityAssessment({
+    r6DataAvailability,
+    householdFee20m3Applicability,
+    peerComparison: selectedPeerComparison,
+    currentComparisonUnitKey: currentPeerRow?.comparisonUnitKey,
+    householdFee20m3Yen: householdFee20m3Applicability === "not_applicable" ? null : latest.householdFee20m3Yen,
+    feeUnitPriceYenPerM3: diagnosis?.feeUnitPriceYenPerM3,
+    treatmentCostYenPerM3: diagnosis?.treatmentCostYenPerM3,
+    expenseRecoveryRate: diagnosis?.expenseRecoveryRate,
+    sewerFeeRevenue: latest.sewerFeeRevenue,
+    wastewaterTreatmentCost: latest.wastewaterTreatmentCost,
+    annuals: trendPoints.map((point) => ({
+      surveyYear: point.year,
+      annualBillableVolume: point.annualBillableVolume,
+      bondBalance: findAnnual(selectedGroup, point.year, latestBusiness.accountingType)?.bondBalance ?? null
+    })),
+    costComposition: financialStory?.costComposition ? {
+      total: financialStory.costComposition.total,
+      items: financialStory.costComposition.items
+    } : null,
+    finance: {
+      netIncome: financialStory?.income?.netIncome ?? latest.netIncome,
+      currentNetAssets: financialStory?.balance?.totalNetAssets,
+      priorNetAssets: financialStory?.balance?.priorNetAssets,
+      bondBalances: trendPoints.map((point) => ({
+        surveyYear: point.year,
+        value: findAnnual(selectedGroup, point.year, latestBusiness.accountingType)?.bondBalance ?? null
+      }))
+    },
+    fundShortage
+  });
+  const businessLabelsByKey = Object.fromEntries(groups.map((group) => [
+    group.key,
+    displayBusinessName(group.latestBusiness)
+  ]));
 
   return (
     <div className={styles.page}>
@@ -200,36 +262,24 @@ export function MunicipalityDetailClient({ municipalityCode }: { municipalityCod
 
         {groups.length > 1 ? (
           <section className={styles.businessSelector} aria-labelledby="business-selector-title">
-            <div className={styles.businessSelectorHeading}>
-              <div>
-                <span>{groups.length}種類から選択</span>
-                <h2 id="business-selector-title">表示する決算事業</h2>
-              </div>
-              <p>この下の料金・財務・比較データが、選んだ1件の事業に切り替わります。</p>
+            <div className={styles.businessSelectorCopy}>
+              <span>{groups.length}種類の下水道事業</span>
+              <h2 id="business-selector-title">表示する事業を選ぶ</h2>
+              <p>料金・財務・{areaLabel}比較を、選んだ事業の決算へ切り替えます。</p>
             </div>
-            <div className={styles.businessOptions}>
-              {groups.map((group) => {
-                const selected = group.key === selectedGroup.key;
-                return (
-                  <Link
-                    key={group.key}
-                    href={detailHref(municipalityCode, group.key, view)}
-                    className={styles.businessOption}
-                    data-tone={businessTone(group.key)}
-                    aria-current={selected ? "page" : undefined}
-                  >
-                    <span className={styles.businessOptionCopy}>
-                      <strong>{displayBusinessName(group.latestBusiness)}</strong>
-                      <small>{accountingTypeLabel(group.latestBusiness.accountingType)}・{formatSettlementFiscalLabel({ surveyYear: group.latest.surveyYear, fiscalYearLabel: group.latest.fiscalYearLabel })}</small>
-                    </span>
-                    <span className={styles.businessOptionState}>
-                      {selected ? <><CheckCircle2 size={15} aria-hidden="true" />表示中</> : <>この事業の決算を表示<ArrowRight size={14} aria-hidden="true" /></>}
-                    </span>
-                  </Link>
-                );
-              })}
-            </div>
-            <p className={styles.businessSelectorNote}>表示する決算データを選びます。自治体の事業・処理区域・契約先を変更する操作ではありません。</p>
+            <label className={styles.businessSelectControl}>
+              <span>選択中の決算事業</span>
+              <select
+                value={selectedGroup.key}
+                onChange={(event) => router.push(detailHref(municipalityCode, event.currentTarget.value, view))}
+              >
+                {groups.map((group) => (
+                  <option key={group.key} value={group.key}>
+                    {displayBusinessName(group.latestBusiness)}／{accountingTypeLabel(group.latestBusiness.accountingType)}／{formatSettlementFiscalLabel({ surveyYear: group.latest.surveyYear, fiscalYearLabel: group.latest.fiscalYearLabel })}
+                  </option>
+                ))}
+              </select>
+            </label>
           </section>
         ) : null}
 
@@ -240,92 +290,83 @@ export function MunicipalityDetailClient({ municipalityCode }: { municipalityCod
           </aside>
         ) : null}
 
-        <JointOperationLinks municipality={municipality} />
+        <JointOperationLinks
+          municipality={municipality}
+          availableJointOperatorMunicipalityCodes={availableJointOperatorMunicipalityCodes}
+        />
 
-        <section className={styles.kpiGrid} aria-label={`${displayBusinessName(latestBusiness)}・${fiscal}の主要指標`}>
-          <DetailKpiCard
-            icon={CircleDollarSign}
-            label="一般家庭用20m³／月"
-            value={householdFeeMetric}
-            sub={categoryCode === "17/2"
-              ? "特定公共下水道は主に事業活動による汚水を対象とするため、家庭用月額は対象外"
-              : latest.householdFee20m3Yen == null
-              ? "料金表データ未取得"
-              : latest.householdFee20m3Yen === 0
-                ? "原表の0は無料・対象外・未取得を判別できないため原資料要確認"
-              : "税込・料金表上の標準額（使用料単価×20ではありません）"}
-            tone="blue"
+        {view === "fees" ? (
+          <CitizenAssessmentPanel
+            assessment={assessment}
+            municipalityName={municipality.municipalityName}
+            prefectureName={municipality.prefectureName}
+            businessKey={latestBusiness.businessKey}
+            businessLabel={displayBusinessName(latestBusiness)}
+            fiscalLabel={fiscal}
+            peerLoading={peerLoading}
+            fundShortage={fundShortage}
+            revisionComparison={feeRevisionComparison}
+            businessLabelsByKey={businessLabelsByKey}
+            prefectureHref={detailHref(municipalityCode, selectedGroup.key, "prefecture")}
+            financeHref={detailHref(municipalityCode, selectedGroup.key, "finance")}
+            yearbookHref={detailHref(municipalityCode, selectedGroup.key, "yearbook")}
           />
-          <DetailKpiCard
-            icon={BarChart3}
-            label="経費回収率"
-            value={percentMetric(diagnosis?.expenseRecoveryRate)}
-            sub={deltaLabel(diagnosis?.expenseRecoveryRate, prior?.expenseRecoveryRate, "pt")}
-            tone="teal"
-          />
-          <DetailKpiCard
-            icon={Droplet}
-            label="汚水処理原価"
-            value={yenPerM3Metric(diagnosis?.treatmentCostYenPerM3)}
-            sub="公費負担分等を除く・円/m³"
-            tone="violet"
-          />
-          <DetailKpiCard
-            icon={Scale}
-            label="会計上の収支"
-            value={{ value: accounting.state }}
-            sub={accounting.detail}
-            tone={accounting.tone}
-            status
-          />
-        </section>
+        ) : null}
 
         <nav className={styles.viewTabs} aria-label="詳細の表示切り替え">
           <Link
             href={detailHref(municipalityCode, selectedGroup.key, "fees")}
             className={view === "fees" ? styles.activeTab : undefined}
             aria-current={view === "fees" ? "page" : undefined}
-            aria-label="料金と経費回収率"
+            aria-label="このまちの診断"
           >
             <ChartNoAxesCombined size={18} aria-hidden="true" />
-            <span className={styles.tabLabelDesktop}>料金と経費回収率</span>
-            <span className={styles.tabLabelMobile}>料金・回収</span>
+            <span className={styles.tabLabelDesktop}>このまちの診断</span>
+            <span className={styles.tabLabelMobile}>診断</span>
           </Link>
           <Link
             href={detailHref(municipalityCode, selectedGroup.key, "finance")}
             className={view === "finance" ? styles.activeTab : undefined}
             aria-current={view === "finance" ? "page" : undefined}
-            aria-label={financeTabLabel}
+            aria-label={`財務の根拠（${financeAvailabilityLabel}）`}
           >
             <FileChartColumnIncreasing size={18} aria-hidden="true" />
-            <span className={styles.tabLabelDesktop}>{financeTabLabel}</span>
-            <span className={styles.tabLabelMobile}>R6財務</span>
+            <span className={styles.tabLabelDesktop}>財務の根拠</span>
+            <span className={styles.tabLabelMobile}>財務</span>
           </Link>
           <Link
             href={detailHref(municipalityCode, selectedGroup.key, "prefecture")}
             className={view === "prefecture" ? styles.activeTab : undefined}
             aria-current={view === "prefecture" ? "page" : undefined}
-            aria-label={localComparisonLabel}
+            aria-label={`県内の位置（${municipality.prefectureName}内の比較）`}
           >
             <MapPinned size={18} aria-hidden="true" />
-            <span className={styles.tabLabelDesktop}>{localComparisonLabel}</span>
-            <span className={styles.tabLabelMobile}>{localComparisonShortLabel}</span>
+            <span className={styles.tabLabelDesktop}>県内の位置</span>
+            <span className={styles.tabLabelMobile}>県内</span>
           </Link>
           <Link
             href={detailHref(municipalityCode, selectedGroup.key, "yearbook")}
             className={view === "yearbook" ? styles.activeTab : undefined}
             aria-current={view === "yearbook" ? "page" : undefined}
-            aria-label="年鑑・根拠データ"
+            aria-label="公式データ"
           >
             <Database size={18} aria-hidden="true" />
-            <span className={styles.tabLabelDesktop}>年鑑・根拠データ</span>
-            <span className={styles.tabLabelMobile}>年鑑データ</span>
+            <span className={styles.tabLabelDesktop}>公式データ</span>
+            <span className={styles.tabLabelMobile}>公式</span>
           </Link>
         </nav>
 
         {view === "fees" ? (
           <>
-            <FeeRecoveryStory annual={latest} diagnosis={diagnosis} fiscal={fiscal} />
+            <details className={styles.feeEvidenceDetails}>
+              <summary>
+                <span><strong>料金と費用回収の詳しい根拠</strong><small>公式値、年間収入・費用、計算範囲を確認</small></span>
+                <ChevronDown size={18} aria-hidden="true" />
+              </summary>
+              <div className={styles.feeEvidenceBody}>
+                <FeeRecoveryStory annual={latest} diagnosis={diagnosis} fiscal={fiscal} />
+              </div>
+            </details>
             <section className={styles.contentSection} aria-labelledby="trend-heading">
               <div className={styles.sectionHeading}>
                 <div>
@@ -342,10 +383,10 @@ export function MunicipalityDetailClient({ municipalityCode }: { municipalityCod
             <FinancialStory {...financialStory} />
           </section>
         ) : view === "yearbook" ? (
-          <section className={styles.yearbookView} aria-labelledby="yearbook-view-title">
+          <section id="official-data" className={styles.yearbookView} aria-labelledby="yearbook-view-title">
             <div className={styles.yearbookViewHeading}>
               <span>{fiscal}・選択中の決算事業</span>
-              <h2 id="yearbook-view-title">年鑑・根拠データ</h2>
+              <h2 id="yearbook-view-title">公式データと計算根拠</h2>
               <p>総務省「地方公営企業年鑑」の公式個表を先に確認し、その下でこのサイトの主要項目・計算式・参照行を照合できます。</p>
             </div>
             <YearbookOriginalData
@@ -358,55 +399,33 @@ export function MunicipalityDetailClient({ municipalityCode }: { municipalityCod
               diagnosis={diagnosis}
             />
           </section>
-        ) : prefecturePeerComparison ? (
+        ) : selectedPeerComparison ? (
           <section className={styles.financeSection} aria-label={`${localComparisonLabel}の比較`}>
             <PrefecturePeerComparison
-              model={prefecturePeerComparison}
+              model={selectedPeerComparison}
               businessLabel={displayBusinessName(latestBusiness)}
+              availableMunicipalityDetailCodes={availableMunicipalityDetailCodes}
             />
           </section>
-        ) : null}
+        ) : (
+          <p className={styles.peerStatus} role="status">
+            {peerLoading ? `${localComparisonLabel}の比較データを読み込んでいます…` : `この条件では${areaLabel}比較データを読み込めませんでした。`}
+          </p>
+        )}
 
-        <section className={styles.supportGrid} aria-label="補足情報">
-          <article className={styles.revisionCard}>
-            <div className={styles.supportHeading}>
-              <span><Landmark size={18} aria-hidden="true" /></span>
-              <div>
-                <h2>公式改定情報</h2>
-                <p>自治体が公表した改定予定・実績</p>
+        <section className={styles.formulaSection} aria-labelledby="indicator-formula-title">
+          <header className={styles.formulaHeading}>
+            <span><Calculator size={18} aria-hidden="true" /></span>
+            <div><h2 id="indicator-formula-title">指標の計算式</h2><p>使用料水準の算定方法</p></div>
+          </header>
+          <div className={styles.formulaGrid}>
+            {formulaCopy.map((item) => (
+              <div key={item.title}>
+                <strong>{item.title}</strong>
+                <span>{item.formula}</span>
               </div>
-            </div>
-            {municipality.revisionEvents.length > 0 ? (
-              <div className={styles.revisionList}>
-                {municipality.revisionEvents.map((event: any) => (
-                  <a key={event.id} href={event.sourceUrl} target="_blank" rel="noreferrer">
-                    <span>{event.title ?? event.status}</span>
-                    <small>{event.summary ?? "公式公表情報"}</small>
-                    <ExternalLink size={15} aria-hidden="true" />
-                  </a>
-                ))}
-              </div>
-            ) : (
-              <p className={styles.emptySupport}>公式改定情報は未登録です。</p>
-            )}
-          </article>
-
-          <details className={styles.disclosure}>
-            <summary>
-              <span><Calculator size={18} aria-hidden="true" /></span>
-              <div><strong>指標の計算式</strong><small>使用料水準の算定方法</small></div>
-              <ChevronDown size={17} aria-hidden="true" />
-            </summary>
-            <div className={styles.formulaGrid}>
-              {formulaCopy.map((item) => (
-                <div key={item.title}>
-                  <strong>{item.title}</strong>
-                  <span>{item.formula}</span>
-                </div>
-              ))}
-            </div>
-          </details>
-
+            ))}
+          </div>
         </section>
 
         <details className={styles.disclaimer}>
@@ -418,7 +437,13 @@ export function MunicipalityDetailClient({ municipalityCode }: { municipalityCod
   );
 }
 
-function JointOperationLinks({ municipality }: { municipality: MunicipalityDetail }) {
+function JointOperationLinks({
+  municipality,
+  availableJointOperatorMunicipalityCodes
+}: {
+  municipality: MunicipalityDetail;
+  availableJointOperatorMunicipalityCodes: string[];
+}) {
   const membershipsByKey = new Map<string, any>();
   for (const membership of municipality.servedServiceMemberships as any[]) {
     membershipsByKey.set(`${membership.operatorMunicipality.municipalityCode}:${membership.businessKey}`, membership);
@@ -440,9 +465,21 @@ function JointOperationLinks({ municipality }: { municipality: MunicipalityDetai
         {memberships.map((membership) => {
           const operatorCode = membership.operatorMunicipality.municipalityCode;
           if (!operatorCode) return null;
-          const query = new URLSearchParams({ business: membership.businessKey, view: "fees" });
+          const href = jointOperationHref(
+            operatorCode,
+            membership.businessKey,
+            availableJointOperatorMunicipalityCodes
+          );
+          if (!href) {
+            return (
+              <span className={styles.jointOperationUnavailable} key={`${operatorCode}:${membership.businessKey}`}>
+                <span>{sewerBusinessKeyLabel(membership.businessKey)}</span>
+                <small>組合全体の料金指標は、当サイトでは未掲載です</small>
+              </span>
+            );
+          }
           return (
-            <Link key={`${operatorCode}:${membership.businessKey}`} href={`/municipalities/${operatorCode}?${query.toString()}`}>
+            <Link key={`${operatorCode}:${membership.businessKey}`} href={href}>
               <span>{sewerBusinessKeyLabel(membership.businessKey)}</span>
               <small>組合全体の料金指標を見る</small>
               <ArrowRight size={14} aria-hidden="true" />
@@ -464,7 +501,13 @@ function sewerBusinessKeyLabel(businessKey: string) {
   return `関連事業 ${businessKey}`;
 }
 
-function EmptyMunicipality({ municipality }: { municipality: MunicipalityDetail }) {
+function EmptyMunicipality({
+  municipality,
+  availableJointOperatorMunicipalityCodes
+}: {
+  municipality: MunicipalityDetail;
+  availableJointOperatorMunicipalityCodes: string[];
+}) {
   return (
     <div className={styles.page}>
       <div className={styles.container}>
@@ -478,7 +521,10 @@ function EmptyMunicipality({ municipality }: { municipality: MunicipalityDetail 
           </div>
           <Link href="/municipalities" className={styles.backLink}><ArrowLeft size={16} />自治体を変更</Link>
         </header>
-        <JointOperationLinks municipality={municipality} />
+        <JointOperationLinks
+          municipality={municipality}
+          availableJointOperatorMunicipalityCodes={availableJointOperatorMunicipalityCodes}
+        />
       </div>
     </div>
   );
@@ -609,13 +655,6 @@ function detailHref(municipalityCode: string, business: string, view: DetailView
   return `/municipalities/${municipalityCode}?${query.toString()}`;
 }
 
-function businessTone(businessKey: string) {
-  if (/^17[-/]1(?:[-/]|$)/.test(businessKey)) return "teal";
-  if (/^17[-/](?:2|4)(?:[-/]|$)/.test(businessKey)) return "blue";
-  if (/^(?:17[-/](?:5|6|7|8|9)|18[-/](?:0|1))(?:[-/]|$)/.test(businessKey)) return "violet";
-  return "slate";
-}
-
 function parseDetailView(value?: string): DetailView {
   return value === "finance" || value === "prefecture" || value === "yearbook" ? value : "fees";
 }
@@ -627,85 +666,69 @@ function prefectureComparisonLabel(prefectureName: string) {
   return "県内市町村";
 }
 
-function prefectureComparisonShortLabel(prefectureName: string) {
-  if (prefectureName === "北海道") return "道内比較";
-  if (prefectureName === "東京都") return "都内比較";
-  if (prefectureName === "大阪府" || prefectureName === "京都府") return "府内比較";
-  return "県内比較";
+function prefectureAreaLabel(prefectureName: string) {
+  if (prefectureName === "北海道") return "道内";
+  if (prefectureName === "東京都") return "都内";
+  if (prefectureName === "大阪府" || prefectureName === "京都府") return "府内";
+  return "県内";
 }
 
-type MetricParts = { value: string; unit?: string };
-type KpiTone = "teal" | "blue" | "violet" | "amber" | "red" | "green" | "neutral";
+function findCurrentPeerRow(
+  rows: PrefecturePeerComparisonRow[],
+  municipalityCode: string,
+  businessKey: string
+) {
+  return rows.find((row) => (
+    row.isCurrent
+    && row.businessKey === businessKey
+    && (
+      row.detailMunicipalityCode === municipalityCode
+      || row.operatorMunicipalityCode === municipalityCode
+      || row.representedMunicipalityCodes.includes(municipalityCode)
+    )
+  )) ?? null;
+}
 
-function DetailKpiCard({
-  icon: Icon,
-  label,
-  value,
-  sub,
-  tone,
-  status = false
+export function bindPeerComparisonToSelectedBusiness({
+  model,
+  municipalityCode,
+  businessKey,
+  currentFundingContext
 }: {
-  icon: LucideIcon;
-  label: string;
-  value: MetricParts;
-  sub: string;
-  tone: KpiTone;
-  status?: boolean;
-}) {
-  return (
-    <article className={styles.kpiCard} data-tone={tone}>
-      <span className={styles.kpiIcon} aria-hidden="true"><Icon size={23} strokeWidth={2.1} /></span>
-      <div>
-        <span className={styles.kpiLabel}>{label}</span>
-        <div className={status ? styles.kpiStatusValue : styles.kpiValue}>
-          <strong>{value.value}</strong>
-          {value.unit ? <span>{value.unit}</span> : null}
-        </div>
-        <small>{sub}</small>
-      </div>
-    </article>
-  );
-}
-
-function percentMetric(value: number | null | undefined): MetricParts {
-  return value == null || !Number.isFinite(value) ? { value: "算定不可" } : { value: value.toFixed(1), unit: "%" };
-}
-
-function yenPerM3Metric(value: number | null | undefined): MetricParts {
-  return value == null || !Number.isFinite(value) ? { value: "算定不可" } : { value: value.toFixed(1), unit: "円/m³" };
-}
-
-function yenPerMonthMetric(value: number | null | undefined): MetricParts {
-  return value == null || !Number.isFinite(value)
-    ? { value: "未取得" }
-    : { value: Math.round(value).toLocaleString("ja-JP"), unit: "円／月" };
-}
-
-function deltaLabel(current: number | null | undefined, previous: number | null | undefined, unit: string) {
-  if (current == null || previous == null || !Number.isFinite(current) || !Number.isFinite(previous)) return "前年比は算定不可";
-  const delta = current - previous;
-  if (Math.abs(delta) < 0.05) return `前年比 ±0.0${unit}`;
-  return `前年比 ${delta > 0 ? "+" : ""}${delta.toFixed(1)}${unit}`;
-}
-
-function accountingMetric(accountingType: string | null | undefined, annual: DetailAnnual) {
-  const nonLegal = accountingType === "non_legal_applied";
-  const usesNetIncome = !nonLegal && annual.netIncome != null && Number.isFinite(annual.netIncome);
-  const value = nonLegal ? annual.realBalance : usesNetIncome ? annual.netIncome : annual.ordinaryProfitLoss;
-  const metricLabel = nonLegal ? "実質収支" : usesNetIncome ? "当年度純損益" : "経常損益";
-  if (value == null || !Number.isFinite(value)) return { state: "判定不可", detail: "収支データ未取得", tone: "neutral" as const };
-  if (value === 0) {
+  model: PrefecturePeerComparisonResult;
+  municipalityCode: string;
+  businessKey: string;
+  currentFundingContext: CurrentFundingContext;
+}): PrefecturePeerComparisonResult | null {
+  const rows = model.rows.map((row) => {
+    const isCurrent = row.businessKey === businessKey && (
+      row.detailMunicipalityCode === municipalityCode
+      || row.operatorMunicipalityCode === municipalityCode
+      || row.representedMunicipalityCodes.includes(municipalityCode)
+    );
     return {
-      state: "収支均衡",
-      detail: `${metricLabel} 差額なし`,
-      tone: "neutral" as const
+      ...row,
+      ...(isCurrent ? mergeFundingContext(row, currentFundingContext) : {}),
+      isCurrent
     };
-  }
+  });
+
+  if (!rows.some((row) => row.isCurrent)) return null;
   return {
-    state: value > 0 ? "黒字" : "赤字",
-    detail: `${metricLabel} ${formatMoneyThousandYen(value)}`,
-    tone: value > 0 ? "green" as const : "red" as const
+    ...model,
+    currentMunicipalityCode: municipalityCode,
+    rows
   };
+}
+
+export function jointOperationHref(
+  operatorMunicipalityCode: string,
+  businessKey: string,
+  availableJointOperatorMunicipalityCodes: readonly string[]
+) {
+  if (!availableJointOperatorMunicipalityCodes.includes(operatorMunicipalityCode)) return null;
+  const query = new URLSearchParams({ business: businessKey, view: "fees" });
+  return `/municipalities/${operatorMunicipalityCode}?${query.toString()}`;
 }
 
 function FeeRecoveryStory({
@@ -735,9 +758,9 @@ function FeeRecoveryStory({
     <section className={styles.feeDecision} aria-labelledby="fee-decision-heading">
       <div className={styles.feeDecisionHeading}>
         <div>
-          <span>{fiscal} 料金表・決算</span>
-          <h2 id="fee-decision-heading">家庭の料金と事業全体の費用回収</h2>
-          <p>対象も単位も異なるため、家庭向け料金表と事業全体の決算を分けて表示します。</p>
+          <span>{fiscal} 計算根拠</span>
+          <h2 id="fee-decision-heading">料金と費用回収の根拠</h2>
+          <p>上の診断で使った家庭向け料金表と事業全体の決算を、対象と単位を分けて確認します。</p>
         </div>
         <span className={hasShortfall ? styles.feeDecisionWarning : styles.feeDecisionReady}>
           <ShieldCheck size={15} aria-hidden="true" />
@@ -824,7 +847,7 @@ export function buildCurrentFundingContext(group: BusinessGroup): CurrentFunding
   };
 }
 
-function mergeFundingContext(row: any, context: CurrentFundingContext) {
+function mergeFundingContext(row: PrefecturePeerComparisonRow, context: CurrentFundingContext) {
   return {
     operatingRevenue: context.operatingRevenue ?? finiteOrNull(row.operatingRevenue),
     operatingExpense: context.operatingExpense ?? finiteOrNull(row.operatingExpense),

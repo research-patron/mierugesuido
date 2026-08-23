@@ -25,6 +25,14 @@ describe("financial statement accounting-box UI", () => {
     expect(cssSource).toContain(".costTable tbody td::before");
   });
 
+  it("connects each main financial figure to fees and sustainability without claiming causation", () => {
+    expect(componentSource.match(/<CitizenRelationNote>/g)).toHaveLength(3);
+    expect(componentSource).toContain("費用の集中先は料金水準の背景を考える材料の一つですが、効率や将来負担の判断には施設条件や更新計画も必要です。");
+    expect(componentSource).toContain("単年度の収益と費用の関係は現在の経営状況を考える材料の一つで、料金や持続可能性の判断には経費回収率、複数年の推移、更新計画も必要です。");
+    expect(componentSource).toContain("資産と負債の構成は将来負担を考える材料の一つで、持続可能性の判断には更新計画や企業債の償還計画も必要です。");
+    expect(cssSource).toMatch(/\.citizenRelation\s*{[^}]*border-top:[^}]*font-size:\s*12px/s);
+  });
+
   it("uses the conventional debit-left and credit-right income equation", () => {
     expect(componentSource).toContain('const leftTitle = analysis.equation.resultSide === "left" ? "費用＋純利益" : "費用"');
     expect(componentSource).toContain('const rightTitle = analysis.equation.resultSide === "right" ? "収益＋純損失" : "収益"');

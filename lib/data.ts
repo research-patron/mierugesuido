@@ -7,6 +7,7 @@ import {
   buildPrefecturePeerComparison,
   getPrefecturePeerBusinessKeys,
   PREFECTURE_PEER_COMPARISON_SURVEY_YEAR,
+  PREFECTURE_PEER_COST_COMPOSITION_ITEM_CODES,
   PREFECTURE_PEER_INCOME_ITEM_CODES,
   type PrefecturePeerComparisonResult,
   type PrefecturePeerComparisonSurveyYear
@@ -520,8 +521,16 @@ export async function getPrefecturePeerComparison({
                 diagnosisResult: true,
                 financialStatementItems: {
                   where: {
-                    statementType: "income_statement",
-                    itemCode: { in: [...PREFECTURE_PEER_INCOME_ITEM_CODES] }
+                    OR: [
+                      {
+                        statementType: "income_statement",
+                        itemCode: { in: [...PREFECTURE_PEER_INCOME_ITEM_CODES] }
+                      },
+                      {
+                        statementType: "cost_composition",
+                        itemCode: { in: [...PREFECTURE_PEER_COST_COMPOSITION_ITEM_CODES] }
+                      }
+                    ]
                   },
                   orderBy: { displayOrder: "asc" }
                 }

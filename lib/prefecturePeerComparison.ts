@@ -1,3 +1,5 @@
+import { COST_COMPOSITION_ITEM_DEFINITIONS } from "@/lib/costCompositionDefinition";
+
 export const PREFECTURE_PEER_COMPARISON_SURVEY_YEAR = 2024 as const;
 export const OPERATING_COVERAGE_CRITICAL_THRESHOLD = 50 as const;
 
@@ -13,6 +15,7 @@ export type PrefecturePeerComparisonSurveyYear = typeof PREFECTURE_PEER_COMPARIS
 
 export type PrefecturePeerExclusionCode =
   | "flow_sewer_excluded"
+  | "outside_public_sewer_comparison_scope"
   | "same_business_not_found"
   | "legal_applied_not_found"
   | "r6_data_not_found";
@@ -27,14 +30,27 @@ export type PrefecturePeerFinancialStatementItemInput = {
   amount: number;
 };
 
+export type PrefecturePeerCostCompositionItemId =
+  (typeof COST_COMPOSITION_ITEM_DEFINITIONS)[number]["id"];
+
+export type PrefecturePeerCostCompositionShare = {
+  id: PrefecturePeerCostCompositionItemId;
+  label: string;
+  sharePercent: number;
+};
+
 export type PrefecturePeerAnnualInput = {
   surveyYear: number;
   fiscalYearLabel?: string | null;
   accountingType: string;
   householdFee20m3Yen?: number | null;
+  annualBillableVolume?: number | null;
+  wastewaterTreatmentCost?: number | null;
   servicePopulation?: number | null;
   connectedPopulation?: number | null;
   diagnosisResult?: {
+    feeUnitPriceYenPerM3?: number | null;
+    treatmentCostYenPerM3?: number | null;
     expenseRecoveryRate?: number | null;
   } | null;
   financialStatementItems: PrefecturePeerFinancialStatementItemInput[];
@@ -91,6 +107,11 @@ export type PrefecturePeerComparisonRow = {
   eligible: boolean;
   exclusionReason: PrefecturePeerExclusionReason | null;
   householdFee20m3Yen: number | null;
+  feeUnitPriceYenPerM3: number | null;
+  treatmentCostYenPerM3: number | null;
+  annualBillableVolume: number | null;
+  wastewaterTreatmentCost: number | null;
+  costCompositionShares: PrefecturePeerCostCompositionShare[];
   expenseRecoveryRate: number | null;
   operatingRevenue: number | null;
   operatingExpense: number | null;
@@ -153,6 +174,7 @@ export function isOperatingCoverageCritical(value: number | null | undefined) {
 
 const EXCLUSION_LABELS: Record<PrefecturePeerExclusionCode, string> = {
   flow_sewer_excluded: "流域下水道は市町村比較の対象外",
+  outside_public_sewer_comparison_scope: "R6県内比較は法適用の公共下水道・特環のみ対象",
   same_business_not_found: "同じ事業種別なし",
   legal_applied_not_found: "同種の法適用事業なし",
   r6_data_not_found: "同種法適用事業のR6決算なし"
@@ -170,11 +192,20 @@ const INCOME_ITEM_CODES = {
 } as const;
 
 export const PREFECTURE_PEER_INCOME_ITEM_CODES = Object.freeze(Object.values(INCOME_ITEM_CODES));
+export const PREFECTURE_PEER_COST_COMPOSITION_ITEM_CODES = Object.freeze([
+  ...COST_COMPOSITION_ITEM_DEFINITIONS.map((item) => item.itemCode),
+  "total_cost"
+]);
+export const PREFECTURE_PEER_FINANCIAL_STATEMENT_ITEM_CODES = Object.freeze([
+  ...PREFECTURE_PEER_INCOME_ITEM_CODES,
+  ...PREFECTURE_PEER_COST_COMPOSITION_ITEM_CODES
+]);
 
 /**
  * Returns the business keys that can be compared for the selected business.
- * Public sewerage and tokkan are treated as one comparison family; every other
- * business type continues to require an exact business-key match.
+ * Public sewerage and tokkan are treated as the only eligible comparison
+ * family. Other keys are returned only so their rows can be retained with an
+ * explicit out-of-scope reason; they never enter rankings or medians.
  */
 export function getPrefecturePeerBusinessKeys(businessKey: string): string[] {
   if (!isPublicSewerComparisonFamilyKey(businessKey)) return [businessKey];
@@ -336,6 +367,9 @@ function buildRow({
   };
 
   if (flowSewerSelected) return excludedRow(base, "flow_sewer_excluded", businessKey);
+  if (!isPublicSewerComparisonFamilyKey(businessKey)) {
+    return excludedRow(base, "outside_public_sewer_comparison_scope", businessKey);
+  }
   if (matchingBusinesses.length === 0) return excludedRow(base, "same_business_not_found", businessKey);
 
   const legalBusinesses = matchingBusinesses.filter((business) => business.accountingType === "legal_applied");
@@ -374,6 +408,11 @@ function buildRow({
     eligible: true,
     exclusionReason: null,
     householdFee20m3Yen: positiveFiniteOrNull(annual.householdFee20m3Yen),
+    feeUnitPriceYenPerM3: positiveFiniteOrNull(annual.diagnosisResult?.feeUnitPriceYenPerM3),
+    treatmentCostYenPerM3: positiveFiniteOrNull(annual.diagnosisResult?.treatmentCostYenPerM3),
+    annualBillableVolume: positiveFiniteOrNull(annual.annualBillableVolume),
+    wastewaterTreatmentCost: nonNegativeFiniteOrNull(annual.wastewaterTreatmentCost),
+    costCompositionShares: buildCostCompositionShares(items),
     expenseRecoveryRate,
     operatingRevenue,
     operatingExpense,
@@ -417,6 +456,11 @@ function excludedRow(
         : EXCLUSION_LABELS[code]
     },
     householdFee20m3Yen: null,
+    feeUnitPriceYenPerM3: null,
+    treatmentCostYenPerM3: null,
+    annualBillableVolume: null,
+    wastewaterTreatmentCost: null,
+    costCompositionShares: [],
     expenseRecoveryRate: null,
     operatingRevenue: null,
     operatingExpense: null,
@@ -484,6 +528,23 @@ function finiteOrNull(value: number | null | undefined) {
 
 function positiveFiniteOrNull(value: number | null | undefined) {
   return value == null || !Number.isFinite(value) || value <= 0 ? null : value;
+}
+
+function nonNegativeFiniteOrNull(value: number | null | undefined) {
+  return value == null || !Number.isFinite(value) || value < 0 ? null : value;
+}
+
+function buildCostCompositionShares(items: Map<string, number | null>): PrefecturePeerCostCompositionShare[] {
+  const total = positiveFiniteOrNull(items.get("total_cost"));
+  if (total == null) return [];
+  return COST_COMPOSITION_ITEM_DEFINITIONS.flatMap((definition) => {
+    const amount = nonNegativeFiniteOrNull(items.get(definition.itemCode));
+    return amount == null ? [] : [{
+      id: definition.id,
+      label: definition.label,
+      sharePercent: amount / total * 100
+    }];
+  });
 }
 
 function isMunicipalityName(name: string) {

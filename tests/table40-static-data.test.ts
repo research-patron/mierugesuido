@@ -34,7 +34,7 @@ describe("withdrawn transfer fields in static publication", () => {
 
   it("keeps operating coverage and expense recovery while omitting the withdrawn peer fields", () => {
     const comparison = JSON.parse(readFileSync(
-      path.join(root, "public/data/static/peers/15/17-1-000.json"),
+      path.join(root, "public/data/static/citizen-peers/15/17-1-000.json"),
       "utf8"
     ));
     const row = comparison.rows.find((item: any) =>

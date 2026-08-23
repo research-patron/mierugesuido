@@ -3,7 +3,17 @@ import { Suspense } from "react";
 import { MunicipalityDetailClient } from "@/components/MunicipalityDetailClient";
 import { siteName } from "@/lib/copy";
 import { formatSettlementFiscalLabel } from "@/lib/format";
-import { getStaticManifest, getStaticMunicipalityDetail } from "@/lib/staticData";
+import {
+  fundShortageAssessmentSelectionKey,
+  type FundShortageAssessment
+} from "@/lib/fundShortage";
+import { municipalityFeeRevisionFromStaticIndex } from "@/lib/municipalityFeeRevisionStatic";
+import {
+  getStaticManifest,
+  getStaticMunicipalityDetail,
+  getStaticMunicipalityFeeRevisionIndex
+} from "@/lib/staticData";
+import { getStaticFundShortageAssessment } from "@/lib/staticFundShortageDataset";
 
 export async function generateStaticParams() {
   const manifest = await getStaticManifest();
@@ -32,9 +42,43 @@ export default async function MunicipalityDetailPage({
   params: Promise<{ municipalityCode: string }>;
 }) {
   const { municipalityCode } = await params;
+  const municipality = await getStaticMunicipalityDetail(municipalityCode);
+  const assessmentTargets = [...new Map(
+    municipality.businesses.map((business: any) => [
+      fundShortageAssessmentSelectionKey(business),
+      {
+        businessKey: business.businessKey as string,
+        accountingType: business.accountingType as string
+      }
+    ])
+  ).values()] as Array<{ businessKey: string; accountingType: string }>;
+  const fundShortageEntries = await Promise.all(assessmentTargets.map(async (target) => [
+    fundShortageAssessmentSelectionKey(target),
+    await getStaticFundShortageAssessment({ municipalityCode, ...target })
+  ] as const));
+  const fundShortageAssessments = Object.fromEntries(fundShortageEntries) as Record<string, FundShortageAssessment>;
+  const revisionIndex = await getStaticMunicipalityFeeRevisionIndex();
+  const manifest = await getStaticManifest();
+  const staticMunicipalityCodes = new Set(manifest.municipalityCodes);
+  const prefectureCode = municipality.prefectureCode ?? municipalityCode.slice(0, 2);
+  const availableMunicipalityDetailCodes = manifest.municipalityCodes
+    .filter((code) => code.slice(0, 2) === prefectureCode);
+  const availableJointOperatorMunicipalityCodes = [...new Set<string>(
+    municipality.servedServiceMemberships
+      .map((membership: any) => membership.operatorMunicipality?.municipalityCode as string | undefined)
+      .filter((operatorCode: string | undefined): operatorCode is string => (
+        operatorCode != null && staticMunicipalityCodes.has(operatorCode)
+      ))
+  )];
   return (
     <Suspense fallback={null}>
-      <MunicipalityDetailClient municipalityCode={municipalityCode} />
+      <MunicipalityDetailClient
+        municipalityCode={municipalityCode}
+        fundShortageAssessments={fundShortageAssessments}
+        feeRevisionComparison={municipalityFeeRevisionFromStaticIndex(revisionIndex, municipalityCode)}
+        availableJointOperatorMunicipalityCodes={availableJointOperatorMunicipalityCodes}
+        availableMunicipalityDetailCodes={availableMunicipalityDetailCodes}
+      />
     </Suspense>
   );
 }

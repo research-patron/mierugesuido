@@ -14,7 +14,11 @@ export function RankingTable({ items, type }: { items: any[]; type: RankingType 
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <div className="text-xs font-bold text-muted">順位 {index + 1}</div>
-                <Link href={municipalityDetailHref(item.municipalityCode, item.businessKey)} className="mt-1 block text-base font-bold text-blue hover:underline">
+                <Link
+                  href={municipalityDetailHref(item.municipalityCode, item.businessKey)}
+                  className="mt-1 block text-base font-bold text-blue hover:underline"
+                  aria-label={`${item.prefectureName} ${item.municipalityName}・${displayBusinessName(item)}のこのまちの診断を見る`}
+                >
                   {item.prefectureName} {item.municipalityName}
                 </Link>
                 <p className="mt-1 text-sm text-slate-600">{displayBusinessName(item)}</p>
@@ -46,7 +50,11 @@ export function RankingTable({ items, type }: { items: any[]; type: RankingType 
               <tr key={`${item.municipalityCode}-${item.businessName}-${index}`}>
                 <td className="font-bold text-muted">{index + 1}</td>
                 <td>
-                  <Link href={municipalityDetailHref(item.municipalityCode, item.businessKey)} className="font-bold text-blue hover:underline">
+                  <Link
+                    href={municipalityDetailHref(item.municipalityCode, item.businessKey)}
+                    className="font-bold text-blue hover:underline"
+                    aria-label={`${item.prefectureName} ${item.municipalityName}・${displayBusinessName(item)}のこのまちの診断を見る`}
+                  >
                     {item.prefectureName} {item.municipalityName}
                   </Link>
                   {item.entityType === "joint_operator" ? <small className="mt-1 block font-bold text-muted">組合等の運営団体</small> : null}

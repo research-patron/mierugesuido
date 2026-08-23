@@ -102,7 +102,7 @@ function MunicipalitiesContent() {
       <section className="mx-auto grid max-w-[1491px] gap-5 px-9 py-7">
         <div className="search-page-heading">
           <h1>自治体検索</h1>
-          <p>条件を指定して、自治体の下水道使用料や経営指標を検索できます。複数事業がある場合は詳細画面で表示事業を切り替えられます。</p>
+          <p>条件を指定して、自治体の下水道使用料や経営指標を検索できます。自治体名を選ぶと「このまちの診断」を開きます。複数事業がある場合は診断画面で表示事業を切り替えられます。</p>
         </div>
 
         <MunicipalitySearchFilterPanel
@@ -186,7 +186,12 @@ function MunicipalityCardGrid({ items }: { items: any[] }) {
   return (
     <div className="municipality-card-grid">
       {items.map((item) => (
-        <Link key={`${item.municipalityCode}-search-card`} href={municipalityDetailHref(item.municipalityCode, item.businessKey)} className="municipality-result-card">
+        <Link
+          key={`${item.municipalityCode}-search-card`}
+          href={municipalityDetailHref(item.municipalityCode, item.businessKey)}
+          className="municipality-result-card"
+          aria-label={`${item.prefectureName} ${item.municipalityName}のこのまちの診断を見る`}
+        >
           <div className="municipality-result-card-head">
             <div>
               <div className="municipality-result-prefecture">{item.prefectureName}</div>

@@ -74,8 +74,32 @@ export default async function DataSourcesPage() {
 
         <section className="panel min-w-0 p-4">
           <div className="flex items-center gap-2">
+            <CircleHelp size={21} className="text-teal" aria-hidden="true" />
+            <h2 className="text-xl font-black text-ink">2. 「このまちの診断」の読み方</h2>
+          </div>
+          <p className="mt-3 max-w-5xl text-sm font-medium leading-7 text-slate-700">
+            市町村詳細では、公式値と本サイトの計算を組み合わせ、住民が知りたい順に結論を整理します。将来の料金や経営状態を断定するものではなく、表示した根拠から確認できる範囲を説明します。
+          </p>
+          <dl className="mt-4 divide-y divide-line rounded-md border border-line bg-white">
+            {[
+              ["料金は県内で高いか", "同一都道府県のR6法適用・公共下水道と特定環境保全公共下水道を比較し、高い方からの順位、母数、中央値との差を表示します。共同運営の会計は一度だけ数えます。"],
+              ["何が背景にあるか", "家庭用20m³料金、汚水処理原価、有収水量、費用構成を別々に確認します。費用の集中先を示すもので、料金が高い原因を断定するものではありません。"],
+              ["将来も続けられるか", "資金不足、経費回収率、有収水量、損益、純資産、企業債残高を根拠別に示します。人口予測、更新投資計画、将来物価等を含まないため、長期的な持続可能性は断定しません。"],
+              ["料金が上がる可能性", "公式の改定情報と、現在年度の費用回収だけを使う単純シナリオを分離します。改定の確率、時期、自治体の料金案を予測しません。"],
+              ["資金不足の状態", "総務省確報の『資金不足額がある公営企業会計』一覧を正本とし、e-Statの会計単位と照合します。掲載会計だけに公式の資金不足額・比率を表示し、非掲載会計は0円ではなく『一覧に掲載なし』と表示します。事業や構成市町村へ配分した値ではありません。"]
+            ].map(([term, description]) => (
+              <div key={term} className="grid gap-1 px-4 py-3 md:grid-cols-[210px_minmax(0,1fr)] md:gap-5">
+                <dt className="text-sm font-black text-ink">{term}</dt>
+                <dd className="text-sm font-medium leading-7 text-slate-700">{description}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+
+        <section className="panel min-w-0 p-4">
+          <div className="flex items-center gap-2">
             <Scale size={21} className="text-teal" aria-hidden="true" />
-            <h2 className="text-xl font-black text-ink">2. 損益計算書と営業収支の読み方</h2>
+            <h2 className="text-xl font-black text-ink">3. 損益計算書と営業収支の読み方</h2>
           </div>
           <p className="mt-3 max-w-6xl text-sm font-medium leading-7 text-slate-700">
             {operatingRatioExplanation}
@@ -91,23 +115,23 @@ export default async function DataSourcesPage() {
             </div>
             <div className="rounded-md border border-line bg-panel p-4">
               <h3 className="font-black text-ink">営業損益と経費回収率は範囲が異なる</h3>
-              <p className="mt-2 text-sm font-medium leading-7 text-slate-700">100%未満は会計上の営業損失を示します。営業収益には雨水処理負担金等も含まれるため、使用料による汚水処理費の回収状況は、別の指標である経費回収率で確認します。</p>
+              <p className="mt-2 text-sm font-medium leading-7 text-slate-700">営業収益÷営業費用の簡易比率が100%未満なら、営業収益が営業費用に届かない状態です。営業収益には雨水処理負担金等も含まれるため、使用料による汚水処理費の回収状況は、別の指標である経費回収率で確認します。</p>
             </div>
           </div>
           <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm font-black">
-            <a href="https://laws.e-gov.go.jp/law/327AC0000000292" className="inline-flex items-center gap-2 text-teal hover:underline">
+            <a href="https://laws.e-gov.go.jp/law/327AC0000000292" className="inline-flex min-h-11 items-center gap-2 text-teal hover:underline">
               <FileText size={16} aria-hidden="true" />
               e-Gov 地方公営企業法（第17条の2）
             </a>
-            <a href="https://laws.e-gov.go.jp/law/327M50000002073/" className="inline-flex items-center gap-2 text-teal hover:underline">
+            <a href="https://laws.e-gov.go.jp/law/327M50000002073/" className="inline-flex min-h-11 items-center gap-2 text-teal hover:underline">
               <FileText size={16} aria-hidden="true" />
               e-Gov 地方公営企業法施行規則（第24条）
             </a>
-            <a href="https://www.city.suita.osaka.jp/kurashi/1018513/1018531/1018533/1037597.html" className="inline-flex items-center gap-2 text-teal hover:underline">
+            <a href="https://www.city.suita.osaka.jp/kurashi/1018513/1018531/1018533/1037597.html" className="inline-flex min-h-11 items-center gap-2 text-teal hover:underline">
               <FileText size={16} aria-hidden="true" />
               吹田市 公営企業の営業収支比率の解説
             </a>
-            <a href="https://www.mlit.go.jp/mizukokudo/sewerage/crd_sewerage_tk_000140.html" className="inline-flex items-center gap-2 text-teal hover:underline">
+            <a href="https://www.mlit.go.jp/mizukokudo/sewerage/crd_sewerage_tk_000140.html" className="inline-flex min-h-11 items-center gap-2 text-teal hover:underline">
               <FileText size={16} aria-hidden="true" />
               国土交通省 下水道経営の基本原則
             </a>
@@ -117,19 +141,20 @@ export default async function DataSourcesPage() {
         <section className="panel min-w-0 p-4">
           <div className="flex items-center gap-2">
             <Scale size={21} className="text-teal" aria-hidden="true" />
-            <h2 className="text-xl font-black text-ink">3. 法適用・法非適用の比較範囲</h2>
+            <h2 className="text-xl font-black text-ink">4. 法適用・法非適用の比較範囲</h2>
           </div>
           <p className="mt-3 max-w-5xl text-sm font-medium leading-7 text-slate-700">
             両方とも地方公営企業であり、地方公営企業決算状況調査の対象です。法非適用には、同調査上、法適用と同じ企業会計方式の損益計算書・貸借対照表様式がありません。一方、汚水処理費と下水道使用料による経費回収率は両区分で共通の公式指標です。そのため料金指標は会計方式を明示して参考比較し、企業会計方式の財務図は法適用事業に限ります。
           </p>
           <div className="mt-4 overflow-x-auto">
             <table className="data-table min-w-[760px]">
+              <caption className="sr-only">法適用と法非適用の比較範囲</caption>
               <thead>
                 <tr>
-                  <th>表示・比較する内容</th>
-                  <th>法適用</th>
-                  <th>法非適用</th>
-                  <th>本サイトの扱い</th>
+                  <th scope="col">表示・比較する内容</th>
+                  <th scope="col">法適用</th>
+                  <th scope="col">法非適用</th>
+                  <th scope="col">本サイトの扱い</th>
                 </tr>
               </thead>
               <tbody>
@@ -149,11 +174,11 @@ export default async function DataSourcesPage() {
             </table>
           </div>
           <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm font-black">
-            <a href="https://www.e-stat.go.jp/stat-search/file-download?fileKind=2&statInfId=000040327165" className="inline-flex items-center gap-2 text-teal hover:underline">
+            <a href="https://www.e-stat.go.jp/stat-search/file-download?fileKind=2&statInfId=000040327165" className="inline-flex min-h-11 items-center gap-2 text-teal hover:underline">
               <FileText size={16} aria-hidden="true" />
               総務省 R6調査表・審査要領
             </a>
-            <a href="https://www.mlit.go.jp/mizukokudo/sewerage/crd_sewerage_tk_000140.html" className="inline-flex items-center gap-2 text-teal hover:underline">
+            <a href="https://www.mlit.go.jp/mizukokudo/sewerage/crd_sewerage_tk_000140.html" className="inline-flex min-h-11 items-center gap-2 text-teal hover:underline">
               <FileText size={16} aria-hidden="true" />
               国土交通省 経費回収率の解説
             </a>
@@ -162,15 +187,15 @@ export default async function DataSourcesPage() {
 
         <section className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_420px]">
           <div className="panel min-w-0 overflow-hidden p-4">
-            <h2 className="text-xl font-black text-ink">4. データの出典</h2>
+            <h2 className="text-xl font-black text-ink">5. データの出典</h2>
             <div className="mt-4 rounded-md border border-teal/25 bg-teal/5 p-4">
               <h3 className="font-black text-ink">公的統計（e-Stat / 総務省）</h3>
               <p className="mt-2 text-sm font-medium leading-7 text-slate-700">
-                総務省が公表する「地方公営企業決算状況調査」を基に作成しています。画面の各指標は、詳細ページのデータ根拠から表番号・項目名まで確認できます。
+                総務省が公表する「地方公営企業決算状況調査」を基に作成しています。画面の各指標は、市町村ページの「公式データ」タブから表番号・項目名まで確認できます。
               </p>
               <a
                 href="https://www.e-stat.go.jp/stat-search/files?page=1&toukei=00200251"
-                className="mt-3 inline-flex items-center gap-2 text-sm font-black text-teal hover:underline"
+                className="mt-3 inline-flex min-h-11 items-center gap-2 text-sm font-black text-teal hover:underline"
               >
                 <FileText size={16} />
                 e-Stat 地方公営企業決算状況調査ファイル一覧
@@ -178,14 +203,15 @@ export default async function DataSourcesPage() {
             </div>
             <div className="mt-4 overflow-x-auto">
               <table className="data-table min-w-[980px]">
+                <caption className="sr-only">取り込んだ公的統計の一覧</caption>
                 <thead>
                   <tr>
-                    <th>決算</th>
-                    <th>区分</th>
-                    <th>表番号</th>
-                    <th>表名</th>
-                    <th>出典種別</th>
-                    <th>取得状況</th>
+                    <th scope="col">決算</th>
+                    <th scope="col">区分</th>
+                    <th scope="col">表番号</th>
+                    <th scope="col">表名</th>
+                    <th scope="col">出典種別</th>
+                    <th scope="col">取得状況</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -206,7 +232,7 @@ export default async function DataSourcesPage() {
           </div>
 
           <section className="panel min-w-0 p-4">
-            <h2 className="text-xl font-black text-ink">5. よくあるご質問</h2>
+            <h2 className="text-xl font-black text-ink">6. よくあるご質問</h2>
             <div className="mt-4 grid gap-3">
               {[
                 ["法非適用事業も使用料を比較できますか？", "汚水処理費と下水道使用料は総務省の統一定義で整理されるため、経費回収率等は参考比較できます。一方、損益計算書・貸借対照表の同列比較は行いません。"],
@@ -214,11 +240,14 @@ export default async function DataSourcesPage() {
                 ["データなしと表示されるのはなぜですか？", "必要な分母・分子のどちらかが未取得、または該当事業の決算データが未登録の場合に表示します。"],
                 ["一般家庭用20m³／月使用料と使用料単価は同じですか？", "同じではありません。20m³月額は料金表上の税込標準額で、年鑑の『その1m³平均使用料』はその金額を20で割り、整数に丸めた表示です。一方、使用料単価は年間使用料収入÷年間有収水量で求める事業全体の決算実績です。使用料単価に20を掛けても家庭用20m³月額にはなりません。"],
                 ["料金改定はどの項目で確認しますか？", "本サイトのR5・R6変更一覧には、地方公営企業決算状況調査の第33表にある『現行使用料施行年月日』が年度間で変わった事業だけを掲載します。前回使用料改定年月日、実質使用料改定率、家庭用・業務用料金、料金体系は各行の関連情報として表示しますが、20m³月額などの金額差だけでは一覧に含めません。"],
+                ["県内順位はどのように決めますか？", "比較できる月20m³料金を高い順に並べ、同額は同率として1位・2位・2位・4位の方式で表示します。法非適用や比較対象外の事業、料金が確認できない事業には順位を付けません。"],
+                ["将来の20m³料金を予測していますか？", "予測していません。費用と有収水量等が変わらず、すべての料金区分が同率で変わると仮定した場合だけ、現在額への単純換算を開閉式で示します。実際の改定率や料金体系は自治体の条例・経営戦略等で決まります。"],
+                ["資金不足比率が20%以上なら、すぐに起債できなくなりますか？", "20%以上は原則として経営健全化計画の策定基準です。地方債の発行が一律に禁じられる制度ではありませんが、計画の実行や地方債の協議・許可において経営見通しが確認されます。本サイトは総務省確報の会計単位の比率を表示します。"],
                 ["営業費用は営業収益で賄うべきですか？", "一般会計等が負担すべき経費を除き、企業の経営に伴う収入で経費を賄うのが地方公営企業法上の原則です。ただし、下水道の営業収益には雨水処理負担金等の正当な公費負担も含まれます。営業収益÷営業費用は営業損益を見る補足指標で、使用料の十分性は経費回収率で確認します。"],
                 ["ランキングの並び順はどう決まりますか？", "算定不可を除外し、選択した指標の昇順または降順で並べます。"],
               ].map(([question, answer]) => (
                 <details key={question} className="rounded-md border border-line bg-white p-3">
-                  <summary className="cursor-pointer text-sm font-black text-ink">{question}</summary>
+                  <summary className="flex min-h-11 cursor-pointer items-center text-sm font-black text-ink">{question}</summary>
                   <p className="mt-3 text-sm font-medium leading-7 text-slate-700">{answer}</p>
                 </details>
               ))}
@@ -227,13 +256,42 @@ export default async function DataSourcesPage() {
         </section>
 
         <section className="panel min-w-0 p-4">
-          <h2 className="text-xl font-black text-ink">GIS地図データ</h2>
+          <h2 className="text-xl font-black text-ink">7. 資金不足比率と料金シナリオの公式根拠</h2>
+          <p className="mt-2 max-w-5xl text-sm font-medium leading-7 text-slate-700">
+            資金不足比率は総務省R6確報の「資金不足額がある公営企業会計」一覧を正本とし、地方公営企業決算状況調査の会計単位と照合します。一覧に掲載された会計は公式の資金不足額・比率を表示し、照合済みの非掲載会計は「資金不足額0円」ではなく「一覧に掲載なし」と表示します。料金シナリオは現在年度の費用回収だけを示し、人口・投資・物価・料金体系を含む正式な将来推計とは区別します。
+          </p>
+          <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm font-black">
+            <a href="https://www.soumu.go.jp/menu_news/s-news/01zaisei07_02000434.html" className="inline-flex min-h-11 items-center gap-2 text-teal hover:underline">
+              <FileText size={16} aria-hidden="true" />
+              総務省 R6健全化判断比率・資金不足比率（確報）
+            </a>
+            <a href="https://laws.e-gov.go.jp/law/419AC0000000094" className="inline-flex min-h-11 items-center gap-2 text-teal hover:underline">
+              <FileText size={16} aria-hidden="true" />
+              e-Gov 地方公共団体財政健全化法
+            </a>
+            <a href="https://laws.e-gov.go.jp/law/419CO0000000397" className="inline-flex min-h-11 items-center gap-2 text-teal hover:underline">
+              <FileText size={16} aria-hidden="true" />
+              e-Gov 健全化法施行令
+            </a>
+            <a href="https://laws.e-gov.go.jp/law/323AC0000000109" className="inline-flex min-h-11 items-center gap-2 text-teal hover:underline">
+              <FileText size={16} aria-hidden="true" />
+              e-Gov 地方財政法
+            </a>
+            <a href="https://www.mlit.go.jp/mizukokudo/sewerage/content/001856840.pdf" className="inline-flex min-h-11 items-center gap-2 text-teal hover:underline">
+              <FileText size={16} aria-hidden="true" />
+              国土交通省 下水道使用料改定の基本的な考え方
+            </a>
+          </div>
+        </section>
+
+        <section className="panel min-w-0 p-4">
+          <h2 className="text-xl font-black text-ink">8. GIS地図データ</h2>
           <p className="mt-2 text-sm font-medium leading-7 text-slate-700">
             行政区域地図は、国土交通省 国土数値情報「行政区域データ N03」（2023年1月1日時点）の県別ZIP内GeoJSONをWeb表示用に簡略化して使用しています。境界は表示用途のため、厳密な境界確認には原典を参照してください。
           </p>
           <a
             href="https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N03-v3_1.html"
-            className="mt-3 inline-flex items-center gap-2 text-sm font-black text-teal hover:underline"
+            className="mt-3 inline-flex min-h-11 items-center gap-2 text-sm font-black text-teal hover:underline"
           >
             <FileText size={16} />
             国土数値情報 行政区域データ N03
@@ -241,19 +299,20 @@ export default async function DataSourcesPage() {
         </section>
 
         <section className="panel min-w-0 overflow-hidden p-4">
-          <h2 className="text-xl font-black text-ink">根拠項目の意味</h2>
+          <h2 className="text-xl font-black text-ink">9. 公式データ項目の意味</h2>
           <p className="mt-2 text-sm font-medium leading-7 text-slate-700">
-            自治体詳細ページの「データ根拠」に表示する主な項目について、確認すべき意味と単位を整理しています。
+            市町村ページの「公式データ」タブに表示する主な項目について、確認すべき意味と単位を整理しています。
           </p>
           <div className="mt-4 overflow-x-auto">
             <table className="data-table min-w-[1100px]">
+              <caption className="sr-only">公式データに使用する主な項目の定義</caption>
               <thead>
                 <tr>
-                  <th>項目</th>
-                  <th>意味</th>
-                  <th>単位</th>
-                  <th>主な出典表</th>
-                  <th>用途</th>
+                  <th scope="col">項目</th>
+                  <th scope="col">意味</th>
+                  <th scope="col">単位</th>
+                  <th scope="col">主な出典表</th>
+                  <th scope="col">用途</th>
                 </tr>
               </thead>
               <tbody>
@@ -278,10 +337,10 @@ export default async function DataSourcesPage() {
 function InfoCard({ icon: Icon, title, children }: { icon: LucideIcon; title: string; children: ReactNode }) {
   return (
     <div className="rounded-md border border-line bg-white p-4">
-      <div className="mb-3 flex items-center gap-2 font-black text-ink">
+      <h3 className="mb-3 flex items-center gap-2 font-black text-ink">
         <Icon size={20} className="text-teal" />
         {title}
-      </div>
+      </h3>
       {children}
     </div>
   );

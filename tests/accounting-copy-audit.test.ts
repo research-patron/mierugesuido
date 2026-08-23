@@ -13,9 +13,10 @@ describe("public-enterprise accounting copy audit", () => {
     expect(copySource).toContain("地方公営企業法第17条の2");
     expect(copySource).toContain("一般会計等が負担すべき経費を除き");
     expect(copySource).toContain("雨水公費・汚水私費");
-    expect(copySource).toContain("100%未満は営業損失、100%以上は営業利益または収支均衡を示します");
+    expect(copySource).toContain("100%未満を営業費用に届かない状態、100%以上を営業費用を賄う状態として説明します");
     expect(copySource).toContain("使用料の十分性とは分けて読む必要があります");
-    expect(copySource).toContain("使用料による汚水処理費の回収状況は経費回収率で確認します");
+    expect(copySource).toContain("使用料による汚水処理費の回収状況は、別の公式指標である経費回収率で確認します");
+    expect(copySource).not.toContain("100%未満は営業損失");
     expect(copySource).toContain("受託工事収益・費用等を除いて算定する場合があるため");
     expect(copySource).toContain('title: "営業収支比率（簡易）"');
     expect(copySource).not.toContain("営業収益÷営業費用（サイト算定）");

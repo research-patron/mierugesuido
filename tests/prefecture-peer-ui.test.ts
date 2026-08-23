@@ -25,8 +25,8 @@ describe("prefecture peer comparison UI", () => {
     expect(pageSource).toContain('href={detailHref(municipalityCode, selectedGroup.key, "yearbook")}');
     expect(pageSource).toContain('if (prefectureName === "北海道") return "道内市町村"');
     expect(pageSource).toContain('if (prefectureName === "東京都") return "都内市区町村"');
-    expect(pageSource).toContain("/data/static/peers/");
-    expect(pageSource).toContain("row.representedMunicipalityCodes.includes(municipality.municipalityCode)");
+    expect(pageSource).toContain("/data/static/citizen-peers/");
+    expect(pageSource).toContain("row.representedMunicipalityCodes.includes(municipalityCode)");
     expect(pageSource).toContain("buildCurrentFundingContext(selectedGroup)");
     expect(pageSource).toContain("operatingRevenue: context.operatingRevenue");
     expect(pageSource).toContain("operatingExpense: context.operatingExpense");
@@ -46,7 +46,7 @@ describe("prefecture peer comparison UI", () => {
     expect(componentSource).toContain("本データでは受託工事収益を別掲できない");
     expect(componentSource).not.toContain("（サイト算定）");
     expect(componentSource).toContain('medianLabel={`${model.prefectureName} 中央値`}');
-    expect(componentSource.match(/role="img"/g)).toHaveLength(1);
+    expect(componentSource).not.toContain('role="img"');
     expect(componentSource).toContain('aria-label={ariaLabel}');
     expect(componentSource).not.toContain("県内の分布");
     expect(componentSource).not.toContain("histogram");
@@ -130,10 +130,11 @@ describe("prefecture peer comparison UI", () => {
   it("compares legal-applied public and special-environment businesses and labels each adopted type", () => {
     expect(componentSource).toContain("本サイト独自に都道府県内で横並び比較します");
     expect(componentSource).toContain("公式類似団体区分では公共下水道と特環は別区分です");
-    expect(componentSource).toContain('const scopeLabel = comparesPublicAndTokkan ? "公共＋特環" : businessLabel');
-    expect(componentSource).toContain('`R6に地方公営企業法を適用する「${businessLabel}」を同じ事業種別で比較します。`');
+    expect(componentSource).toContain('const scopeLabel = comparesPublicAndTokkan ? "公共＋特環" : `${businessLabel}（比較対象外）`');
+    expect(componentSource).toContain("公共下水道と特環だけを対象とします");
+    expect(componentSource).toContain("順位・中央値を算定しません");
     expect(componentSource).toContain("R6・法適用・{scopeLabel}");
-    expect(componentSource.match(/<BusinessTypeBadge row=\{row\} \/>/g)).toHaveLength(2);
+    expect(componentSource.match(/<BusinessTypeBadge row=\{row\} \/>/g)).toHaveLength(3);
     expect(componentSource).toContain('return "特環"');
     expect(componentSource).toContain('return "公共"');
     expect(componentSource).toContain("PREFECTURE_PEER_TOKKAN_BUSINESS_KEY");
@@ -141,7 +142,7 @@ describe("prefecture peer comparison UI", () => {
   });
 
   it("shows verified joint operations without presenting operator totals as municipality-level allocations", () => {
-    expect(pageSource).toContain("<JointOperationLinks municipality={municipality} />");
+    expect(pageSource).toContain("availableJointOperatorMunicipalityCodes={availableJointOperatorMunicipalityCodes}");
     expect(pageSource).toContain("組合運営の関連下水道があります");
     expect(pageSource).toContain("組合全体の決算で、市町村別の配分額ではありません");
     expect(pageSource).toContain("sewerBusinessKeyLabel(membership.businessKey)");
@@ -158,7 +159,7 @@ describe("prefecture peer comparison UI", () => {
     expect(componentSource).toContain("<caption>");
     expect(componentSource).toContain('scope="row"');
     expect(componentSource).toContain("20m³使用料（月額）");
-    expect(componentSource).toContain("<MobileCards model={model} scales={comparisonScales} />");
+    expect(componentSource).toContain("<MobileCards model={model} scales={comparisonScales} availableDetailCodes={availableDetailCodes} />");
     expect(cssSource).toMatch(/@media \(max-width: 720px\)[\s\S]*\.tableScroll\s*{\s*display:\s*none/s);
     expect(cssSource).toMatch(/@media \(max-width: 720px\)[\s\S]*\.mobileCards\s*{\s*display:\s*grid/s);
   });

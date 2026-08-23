@@ -17,6 +17,7 @@ import {
   buildPrefecturePeerComparison,
   isOperatingCoverageCritical,
   operatingCoverageDisplayValue,
+  PREFECTURE_PEER_COST_COMPOSITION_ITEM_CODES,
   PREFECTURE_PEER_INCOME_ITEM_CODES,
   type PrefecturePeerAnnualInput,
   type PrefecturePeerBusinessInput,
@@ -125,6 +126,35 @@ describe("buildPrefecturePeerComparison", () => {
     expect(result.summary.missingCounts).toEqual({
       expenseRecoveryRate: 1,
       operatingCoverageRatio: 1
+    });
+  });
+
+  it("exposes R6 unit costs, billable volume and official cost-composition shares", () => {
+    const result = buildPrefecturePeerComparison({
+      prefectureName: "テスト県",
+      businessKey: "17-1-000",
+      municipalities: [municipality("012025", "比較対象市", [business({ annuals: [annual({
+        feeUnitPriceYenPerM3: 160,
+        treatmentCostYenPerM3: 200,
+        annualBillableVolume: 50_000,
+        wastewaterTreatmentCost: 10_000,
+        costComposition: {
+          personnel_cost_total: 20,
+          depreciation_cost: 50,
+          total_cost: 100
+        }
+      })] })])]
+    });
+
+    expect(result.rows[0]).toMatchObject({
+      feeUnitPriceYenPerM3: 160,
+      treatmentCostYenPerM3: 200,
+      annualBillableVolume: 50_000,
+      wastewaterTreatmentCost: 10_000,
+      costCompositionShares: [
+        { id: "personnel", label: "職員給与費", sharePercent: 20 },
+        { id: "depreciation", label: "減価償却費", sharePercent: 50 }
+      ]
     });
   });
 
@@ -389,7 +419,7 @@ describe("buildPrefecturePeerComparison", () => {
     });
   });
 
-  it("continues to require an exact business-key match outside the public sewerage family", () => {
+  it("retains rows outside the public sewerage family but excludes all of them from comparisons", () => {
     const result = buildPrefecturePeerComparison({
       prefectureName: "テスト県",
       businessKey: "17-5-000",
@@ -406,10 +436,42 @@ describe("buildPrefecturePeerComparison", () => {
       businessKey: row.businessKey,
       reason: row.exclusionReason?.code ?? null
     }))).toEqual([
-      { municipalityCode: "012025", eligible: false, businessKey: "17-5-000", reason: "same_business_not_found" },
-      { municipalityCode: "013005", eligible: false, businessKey: "17-5-000", reason: "same_business_not_found" },
-      { municipalityCode: "014001", eligible: true, businessKey: "17-5-000", reason: null }
+      { municipalityCode: "012025", eligible: false, businessKey: "17-5-000", reason: "outside_public_sewer_comparison_scope" },
+      { municipalityCode: "013005", eligible: false, businessKey: "17-5-000", reason: "outside_public_sewer_comparison_scope" },
+      { municipalityCode: "014001", eligible: false, businessKey: "17-5-000", reason: "outside_public_sewer_comparison_scope" }
     ]);
+    expect(result.summary.eligibleComparisonUnits).toBe(0);
+  });
+
+  it.each([
+    "17-2-000",
+    "17-5-000",
+    "17-6-000",
+    "17-7-000",
+    "17-8-000",
+    "17-9-000",
+    "18-0-000",
+    "18-1-000"
+  ])("keeps %s outside the R6 legal-applied public-plus-tokkan cohort", (businessKey) => {
+    const result = buildPrefecturePeerComparison({
+      prefectureName: "テスト県",
+      businessKey,
+      municipalities: [
+        municipality("014001", "対象外町", [business({ businessKey })])
+      ]
+    });
+
+    expect(result.rows).toEqual([
+      expect.objectContaining({
+        businessKey,
+        eligible: false,
+        exclusionReason: expect.objectContaining({ code: "outside_public_sewer_comparison_scope" })
+      })
+    ]);
+    expect(result.summary).toMatchObject({
+      eligibleMunicipalities: 0,
+      eligibleComparisonUnits: 0
+    });
   });
 });
 
@@ -443,8 +505,16 @@ describe("getPrefecturePeerComparison", () => {
               include: expect.objectContaining({
                 financialStatementItems: expect.objectContaining({
                   where: {
-                    statementType: "income_statement",
-                    itemCode: { in: expect.arrayContaining([...PREFECTURE_PEER_INCOME_ITEM_CODES]) }
+                    OR: [
+                      {
+                        statementType: "income_statement",
+                        itemCode: { in: expect.arrayContaining([...PREFECTURE_PEER_INCOME_ITEM_CODES]) }
+                      },
+                      {
+                        statementType: "cost_composition",
+                        itemCode: { in: expect.arrayContaining([...PREFECTURE_PEER_COST_COMPOSITION_ITEM_CODES]) }
+                      }
+                    ]
                   }
                 })
               })
@@ -468,6 +538,7 @@ describe("getPrefecturePeerComparison", () => {
       "operating_revenue",
       "operating_expense"
     ]);
+    expect(PREFECTURE_PEER_COST_COMPOSITION_ITEM_CODES).toContain("total_cost");
     expect(result.rows[0]).toMatchObject({ municipalityCode: "012025", isCurrent: true, operatingCoverageRatio: 80 });
   });
 
@@ -588,27 +659,44 @@ function annual({
   accountingType = "legal_applied",
   recovery = 95,
   householdFee20m3Yen = 3_000,
+  feeUnitPriceYenPerM3 = 150,
+  treatmentCostYenPerM3 = 160,
+  annualBillableVolume = 5_000,
+  wastewaterTreatmentCost = 800,
   operatingRevenue = 800,
-  operatingExpense = 1_000
+  operatingExpense = 1_000,
+  costComposition = null
 }: {
   year?: number;
   accountingType?: string;
   recovery?: number | null;
   householdFee20m3Yen?: number | null;
+  feeUnitPriceYenPerM3?: number | null;
+  treatmentCostYenPerM3?: number | null;
+  annualBillableVolume?: number | null;
+  wastewaterTreatmentCost?: number | null;
   operatingRevenue?: number;
   operatingExpense?: number;
+  costComposition?: Record<string, number> | null;
 } = {}): PrefecturePeerAnnualInput {
   return {
     surveyYear: year,
     fiscalYearLabel: year === 2024 ? "R6" : "R5",
     accountingType,
     householdFee20m3Yen,
+    annualBillableVolume,
+    wastewaterTreatmentCost,
     servicePopulation: 10_000,
     connectedPopulation: 9_000,
-    diagnosisResult: { expenseRecoveryRate: recovery },
+    diagnosisResult: {
+      expenseRecoveryRate: recovery,
+      feeUnitPriceYenPerM3,
+      treatmentCostYenPerM3
+    },
     financialStatementItems: [
       { itemCode: "operating_revenue", amount: operatingRevenue },
-      { itemCode: "operating_expense", amount: operatingExpense }
+      { itemCode: "operating_expense", amount: operatingExpense },
+      ...Object.entries(costComposition ?? {}).map(([itemCode, amount]) => ({ itemCode, amount }))
     ]
   };
 }

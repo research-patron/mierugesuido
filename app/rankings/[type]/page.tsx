@@ -28,7 +28,7 @@ export default async function RankingTypePage({
           <div>
             <h1 className="text-3xl font-black text-ink sm:text-4xl">{rankingLabels[rankingType]}</h1>
             <p className="mt-2 max-w-4xl text-sm font-medium leading-7 text-slate-700">
-              {metric.description} 異常値フラグがあるデータは注記対象とし、算定できないデータはランキングから除外します。
+              {metric.description} 異常値フラグがあるデータは注記対象とし、算定できないデータはランキングから除外します。自治体・運営団体名を選ぶと「このまちの診断」を開きます。
             </p>
             <p className="mt-1 max-w-4xl text-xs font-bold leading-6 text-slate-600">
               全国単純比較であり、類似団体区分の差を調整していません。法非適用事業は、総務省調査の共通定義による料金指標だけを参考比較します。

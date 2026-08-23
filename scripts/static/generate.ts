@@ -1,4 +1,4 @@
-import { mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import {
   getDataSources,
@@ -15,6 +15,7 @@ import {
 } from "@/lib/data";
 import { mapBusinessScopes, type MapBusinessScope } from "@/lib/data";
 import { buildFinancialStoryModel } from "@/lib/financialStoryModel";
+import { assertFundShortageStaticDataset, type FundShortageStaticDataset } from "@/lib/fundShortage";
 import { separateCostCompositionFromDetail } from "@/lib/costCompositionStatic";
 import { municipalitiesToCsv } from "@/lib/municipalityCsv";
 import {
@@ -22,6 +23,7 @@ import {
   buildMunicipalityFeeRevisionIndex,
   municipalityFeeRevisionStatus
 } from "@/lib/municipalityFeeRevision";
+import { buildMunicipalityFeeRevisionStaticIndex } from "@/lib/municipalityFeeRevisionStatic";
 import { getPrefectureCode, prefectures } from "@/lib/prefectures";
 import { prisma } from "@/lib/prisma";
 import { rankingLabels, type RankingType } from "@/lib/rankings";
@@ -44,11 +46,13 @@ const rankingTypes = Object.keys(rankingLabels) as RankingType[];
 const latestFiscalYear = 2024;
 
 async function main() {
+  const fundShortageDataset = await loadFundShortageDataset();
   await Promise.all([
     rm(sourceRoot, { recursive: true, force: true }),
     rm(publicRoot, { recursive: true, force: true })
   ]);
   await Promise.all([mkdir(sourceRoot, { recursive: true }), mkdir(publicRoot, { recursive: true })]);
+  await writeJson(path.join(sourceRoot, "fund-shortage-r6.json"), fundShortageDataset);
 
   const mapMunicipalities = await getMapMunicipalities();
   const scopeEntries = await Promise.all(
@@ -120,6 +124,17 @@ async function main() {
     },
     prefectures: prefectureNames
   });
+  const municipalityFeeRevisionStaticIndex = buildMunicipalityFeeRevisionStaticIndex(municipalitySearchItems);
+  await Promise.all([
+    writeJson(
+      path.join(sourceRoot, "municipality-fee-revisions.json"),
+      municipalityFeeRevisionStaticIndex
+    ),
+    writeJson(
+      path.join(publicRoot, "municipality-fee-revisions.json"),
+      municipalityFeeRevisionStaticIndex
+    )
+  ]);
   await writeJson(path.join(publicRoot, "search-index.json"), mapMunicipalities.map((item) => ({
     municipalityCode: item.municipalityCode,
     prefectureName: item.prefectureName,
@@ -286,10 +301,16 @@ async function main() {
     const prefectureCode = getPrefectureCode(prefectureName);
     if (!prefectureCode) return;
     const comparison = await getPrefecturePeerComparison({ prefectureName, businessKey });
-    await writeJson(
-      path.join(publicRoot, "peers", prefectureCode, `${encodeURIComponent(businessKey)}.json`),
-      comparison
-    );
+    await Promise.all([
+      writeJson(
+        path.join(publicRoot, "peers", prefectureCode, `${encodeURIComponent(businessKey)}.json`),
+        comparison
+      ),
+      writeJson(
+        path.join(publicRoot, "citizen-peers", prefectureCode, `${encodeURIComponent(businessKey)}.json`),
+        comparison
+      )
+    ]);
     if ((index + 1) % 50 === 0 || index + 1 === pairs.length) {
       process.stdout.write(`static comparisons: ${index + 1}/${pairs.length}\n`);
     }
@@ -302,6 +323,13 @@ async function main() {
   });
   await writeText(path.join(sourceRoot, "README.md"), sourceReadme());
   await prisma.$disconnect();
+}
+
+async function loadFundShortageDataset(): Promise<FundShortageStaticDataset> {
+  const file = path.join(sourceRoot, "fund-shortage-r6.json");
+  const value = JSON.parse(await readFile(file, "utf8")) as unknown;
+  assertFundShortageStaticDataset(value);
+  return value;
 }
 
 function compactMunicipalityDetail(detail: any, yearbookData: YearbookIndividualData) {

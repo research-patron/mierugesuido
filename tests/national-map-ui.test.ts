@@ -419,6 +419,18 @@ describe("national map UI guardrails", () => {
     expect(componentSource).toContain("<FlatPrefectureShape path={displayPath} fillColor={fillColor}");
   });
 
+  it("keeps the national recovery legend container transparent without changing its swatches", () => {
+    const baseLegend = cssBlock(".home-national-map-legend");
+    const fidelityLegend = fidelityCssBlock(".home-national-map-legend");
+    const legendComponent = componentFunctionBlock("MapLegend");
+
+    expect(baseLegend).toContain("background: transparent;");
+    expect(fidelityLegend).toContain("background: transparent;");
+    expect(legendComponent).toContain("経費回収率（%）");
+    expect(legendComponent).toContain('className="status-swatch"');
+    expect(legendComponent).toContain("backgroundColor: item.color");
+  });
+
   it("uses a two-layer flat prefecture silhouette and retires heuristic outlines", () => {
     const shapeBlock = componentFunctionBlock("FlatPrefectureShape");
     const silhouetteIndex = shapeBlock.indexOf('className="gis-prefecture-silhouette"');

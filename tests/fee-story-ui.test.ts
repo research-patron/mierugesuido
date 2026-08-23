@@ -7,6 +7,14 @@ const detailSource = readFileSync(
   path.join(process.cwd(), "components/MunicipalityDetailClient.tsx"),
   "utf8"
 );
+const assessmentSource = readFileSync(
+  path.join(process.cwd(), "components/municipality-detail/CitizenAssessmentPanel.tsx"),
+  "utf8"
+);
+const assessmentLogicSource = readFileSync(
+  path.join(process.cwd(), "lib/citizenMunicipalityAssessment.ts"),
+  "utf8"
+);
 const etlSource = readFileSync(
   path.join(process.cwd(), "scripts/etl/etl.ts"),
   "utf8"
@@ -16,10 +24,10 @@ describe("household 20m3 fee and recovery-story UI", () => {
   it("keeps the official household tariff separate from the average unit price", () => {
     expect(detailSource).toContain("家庭の料金表");
     expect(detailSource).toContain("一般家庭用20m³／月");
-    expect(detailSource).toContain("料金表データ未取得");
-    expect(detailSource).toContain("税込・料金表上の標準額（使用料単価×20ではありません）");
+    expect(assessmentSource).toContain('fee == null ? "未取得"');
+    expect(assessmentSource).toContain("一般家庭用20m³／月・税込");
     expect(detailSource).not.toContain("税込・使用料単価 ${formatYenPerM3");
-    expect(detailSource).toContain("対象も単位も異なるため、家庭向け料金表と事業全体の決算を分けて表示します");
+    expect(detailSource).toContain("家庭向け料金表と事業全体の決算を、対象と単位を分けて確認します");
     expect(detailSource).toContain("全利用者の実績平均や事業全体の費用回収額ではありません");
   });
 
@@ -34,10 +42,9 @@ describe("household 20m3 fee and recovery-story UI", () => {
     expect(detailSource).toContain("家庭の20m³月額への換算ではありません");
     expect(detailSource).toContain("Math.abs(opex + capital - treatment) < 0.5");
     expect(detailSource).toContain("内訳が未取得または合計と一致しないため、確認できた合計だけを表示しています");
-    expect(detailSource).not.toContain("経費回収率100%相当の月額");
-    expect(detailSource).not.toContain("現在の月額との差");
-    expect(detailSource).not.toContain("formatSignedMonthlyDifference");
-    expect(detailSource).not.toContain("calculateRequiredHouseholdFee20m3");
+    expect(assessmentSource).toContain("月20m³料金へ単純換算すると");
+    expect(assessmentLogicSource).toContain("すべての料金区分が同じ率で変わると仮定");
+    expect(assessmentLogicSource).toContain("料金改定の予測、推奨改定率、公式指標ではありません");
     expect(detailSource).not.toContain("改定リスクスコア");
   });
 

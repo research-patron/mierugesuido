@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { accountingTypeLabel } from "@/lib/businessDisplay";
+import { accountingTypeLabel, displayBusinessName } from "@/lib/businessDisplay";
 import type { RankingType } from "@/lib/rankings";
 import { municipalityDetailHref } from "@/lib/municipalityLinks";
 import { formatRankingMetric, rankingMetricLabels, rankingMetricValue } from "@/lib/rankingDisplay";
@@ -21,7 +21,11 @@ export function RankingComparison({ items, type }: { items: any[]; type: Ranking
         {rows.map((item, index) => (
           <article key={`${item.municipalityCode}-${index}-summary`} className="rounded-md border border-line bg-white p-3">
             <div className="flex items-center justify-between gap-3">
-              <Link href={municipalityDetailHref(item.municipalityCode, item.businessKey)} className="font-black text-teal hover:underline">
+              <Link
+                href={municipalityDetailHref(item.municipalityCode, item.businessKey)}
+                className="font-black text-teal hover:underline"
+                aria-label={`${item.prefectureName} ${item.municipalityName}・${displayBusinessName(item)}のこのまちの診断を見る`}
+              >
                 {item.prefectureName} {item.municipalityName}
               </Link>
               <span className="rounded bg-teal px-2 py-1 text-xs font-black text-white">{index + 1}位</span>

@@ -1,6 +1,7 @@
 import { cache } from "react";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import type { MunicipalityFeeRevisionStaticIndex } from "@/lib/municipalityFeeRevisionStatic";
 import type { RankingType } from "@/lib/rankings";
 
 export type StaticMunicipalityDetail = any;
@@ -21,6 +22,10 @@ export const getStaticDataSources = cache(() => readJson<any[]>("data", "static"
 
 export const getStaticMunicipalityDetail = cache((municipalityCode: string) =>
   readJson<StaticMunicipalityDetail>("public", "data", "static", "municipalities", `${municipalityCode}.json`)
+);
+
+export const getStaticMunicipalityFeeRevisionIndex = cache(() =>
+  readJson<MunicipalityFeeRevisionStaticIndex>("data", "static", "municipality-fee-revisions.json")
 );
 
 export const getStaticPrefectureMapData = cache((prefectureCode: string) =>

@@ -14,6 +14,9 @@ export type MunicipalityFeeRevisionComparison = {
   changes: MunicipalityFeeRevisionChange[];
 };
 
+/** Shared three-state view used by search and municipality diagnosis. */
+export type RevisionComparison = MunicipalityFeeRevisionComparison | null;
+
 /**
  * 改定情報ページと同じ、R5・R6第33表の「現行使用料施行年月日」が
  * 変わった事業だけを市町村コード単位にまとめる。

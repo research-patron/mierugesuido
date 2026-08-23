@@ -13,42 +13,38 @@ const cssSource = readFileSync(
 );
 
 describe("municipality business switch UI", () => {
-  it("shows every business group as a direct Link instead of a select-and-submit form", () => {
-    expect(pageSource).toMatch(/groups\.map\(\(group\)\s*=>\s*\{[\s\S]{0,1800}<Link\b/);
-    expect(pageSource).toContain("href={detailHref(municipalityCode, group.key, view)}");
+  it("shows every business group in one compact select without a submit step", () => {
+    expect(pageSource).toContain("<select");
+    expect(pageSource).toContain("groups.map((group) => (");
+    expect(pageSource).toContain('<option key={group.key} value={group.key}>');
     expect(pageSource).toContain("groups.length > 1");
-
-    expect(pageSource).not.toContain('id="detail-business"');
-    expect(pageSource).not.toContain('name="business"');
     expect(pageSource).not.toMatch(/<form\b[^>]*className=\{styles\.business/i);
     expect(pageSource).not.toContain('type="submit"');
   });
 
-  it("makes the selected and available business states explicit without relying on color", () => {
-    expect(pageSource).toMatch(/aria-current=\{[^}]+\?\s*"page"\s*:\s*undefined\}/);
-    expect(pageSource).toContain("表示中");
-    expect(pageSource).toContain("この事業の決算を表示");
+  it("labels the selected business, accounting basis, and fiscal year in text", () => {
+    expect(pageSource).toContain("選択中の決算事業");
+    expect(pageSource).toContain("displayBusinessName(group.latestBusiness)");
+    expect(pageSource).toContain("accountingTypeLabel(group.latestBusiness.accountingType)");
+    expect(pageSource).toContain("formatSettlementFiscalLabel({ surveyYear: group.latest.surveyYear");
   });
 
-  it("explains that the control changes only the displayed accounting dataset", () => {
-    expect(pageSource).toContain("表示する決算データを選びます");
-    expect(pageSource).toContain("事業・処理区域・契約先を変更する操作ではありません");
+  it("explains that the control switches the displayed accounting dataset without redundant caveat copy", () => {
+    expect(pageSource).toContain("料金・財務・{areaLabel}比較を、選んだ事業の決算へ切り替えます");
+    expect(pageSource).not.toContain("処理区域や契約先を変える操作ではありません");
+    expect(pageSource).not.toContain("styles.businessSelectorNote");
+    expect(cssSource).not.toContain(".businessSelectorNote");
   });
 
   it("keeps the current detail view when switching business groups", () => {
-    expect(pageSource).toContain("href={detailHref(municipalityCode, group.key, view)}");
+    expect(pageSource).toContain("router.push(detailHref(municipalityCode, event.currentTarget.value, view))");
     expect(pageSource).toContain("function detailHref(municipalityCode: string, business: string, view: DetailView)");
   });
 
-  it("names the KPI region with the currently displayed business", () => {
-    const kpiGridIndex = pageSource.indexOf("styles.kpiGrid");
-    expect(kpiGridIndex).toBeGreaterThan(-1);
-
-    const kpiContext = pageSource.slice(
-      Math.max(0, kpiGridIndex - 350),
-      kpiGridIndex + 350
-    );
-    expect(kpiContext).toContain("displayBusinessName(latestBusiness)");
+  it("passes the selected business into the citizen diagnosis", () => {
+    expect(pageSource).toContain("<CitizenAssessmentPanel");
+    expect(pageSource).toContain("businessKey={latestBusiness.businessKey}");
+    expect(pageSource).toContain("businessLabel={displayBusinessName(latestBusiness)}");
   });
 
   it("labels unavailable R6 financial views without implying that statements exist", () => {
@@ -63,28 +59,20 @@ describe("municipality business switch UI", () => {
     expect(jointEnd).toBeGreaterThan(jointStart);
 
     const jointSource = pageSource.slice(jointStart, jointEnd);
-    expect(jointSource).toContain('view: "fees"');
+    expect(pageSource).toContain('new URLSearchParams({ business: businessKey, view: "fees" })');
     expect(jointSource).not.toContain("組合の決算を見る");
     expect(jointSource).toMatch(/組合[^<\n]{0,20}料金[^<\n]{0,20}見る/);
   });
 
-  it("gives business cards a usable target and at least four category tones", () => {
-    const businessBlocks = [...cssSource.matchAll(/([^{}]*\.business[^{}]*)\{([^{}]*)\}/g)];
-    const targetHeights = businessBlocks.flatMap(([, , declarations]) =>
-      [...declarations.matchAll(/min-height:\s*(\d+(?:\.\d+)?)px/g)].map((match) => Number(match[1]))
-    );
-    expect(targetHeights.some((height) => height >= 44)).toBe(true);
-
-    const businessTones = new Set(
-      [...cssSource.matchAll(/\.business[\w-]*\[data-tone="([^"]+)"\]/g)].map((match) => match[1])
-    );
-    expect(businessTones.size).toBeGreaterThanOrEqual(4);
+  it("gives the compact business select a 44px minimum target", () => {
+    expect(cssSource).toMatch(/\.businessSelectControl select\s*\{[^}]*min-height:\s*44px/s);
+    expect(cssSource).toMatch(/\.businessSelector\s*\{[^}]*grid-template-columns:\s*minmax\(260px, 0\.75fr\) minmax\(420px, 1\.25fr\)/s);
   });
 
-  it("uses a uniform card boundary instead of a decorative color strip", () => {
+  it("uses a restrained neutral boundary without decorative business cards", () => {
     expect(pageSource).not.toContain("businessOptionMark");
     expect(cssSource).not.toContain(".businessOptionMark");
-    expect(cssSource).not.toMatch(/grid-template-columns:\s*[2-6]px\s+minmax\(0, 1fr\)/);
-    expect(cssSource).not.toMatch(/\.businessOption\[aria-current="page"\][^{]*\{[^}]*box-shadow:\s*inset/s);
+    expect(cssSource).not.toContain(".businessOption");
+    expect(cssSource).not.toMatch(/\.businessSelector[^}]*background:\s*(?:linear|radial)-gradient/s);
   });
 });

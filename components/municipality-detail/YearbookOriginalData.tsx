@@ -255,6 +255,7 @@ function YearbookCalculationAudit({
   const rows = [
     {
       label: "一般家庭用20m³／月",
+      classification: "公式値",
       value: fee == null ? "未取得" : `${Math.round(fee).toLocaleString("ja-JP")}円／月`,
       formula: "料金表の公式値をそのまま表示（事業全体の回収額への換算はしません）",
       references: compactReferences([householdRef]),
@@ -262,6 +263,7 @@ function YearbookCalculationAudit({
     },
     {
       label: "使用料単価",
+      classification: "当サイト再計算",
       value: feeUnit == null ? "算定不可" : `${feeUnit.toFixed(1)}円／m³`,
       formula: "下水道使用料収入 × 1,000 ÷ 年間有収水量",
       references: compactReferences([revenueRef, volumeRef]),
@@ -269,6 +271,7 @@ function YearbookCalculationAudit({
     },
     {
       label: "汚水処理原価",
+      classification: "当サイト再計算",
       value: treatmentUnit == null ? "算定不可" : `${treatmentUnit.toFixed(1)}円／m³`,
       formula: "汚水処理費 × 1,000 ÷ 年間有収水量",
       references: compactReferences([costRef, volumeRef]),
@@ -276,13 +279,15 @@ function YearbookCalculationAudit({
     },
     {
       label: "経費回収率",
+      classification: "当サイト再計算",
       value: recovery == null ? "算定不可" : `${recovery.toFixed(1)}%`,
       formula: "下水道使用料収入 ÷ 汚水処理費 × 100",
       references: compactReferences([revenueRef, costRef]),
       published: resolvePublishedCalculationReference(business, "expenseRecoveryRate")
     },
     {
-      label: "年間不足額・使用料収入の必要増加率",
+      label: "現在の費用を使用料収入だけで回収する単純シナリオ",
+      classification: "単純シナリオ",
       value: shortfall == null || requiredIncrease == null
         ? "算定不可"
         : shortfall > 0
@@ -305,6 +310,7 @@ function YearbookCalculationAudit({
         {rows.map((row) => (
           <article key={row.label}>
             <div className={styles.yearbookCalculationValue}>
+              <small className={styles.yearbookCalculationKind}>{row.classification}</small>
               <strong>{row.label}</strong>
               <span>{row.value}</span>
             </div>
@@ -330,7 +336,7 @@ function YearbookCalculationAudit({
       </div>
       {diagnosis?.requiredRevisionRateTo100 != null && requiredIncrease != null ? (
         <p className={styles.yearbookAuditFootnote}>
-          診断データの必要増加率 {(Math.max(Number(diagnosis.requiredRevisionRateTo100), 0) * 100).toFixed(1)}% と、上記の元値からの再計算結果 {requiredIncrease.toFixed(1)}% を照合しています。
+          診断データの単純シナリオ {(Math.max(Number(diagnosis.requiredRevisionRateTo100), 0) * 100).toFixed(1)}% と、上記の元値からの再計算結果 {requiredIncrease.toFixed(1)}% を照合しています。公式の将来予測や推奨改定率ではありません。
         </p>
       ) : null}
     </section>

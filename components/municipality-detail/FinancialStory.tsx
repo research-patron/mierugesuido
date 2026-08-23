@@ -221,6 +221,10 @@ function CostComposition({
         </>
       )}
 
+      <CitizenRelationNote>
+        費用の集中先は料金水準の背景を考える材料の一つですが、効率や将来負担の判断には施設条件や更新計画も必要です。
+      </CitizenRelationNote>
+
       <p className={styles.costCaveat} role="note">
         <Info size={17} aria-hidden="true" />
         <span>
@@ -342,6 +346,10 @@ function IncomeStatement({
         </div>
       ) : null}
 
+      <CitizenRelationNote>
+        単年度の収益と費用の関係は現在の経営状況を考える材料の一つで、料金や持続可能性の判断には経費回収率、複数年の推移、更新計画も必要です。
+      </CitizenRelationNote>
+
       <details className={styles.cardDetails}>
         <summary><span>収益・費用の全項目とデータ確認</span><ChevronDown size={16} aria-hidden="true" /></summary>
         <dl className={styles.metricList}>
@@ -413,6 +421,10 @@ function BalanceSheet({
       ) : (
         <BalanceRelationship analysis={analysis} />
       )}
+
+      <CitizenRelationNote>
+        資産と負債の構成は将来負担を考える材料の一つで、持続可能性の判断には更新計画や企業債の償還計画も必要です。
+      </CitizenRelationNote>
 
       <details className={styles.cardDetails}>
         <summary><span>勘定科目の内訳とデータ確認</span><ChevronDown size={16} aria-hidden="true" /></summary>
@@ -985,6 +997,15 @@ function NetAssetsDriver({ component }: { component: NetAssetsComponentChange })
         <div><dt>当年度末</dt><dd>{formatSourceThousandYen(component.current)}</dd></div>
       </dl>
     </article>
+  );
+}
+
+function CitizenRelationNote({ children }: { children: ReactNode }) {
+  return (
+    <p className={styles.citizenRelation} role="note">
+      <strong>料金・持続可能性との関係</strong>
+      <span>{children}</span>
+    </p>
   );
 }
 

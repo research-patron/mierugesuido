@@ -287,6 +287,8 @@ describe("national map UI guardrails", () => {
     expect(insetRenderer).toContain('className="home-map-inset-hit-area"');
     expect(insetRenderer).toContain('pointerEvents="all"');
     expect(insetRenderer).toContain('fill="transparent"');
+    expect(insetRenderer).toContain('strokeWidth={18}');
+    expect(insetRenderer).not.toContain('<rect');
     expect(insetRenderer.match(/role="link"/g)).toHaveLength(1);
     expect(insetRenderer.match(/tabIndex=\{0\}/g)).toHaveLength(1);
     expect(insetRenderer).not.toContain("home-map-inset-frame");
@@ -311,7 +313,7 @@ describe("national map UI guardrails", () => {
     expect(componentSource).toContain("const MOBILE_NATIONAL_INITIAL_ZOOM = 1.5;");
     expect(componentSource).toContain("const MOBILE_NATIONAL_REGION_ZOOM = 1.25;");
     expect(componentSource).toContain("const MOBILE_NATIONAL_MAX_ZOOM = 4.5;");
-    expect(componentSource).toContain("const NATIONAL_DRAG_CLICK_SUPPRESSION_MS = 800;");
+    expect(componentSource).not.toContain("NATIONAL_DRAG_CLICK_SUPPRESSION_MS");
     expect(explorer).toContain("setManualZoom(MOBILE_NATIONAL_INITIAL_ZOOM);");
     expect(explorer).toContain("nextFocusedRegion ? MOBILE_NATIONAL_REGION_ZOOM : MOBILE_NATIONAL_INITIAL_ZOOM");
     expect(explorer).toContain("setManualZoom(1);");
@@ -328,6 +330,12 @@ describe("national map UI guardrails", () => {
     expect(panMove.indexOf("hasExceededDragThreshold")).toBeLessThan(panMove.indexOf("setPointerCapture"));
     expect(panMove).toContain("panFromPointerDelta({");
     expect(explorer).toContain("suppressMapClickRef.current = true;");
+    expect(panStart).toContain("suppressMapClickRef.current = false;");
+    expect(panStart.indexOf("suppressMapClickRef.current = false;"))
+      .toBeLessThan(panStart.indexOf(".map-control-stack, .home-map-inset"));
+    expect(panStart.indexOf("suppressMapClickRef.current = false;"))
+      .toBeLessThan(panStart.indexOf("manualZoom <= 1"));
+    expect(explorer).not.toContain("clickSuppressionTimerRef");
 
     expect(explorer).toContain("setSelectedMobilePrefecture(feature);");
     expect(explorer).toContain('className="mobile-national-map-confirmation"');
@@ -338,6 +346,15 @@ describe("national map UI guardrails", () => {
     expect(fidelityCssBlock('.gis-map-surface--home-national[data-pannable="true"]')).toContain("touch-action: none");
     expect(fidelityCssBlock(".mobile-national-map-confirmation > a")).toContain("min-height: 44px");
     expect(fidelityCssSource).toMatch(/@media \(max-width: 900px\)[\s\S]*?\.national-map-panel \.gis-map-surface--home-national\s*\{[^}]*min-height:\s*440px;[^}]*height:\s*clamp\(440px, 60vh, 480px\);/);
+  });
+
+  it("keeps ranking links in normal flow so they cannot cover the mobile map", () => {
+    const rankingLink = fidelityCssBlock(".home-ranking-row-link");
+
+    expect(rankingLink).toContain("display: inline-flex;");
+    expect(fidelityCssSource).not.toContain(".home-ranking-row-link::after");
+    expect(fidelityCssSource).not.toMatch(/\.home-ranking-list tbody tr\s*\{[^}]*position:\s*relative/);
+    expect(fidelityCssSource).toMatch(/@media \(max-width: 900px\)[\s\S]*?\.home-ranking-row-link\s*\{[^}]*min-height:\s*44px;/);
   });
 
   it("focuses every selector region while keeping the default national composition", () => {
@@ -502,7 +519,7 @@ describe("national map UI guardrails", () => {
     expect(cssBlock(".map-tooltip-cta")).toContain("min-height: 34px");
     expect(cssBlock(".map-tooltip-cta")).toContain("cursor: pointer");
     expect(cssBlock(".home-map-inset-hit-area")).toContain("fill: transparent");
-    expect(cssBlock(".home-map-inset-hit-area")).toContain("stroke: none");
+    expect(cssBlock(".home-map-inset-hit-area")).toContain("stroke: transparent");
   });
 
   it("resolves hover detail links for prefectures, municipalities, and search fallback", () => {

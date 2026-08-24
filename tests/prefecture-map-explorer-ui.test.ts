@@ -46,7 +46,11 @@ describe("prefecture municipality map UI guardrails", () => {
     expect(componentSource).toContain("event.currentTarget.setPointerCapture(event.pointerId)");
     expect(componentSource.indexOf("hasExceededDragThreshold(deltaX, deltaY, drag.pointerType)"))
       .toBeLessThan(componentSource.indexOf("event.currentTarget.setPointerCapture(event.pointerId)"));
-    expect(componentSource).toContain("suppressClickUntilRef.current = Date.now() + dragClickSuppressionMs");
+    expect(componentSource).toContain("const suppressNextRegionClickRef = useRef(false);");
+    expect(componentSource).toContain("suppressNextRegionClickRef.current = true;");
+    expect(componentSource).toContain("suppressNextRegionClickRef.current = false;");
+    expect(componentSource).not.toContain("suppressClickUntilRef");
+    expect(componentSource).not.toContain("dragClickSuppressionMs");
     expect(componentSource).toContain("preserveMapCenterAcrossZoom({");
     expect(componentSource).toContain('data-pan-enabled={zoom > 1 ? "true" : "false"}');
     expect(componentSource).toContain("data-map-zoom={zoom.toFixed(2)}");

@@ -2670,7 +2670,7 @@ body {
 
 .home-map-inset-hit-area {
   fill: transparent;
-  stroke: none;
+  stroke: transparent;
 }
 
 .home-map-explorer--home .home-support-grid {

@@ -2203,3 +2203,39 @@ This gate supersedes the municipality-detail support-area and prefecture-compari
 - Intentional subtraction in this gate is limited to the municipality announcement presentation, its now-unused styles, the formula disclosure interaction, and the temporary nested metric-card treatment rejected during visual review.
 
 final result: passed
+
+## Final superseding mobile map tap and gesture gate — 2026-08-24
+
+This gate supersedes the national and prefecture-map interaction evidence for compact viewports after correcting the reported universal Nishikatsura navigation and post-gesture tap failures.
+
+### Root cause and subtraction
+
+- The home ranking table previously positioned each row as an absolute-positioning containing block and extended its link with an `inset: 0` pseudo-element. Table-row positioning is not a reliable hit-area boundary across browser engines; the final Nishikatsura link could cover the map and intercept unrelated taps. The pseudo-element and table-row containing block were removed. The real ranking link now supplies its own 44 px mobile target in normal flow.
+- National and prefecture maps previously discarded every click for 800 ms after a drag. This also discarded a new intentional tap. Both maps now suppress only the compatibility click emitted by the drag sequence and clear that state on the next primary pointer sequence, zoom action, or reset action.
+- The compact Kyushu/Okinawa focus previously used a rectangular transparent Okinawa hit target that overlapped the mainland frame. It was replaced with a transparent shape-following path. The visible official geometry and destination remain unchanged.
+
+### Mobile interaction evidence
+
+- Production-build output was inspected at 390 x 844 on the home map, `/map/`, and `/map/19/`.
+- Home and national map taps selected Tokyo `/map/13/`, Osaka `/map/27/`, Hokkaido `/map/01/`, and Okinawa `/map/47/`; the selected prefecture name and confirmation link agreed in every case.
+- In the Yamanashi municipality map, Kofu selected `/municipalities/192015/`, Nishikatsura selected `/municipalities/194239/`, and Oshino selected `/municipalities/194247/`. The three distinct shapes no longer resolve to the Nishikatsura destination.
+- After national-map zoom, a new Tokyo tap selected `/map/13/`. After a mainland swipe, a fresh Aomori tap succeeded in 410 ms. Fresh post-swipe taps on the fixed insets selected Hokkaido in 394 ms and Okinawa in 330 ms. Their screen bounds remained unchanged while the mainland view box changed, preserving the fixed-inset and movable-mainland design.
+- After a municipality-map swipe, a fresh Hokuto tap succeeded in 274 ms and selected `/municipalities/192091/`. A separate post-zoom Kofu tap selected the Kofu detail after the responsive layout settled.
+- The mobile confirmation panels remain visible and require users to verify the prefecture or municipality name before following the detail link. No horizontal overflow was observed.
+
+### Visual and desktop regression evidence
+
+- Current-run captures are stored outside the repository as `01-home-national-map-mobile-390x844.png`, `02-national-map-mobile-390x844.png`, `03-yamanashi-municipality-map-mobile-390x844.png`, `04-home-national-map-desktop-1491x1055.png`, and `05-yamanashi-municipality-map-desktop-1491x1055.png`.
+- The 1491 x 1055 home and Yamanashi frames retain the full map, labels, legend, scope controls, zoom/reset controls, and municipality comparison layout. Both inspected documents reported no horizontal overflow.
+
+### Verification and protected scope
+
+- Targeted map tests: 57/57 passed.
+- `pnpm lint`: passed.
+- Full `pnpm test`: 49/49 files passed, 354 tests passed, and one official-workbook-dependent test was skipped.
+- Production `pnpm build`: passed; all 1,650 static pages generated.
+- `git diff --check`: passed.
+- The clean-build audit applied only the six map/CSS/test files to a clean checkout. The 1,114 pre-existing unstaged static-file deletions and 401 untracked conflict copies in the primary working directory were neither modified nor included.
+- No database, Prisma schema, migration, ETL, official workbook, generated public-data payload, GIS source geometry, financial calculation, ranking formula, or URL contract changed.
+
+final result: passed

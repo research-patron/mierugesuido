@@ -175,7 +175,6 @@ const MOBILE_NATIONAL_INITIAL_ZOOM = 1.5;
 const MOBILE_NATIONAL_REGION_ZOOM = 1.25;
 const MOBILE_NATIONAL_MAX_ZOOM = 4.5;
 const MOBILE_NATIONAL_ZOOM_STEP = 0.5;
-const NATIONAL_DRAG_CLICK_SUPPRESSION_MS = 800;
 type NationalHoverEvent = MouseEvent<SVGGElement | HTMLAnchorElement> | ReactPointerEvent<SVGGElement | HTMLAnchorElement>;
 type NationalMapDrag = {
   pointerId: number;
@@ -262,7 +261,6 @@ export function NationalMapExplorer({
   const [isPanning, setIsPanning] = useState(false);
   const [selectedMobilePrefecture, setSelectedMobilePrefecture] = useState<GisFeature | null>(null);
   const hoverDelayRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const clickSuppressionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingHoverRef = useRef<HoverState | null>(null);
   const hoverTargetCodeRef = useRef<string | null>(null);
   const mapDragRef = useRef<NationalMapDrag | null>(null);
@@ -299,7 +297,6 @@ export function NationalMapExplorer({
 
   useEffect(() => () => {
     if (hoverDelayRef.current) clearTimeout(hoverDelayRef.current);
-    if (clickSuppressionTimerRef.current) clearTimeout(clickSuppressionTimerRef.current);
   }, []);
 
   useEffect(() => {
@@ -410,6 +407,7 @@ export function NationalMapExplorer({
 
   function changeNationalZoom(direction: -1 | 1) {
     clearNationalHover();
+    suppressMapClickRef.current = false;
     setSelectedMobilePrefecture(null);
     setActivePrefectureCode(null);
     const step = compactAtlas ? MOBILE_NATIONAL_ZOOM_STEP : 0.18;
@@ -424,7 +422,10 @@ export function NationalMapExplorer({
   }
 
   function selectOrOpenPrefecture(feature: GisFeature) {
-    if (suppressMapClickRef.current) return;
+    if (suppressMapClickRef.current) {
+      suppressMapClickRef.current = false;
+      return;
+    }
     if (!compactAtlas) {
       router.push(`/map/${feature.code}`);
       return;
@@ -435,9 +436,13 @@ export function NationalMapExplorer({
   }
 
   function startNationalPan(event: ReactPointerEvent<HTMLDivElement>) {
-    if (!event.isPrimary || !compactAtlas || manualZoom <= 1 || event.button !== 0 || !panBaseViewBox) return;
+    if (!event.isPrimary || !compactAtlas || event.button !== 0) return;
+    // A new pointer sequence is an intentional interaction. Only a click emitted
+    // by the drag sequence that just ended should be suppressed.
+    suppressMapClickRef.current = false;
     const target = event.target;
     if (target instanceof Element && target.closest(".map-control-stack, .home-map-inset")) return;
+    if (manualZoom <= 1 || !panBaseViewBox) return;
     mapDragRef.current = {
       pointerId: event.pointerId,
       pointerType: event.pointerType,
@@ -486,11 +491,6 @@ export function NationalMapExplorer({
     setIsPanning(false);
     if (!drag.dragging) return;
     suppressMapClickRef.current = true;
-    if (clickSuppressionTimerRef.current) clearTimeout(clickSuppressionTimerRef.current);
-    clickSuppressionTimerRef.current = setTimeout(() => {
-      suppressMapClickRef.current = false;
-      clickSuppressionTimerRef.current = null;
-    }, NATIONAL_DRAG_CLICK_SUPPRESSION_MS);
   }
 
   const MapHeading = variant === "home" ? "h1" : "h2";
@@ -876,16 +876,6 @@ function HomeInsetMap({
       }}
       onMouseMove={(event) => onHover(event, feature, summary, featureMunicipalities)}
     >
-      <rect
-        x={frame.x}
-        y={frame.y}
-        width={frame.width}
-        height={frame.height}
-        className="home-map-inset-hit-area"
-        fill="transparent"
-        pointerEvents="all"
-        aria-hidden="true"
-      />
       <text x={titleX} y={frame.y + 14} className="home-map-inset-title">{title}</text>
       <svg
         x={frame.x}
@@ -898,6 +888,18 @@ function HomeInsetMap({
       >
         <g>
           <FlatPrefectureShape path={displayPath} fillColor={fillColor} inset />
+          <path
+            d={displayPath}
+            className="home-map-inset-hit-area"
+            fill="transparent"
+            stroke="transparent"
+            strokeWidth={18}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            vectorEffect="non-scaling-stroke"
+            pointerEvents="all"
+            aria-hidden="true"
+          />
         </g>
       </svg>
     </g>

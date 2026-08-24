@@ -90,7 +90,6 @@ const statusColors = Object.fromEntries(statusLegend.map((item) => [item.key, it
 const zoomSteps = [1, 1.5, 2.25, 3.5, 5, 8, 12, 20, 40, 80, 160];
 const minimumZoom = zoomSteps[0];
 const maximumZoom = zoomSteps[zoomSteps.length - 1];
-const dragClickSuppressionMs = 800;
 const municipalityTooltipWidth = 232;
 const municipalityTooltipHeight = 196;
 const nonMunicipalityGeographyCodes = new Set(["01695", "01696", "01697", "01698", "01699", "01700"]);
@@ -116,7 +115,7 @@ export function PrefectureMapExplorer({
     moved: boolean;
     captured: boolean;
   } | null>(null);
-  const suppressClickUntilRef = useRef(0);
+  const suppressNextRegionClickRef = useRef(false);
   const mobileInitialZoomAppliedRef = useRef(false);
   const hasViewportInitializedRef = useRef(false);
   const [data, setData] = useState<GisData | null>(null);
@@ -270,6 +269,7 @@ export function PrefectureMapExplorer({
   }
 
   function resetMap() {
+    suppressNextRegionClickRef.current = false;
     setZoom(minimumZoom);
     setPan({ x: 0, y: 0 });
     setHover(null);
@@ -278,6 +278,7 @@ export function PrefectureMapExplorer({
   }
 
   function changeZoom(direction: -1 | 1) {
+    suppressNextRegionClickRef.current = false;
     const nextZoom = direction > 0
       ? zoomSteps.find((step) => step > zoom + 0.001) ?? maximumZoom
       : [...zoomSteps].reverse().find((step) => step < zoom - 0.001) ?? minimumZoom;
@@ -324,7 +325,11 @@ export function PrefectureMapExplorer({
   }
 
   function startPan(event: ReactPointerEvent<HTMLDivElement>) {
-    if (zoom <= 1 || event.button !== 0 || !event.isPrimary) return;
+    if (event.button !== 0 || !event.isPrimary) return;
+    // Clear stale drag suppression as soon as a fresh tap or drag begins.
+    // A compatibility click from the previous drag has no new pointerdown.
+    suppressNextRegionClickRef.current = false;
+    if (zoom <= 1) return;
     dragRef.current = {
       pointerId: event.pointerId,
       pointerType: event.pointerType,
@@ -371,12 +376,13 @@ export function PrefectureMapExplorer({
     }
     setIsPanning(false);
     if (moved) {
-      suppressClickUntilRef.current = Date.now() + dragClickSuppressionMs;
+      suppressNextRegionClickRef.current = true;
     }
   }
 
   function handleRegionClick(event: MouseEvent<SVGGElement>, feature: GisFeature) {
-    if (Date.now() < suppressClickUntilRef.current) {
+    if (suppressNextRegionClickRef.current) {
+      suppressNextRegionClickRef.current = false;
       event.preventDefault();
       event.stopPropagation();
       return;

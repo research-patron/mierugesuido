@@ -934,19 +934,11 @@ body {
   font-size: 10px;
 }
 
-.home-ranking-list tbody tr {
-  position: relative;
-}
-
 .home-ranking-row-link {
+  display: inline-flex;
+  align-items: center;
   color: var(--ui-ink);
   font-weight: 600;
-}
-
-.home-ranking-row-link::after {
-  position: absolute;
-  inset: 0;
-  content: "";
 }
 
 .home-ranking-list tbody tr:hover td {
@@ -1852,6 +1844,11 @@ body {
 
   .home-ranking-panel > div:last-child {
     grid-template-columns: 1fr;
+  }
+
+  .home-ranking-row-link {
+    width: 100%;
+    min-height: 44px;
   }
 
   .home-support-grid > .panel:last-child > div {

@@ -1,10 +1,11 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Kiwi_Maru } from "next/font/google";
 import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
 import "./globals.css";
 import "./ui-fidelity.css";
 import { footerDisclaimer, siteName } from "@/lib/copy";
+import { createPageMetadata, siteDescription, siteUrl } from "@/lib/siteMetadata";
 
 const kiwiMaru = Kiwi_Maru({
   weight: ["400", "500"],
@@ -16,8 +17,39 @@ const kiwiMaru = Kiwi_Maru({
 });
 
 export const metadata: Metadata = {
-  title: siteName,
-  description: "総務省/e-Statの地方公営企業決算状況調査をもとに、自治体別の家庭用料金と経費回収率を比較・可視化します。"
+  ...createPageMetadata({
+    description: siteDescription,
+    path: "/"
+  }),
+  metadataBase: siteUrl,
+  applicationName: siteName,
+  title: {
+    default: siteName,
+    template: `%s | ${siteName}`
+  },
+  manifest: "/manifest.webmanifest",
+  category: "public data",
+  formatDetection: {
+    telephone: false,
+    address: false,
+    email: false
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1
+    }
+  }
+};
+
+export const viewport: Viewport = {
+  colorScheme: "light",
+  themeColor: "#0b9aa3"
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

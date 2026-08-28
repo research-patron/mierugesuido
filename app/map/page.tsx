@@ -1,9 +1,17 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Bell, CalendarDays, CircleHelp, PieChart, Users } from "lucide-react";
 import { JapanMapSelector } from "@/components/JapanMapSelector";
 import { StatCard } from "@/components/StatCard";
 import { formatPercent, formatSettlementFiscalLabel } from "@/lib/format";
 import { getStaticHomeData } from "@/lib/staticData";
+import { createPageMetadata } from "@/lib/siteMetadata";
+
+export const metadata: Metadata = createPageMetadata({
+  title: "全国下水道経費回収率マップ",
+  description: "公共下水道と特定環境保全公共下水道を切り替え、全国の自治体別経費回収率を都道府県ごとに比較できる地図です。",
+  path: "/map"
+});
 
 export default async function MapPage() {
   const { overview, mapMunicipalities: municipalities, prefectureSummaries: summaries, mapScopes, defaultMapScope, yearbookFeeChangeSummary } = await getStaticHomeData();

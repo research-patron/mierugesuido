@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Bell, Gauge, PieChart, Users } from "lucide-react";
@@ -5,10 +6,28 @@ import { PrefectureMapExplorer } from "@/components/PrefectureMapExplorer";
 import { StatCard } from "@/components/StatCard";
 import { formatPercent } from "@/lib/format";
 import { getStaticManifest, getStaticPrefectureMapData } from "@/lib/staticData";
+import { createPageMetadata } from "@/lib/siteMetadata";
 
 export async function generateStaticParams() {
   const manifest = await getStaticManifest();
   return manifest.prefectureCodes.map((prefectureCode) => ({ prefectureCode }));
+}
+
+export async function generateMetadata({
+  params
+}: {
+  params: Promise<{ prefectureCode: string }>;
+}): Promise<Metadata> {
+  const { prefectureCode } = await params;
+  const data = await getStaticPrefectureMapData(prefectureCode);
+  if (!data.prefecture) notFound();
+
+  const title = `${data.prefecture.name}の下水道経費回収率マップ`;
+  return createPageMetadata({
+    title,
+    description: `${data.prefecture.name}の自治体別に、下水道の経費回収率、使用料単価、汚水処理原価を地図と一覧で比較できます。`,
+    path: `/map/${prefectureCode}`
+  });
 }
 
 export default async function PrefectureMapPage({

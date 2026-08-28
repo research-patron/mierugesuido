@@ -2239,3 +2239,35 @@ This gate supersedes the national and prefecture-map interaction evidence for co
 - No database, Prisma schema, migration, ETL, official workbook, generated public-data payload, GIS source geometry, financial calculation, ranking formula, or URL contract changed.
 
 final result: passed
+
+## Final superseding publication metadata and site-icon gate — 2026-08-28
+
+This gate covers the public-launch surface: site icons, route metadata, canonical and social URLs, install metadata, crawler policy, static-host headers, and the branded not-found experience.
+
+### Publication surface and brand assets
+
+- Every public route now emits a concise Japanese title and description, a stable trailing-slash canonical URL, and matching Open Graph and Twitter Card metadata. Query-driven search and ranking views canonicalize to their route entry, while the generated sitemap contains only stable public URLs.
+- The production origin comes from `NEXT_PUBLIC_SITE_URL`, requires HTTPS, and defaults to `https://mierugesuido.pages.dev`. No analytics, cookies, verification tokens, or third-party runtime requests were added.
+- The 16/32/48 px favicon, 180 px Apple touch icon, 192/512 px app icons, and 512 px maskable icon are derived from the existing sewer brand mark. The final small-size and mask-safe-area review found no competing identity or clipped essential mark.
+- The 1200 x 630 social-sharing image uses the existing sewer mark and water-flow visual language. Its rendered text uses the locally bundled Kiwi Maru font; the generated image makes no runtime font request.
+- The web manifest, `robots.txt`, exact 1,647-URL sitemap, branded noindex/nofollow 404, and Cloudflare Pages `_headers` are present in the production export. The 404 intentionally emits neither a canonical URL nor Open Graph or Twitter metadata.
+
+### Rendered and machine-verifiable evidence
+
+- The production export was inspected at 1491 x 1055 for the home surface and branded 404, and at 390 x 844 for the 404. Kiwi Maru was the computed font, navigation remained usable, 44 px primary targets were retained on mobile, and document width equalled scroll width in every inspected state.
+- The post-build publication verifier checked all 1,647 public routes for unique titles, descriptions, and canonical URLs; Japanese language metadata; matching Open Graph and Twitter titles/descriptions/URLs; the exact 1200 x 630 PNG social image and alternative text; manifest and icon links; and absence of third-party runtime resources, including external CSS assets and Google Fonts URLs. Municipality titles include the prefecture so same-named municipalities remain distinguishable. It also checked exact sitemap coverage, crawler policy, install metadata, PNG dimensions, favicon sizes, 404 exclusions, and the copied security headers.
+- The static generator completed from the protected official-source cache: 1,318,745 rows from 86 workbooks, 1,586 municipality payloads, and 312 comparison payloads. It exposed an existing 312-file peer-payload drift unrelated to this publication scope; those generated changes were deliberately not adopted.
+
+### Verification, dependency boundary, and protected scope
+
+- `pnpm run lint`: passed.
+- Full `pnpm test`: 50/50 files passed, 361 tests passed.
+- The six publication-metadata tests also passed with `NEXT_PUBLIC_SITE_URL=https://www.example.jp`, confirming that canonical, robots, social, and sitemap origins follow a configured HTTPS origin.
+- Production `pnpm run build`: passed; all 1,656 static pages generated, followed automatically by the publication verifier for 1,647 public URLs.
+- `git diff --check`: passed. The site-icon and sharing-image files have the expected MIME signatures and dimensions.
+- Gitleaks found no secret in the exact 32-file publication change or the full Git history. Targeted local-path and credential checks found only generic policy wording, and the primary Git index remains empty.
+- Next.js was updated within the supported 15.5 line to 15.5.24. `pnpm audit --prod` still reports 10 transitive or toolchain advisories (8 high, 2 moderate), including workbook-processing and build-only packages; the exported Cloudflare site ships no Node dependency runtime. These findings remain explicit maintenance items rather than being hidden with unreviewed breaking overrides.
+- The primary worktree already contained 1,114 tracked static-file deletions, 401 untracked byte-identical conflict copies, an unrelated untracked video workspace, and a 51-byte session-marker file. They were neither repaired nor included; the session marker must never be staged or committed, and all final gates ran in a clean detached clone with only the publication allowlist overlaid.
+- No database, Prisma schema, migration, ETL implementation, official workbook, imported accounting value, GIS source, or generated public financial payload changed. No commit, push, preview deployment, or production deployment was performed.
+
+final result: passed

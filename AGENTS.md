@@ -1,5 +1,16 @@
 # Current Goal: R2-R6 Accounting Eligibility, Data Completion, and Financial Storytelling
 
+## Goal Extension (2026-08-27 — publication metadata and site icons)
+
+- Audit the public launch surface and implement the missing site icon, page metadata descriptions, canonical URLs, social-sharing metadata, web manifest, robots policy, sitemap, branded not-found experience, and safe static-host security headers needed for this service.
+- Derive favicon, app, Apple touch, and maskable icons from the existing user-facing sewer brand mark. Do not introduce a competing logo or replace the established header identity.
+- Give each public route an accurate, concise Japanese title and description. Preserve query-driven search and comparison behavior while canonicalizing those views to their stable route entry.
+- Keep the production origin configurable with `NEXT_PUBLIC_SITE_URL`, defaulting to the current Cloudflare Pages production URL. Do not add analytics, cookies, verification tokens, or third-party runtime requests without separate authorization and ownership details.
+- Use `Kiwi Maru` for every piece of text baked into generated images, including the social-sharing preview. Keep the font self-hosted through the existing Next.js font pipeline while rendering; do not add a third-party runtime font request.
+- Do not change the database, Prisma schema, migrations, ETL, official source workbooks, imported accounting values, GIS records, or generated public financial data for this publication-readiness work.
+- Verify metadata output, icon rendering at small and installable sizes, robots, sitemap coverage, manifest, 404 behavior, static generation, lint, full tests, and the production build. Record any pre-existing worktree condition that prevents a gate instead of altering unrelated data to make it pass.
+- Publication remains governed by the GitHub and Cloudflare policy below: implementation alone does not authorize staging, commit, push, or deployment.
+
 ## Goal Extension (2026-08-11 — remove non-standard transfers and apply Kiwi Maru)
 
 - Remove every user-facing and publicly exported item related to `基準外繰入金` because this service will no longer adopt that concept as a comparison or explanatory field. This includes cards, tables, charts, map popups, municipality search, CSV, rankings, ranking navigation and routes, field definitions, data-source copy, and compact public static payloads.

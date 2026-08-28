@@ -1,13 +1,30 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { RankingNav } from "@/components/RankingNav";
 import { RankingComparison } from "@/components/RankingComparison";
 import { RankingTable } from "@/components/RankingTable";
 import { isRankingType, rankingLabels, rankingSelection } from "@/lib/rankings";
 import { getStaticManifest, getStaticRankings } from "@/lib/staticData";
+import { createPageMetadata } from "@/lib/siteMetadata";
 
 export async function generateStaticParams() {
   const manifest = await getStaticManifest();
   return manifest.rankingTypes.map((type) => ({ type }));
+}
+
+export async function generateMetadata({
+  params
+}: {
+  params: Promise<{ type: string }>;
+}): Promise<Metadata> {
+  const { type } = await params;
+  if (!isRankingType(type)) notFound();
+  const { metric } = rankingSelection(type);
+  return createPageMetadata({
+    title: rankingLabels[type],
+    description: `${metric.description} 全国の下水道事業を「${rankingLabels[type]}」で確認できます。`,
+    path: `/rankings/${type}`
+  });
 }
 
 export default async function RankingTypePage({

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { MunicipalityDetailClient } from "@/components/MunicipalityDetailClient";
-import { siteName } from "@/lib/copy";
 import { formatSettlementFiscalLabel } from "@/lib/format";
 import {
   fundShortageAssessmentSelectionKey,
@@ -14,6 +13,7 @@ import {
   getStaticMunicipalityFeeRevisionIndex
 } from "@/lib/staticData";
 import { getStaticFundShortageAssessment } from "@/lib/staticFundShortageDataset";
+import { createPageMetadata } from "@/lib/siteMetadata";
 
 export async function generateStaticParams() {
   const manifest = await getStaticManifest();
@@ -33,7 +33,11 @@ export async function generateMetadata({
     surveyYear: latest?.surveyYear,
     fiscalYearLabel: latest?.fiscalYearLabel
   });
-  return { title: `${municipality.municipalityName} | ${siteName}（${fiscal}）` };
+  return createPageMetadata({
+    title: `${municipality.prefectureName} ${municipality.municipalityName}の下水道使用料・経費回収率（${fiscal}）`,
+    description: `${municipality.prefectureName}${municipality.municipalityName}の下水道使用料、経費回収率、使用料単価、汚水処理原価と決算推移を事業別に確認できます。`,
+    path: `/municipalities/${municipalityCode}`
+  });
 }
 
 export default async function MunicipalityDetailPage({

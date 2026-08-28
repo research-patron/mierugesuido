@@ -1,5 +1,13 @@
+import type { Metadata } from "next";
 import { DisclaimerBox } from "@/components/DisclaimerBox";
 import { accountingExplanation, detailDisclaimer, footerDisclaimer, operatingRatioExplanation } from "@/lib/copy";
+import { createPageMetadata } from "@/lib/siteMetadata";
+
+export const metadata: Metadata = createPageMetadata({
+  title: "免責事項",
+  description: "本サイトに掲載する下水道使用料、経費回収率、会計指標、単純試算の前提と利用上の注意事項を説明します。",
+  path: "/disclaimer"
+});
 
 export default function DisclaimerPage() {
   return (

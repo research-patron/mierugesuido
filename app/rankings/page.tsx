@@ -1,8 +1,16 @@
+import type { Metadata } from "next";
 import { RankingNav } from "@/components/RankingNav";
 import { RankingComparison } from "@/components/RankingComparison";
 import { RankingTable } from "@/components/RankingTable";
 import { defaultRankingType } from "@/lib/rankings";
 import { getStaticRankings } from "@/lib/staticData";
+import { createPageMetadata } from "@/lib/siteMetadata";
+
+export const metadata: Metadata = createPageMetadata({
+  title: "下水道使用料ランキング・比較",
+  description: "全国の下水道事業を、経費回収率、使用料単価、汚水処理原価の高い順・低い順で比較できるランキングです。",
+  path: "/rankings"
+});
 
 export default async function RankingsPage() {
   const items = (await getStaticRankings(defaultRankingType)).slice(0, 30);

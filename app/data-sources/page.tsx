@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import { CircleHelp, Database, FileText, Info, Scale } from "lucide-react";
@@ -5,6 +6,13 @@ import { formulaCopy, operatingRatioExplanation } from "@/lib/copy";
 import { fieldDefinitions } from "@/lib/fieldDefinitions";
 import { formatSettlementFiscalLabel } from "@/lib/format";
 import { getStaticDataSources } from "@/lib/staticData";
+import { createPageMetadata } from "@/lib/siteMetadata";
+
+export const metadata: Metadata = createPageMetadata({
+  title: "データの見方・出典",
+  description: "本サイトで使う総務省・e-Stat等の公的データ、対象年度、下水道使用料と経費回収率などの計算方法・判定ルールを説明します。",
+  path: "/data-sources"
+});
 
 export default async function DataSourcesPage() {
   const sources = await getStaticDataSources();

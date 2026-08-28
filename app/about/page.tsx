@@ -1,4 +1,12 @@
+import type { Metadata } from "next";
 import { formulaCopy, siteName } from "@/lib/copy";
+import { createPageMetadata } from "@/lib/siteMetadata";
+
+export const metadata: Metadata = createPageMetadata({
+  title: "サイトについて",
+  description: `${siteName}の目的、掲載する下水道事業データと主な計算式について説明します。`,
+  path: "/about"
+});
 
 export default function AboutPage() {
   return (

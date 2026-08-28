@@ -158,6 +158,10 @@ pnpm build:pages
 - Functions directory: 設定しない
 - Environment variables / D1 binding: 本番表示には不要
 
+canonical URL、OG URL、`robots.txt`、`sitemap.xml` の公開元は `NEXT_PUBLIC_SITE_URL` で上書きできます。未設定時は Cloudflare Pages 本番URL `https://mierugesuido.pages.dev` を使います。独自ドメインを正規URLとして採用するときだけ、Cloudflare Pages のビルド環境へ `https` のオリジンを設定してください。
+
+静的ビルドは `/favicon.ico`、`/manifest.webmanifest`、`/robots.txt`、`/sitemap.xml`、`/404.html` を生成します。Cloudflare Pages 用のセキュリティヘッダーとキャッシュ方針は `public/_headers` から `out/_headers` へコピーされます。アクセス解析、Cookie、所有権確認トークン、第三者への実行時リクエストは含みません。
+
 生成済みの公開データは `data/static` と `public/data/static` に含まれるため、Cloudflare のビルド環境にデータベースやシークレットを渡す必要はありません。
 
 - [Cloudflare Pages: Next.js static export](https://developers.cloudflare.com/pages/framework-guides/nextjs/deploy-a-static-nextjs-site/)

@@ -35,7 +35,7 @@ export async function generateMetadata({
   });
   return createPageMetadata({
     title: `${municipality.prefectureName} ${municipality.municipalityName}の下水道使用料・経費回収率（${fiscal}）`,
-    description: `${municipality.prefectureName}${municipality.municipalityName}の下水道使用料、経費回収率、使用料単価、汚水処理原価と決算推移を事業別に確認できます。`,
+    description: `${municipality.prefectureName}${municipality.municipalityName}の下水道使用料と、維持管理費・資本費に分けた料金水準の背景、経費回収率、決算推移を事業別に確認できます。`,
     path: `/municipalities/${municipalityCode}`
   });
 }

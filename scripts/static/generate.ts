@@ -25,6 +25,10 @@ import {
 } from "@/lib/municipalityFeeRevision";
 import { buildMunicipalityFeeRevisionStaticIndex } from "@/lib/municipalityFeeRevisionStatic";
 import { getPrefectureCode, prefectures } from "@/lib/prefectures";
+import {
+  buildPrefecturePeerFeeCostSupplement,
+  withoutPrefecturePeerFeeCostFields
+} from "@/lib/prefecturePeerComparison";
 import { prisma } from "@/lib/prisma";
 import { rankingLabels, type RankingType } from "@/lib/rankings";
 import { assertCostCompositionMatchesOfficial, assertMappedEvidenceMatchesOfficial } from "@/lib/yearbookEvidence";
@@ -301,14 +305,22 @@ async function main() {
     const prefectureCode = getPrefectureCode(prefectureName);
     if (!prefectureCode) return;
     const comparison = await getPrefecturePeerComparison({ prefectureName, businessKey });
+    if (comparison.rows.length === 0) {
+      throw new Error(`県内比較データを生成できません: ${prefectureName}/${businessKey}`);
+    }
+    const publicComparison = withoutPrefecturePeerFeeCostFields(comparison);
     await Promise.all([
       writeJson(
         path.join(publicRoot, "peers", prefectureCode, `${encodeURIComponent(businessKey)}.json`),
-        comparison
+        publicComparison
       ),
       writeJson(
         path.join(publicRoot, "citizen-peers", prefectureCode, `${encodeURIComponent(businessKey)}.json`),
-        comparison
+        publicComparison
+      ),
+      writeJson(
+        path.join(publicRoot, "citizen-fee-costs", prefectureCode, `${encodeURIComponent(businessKey)}.json`),
+        buildPrefecturePeerFeeCostSupplement(comparison)
       )
     ]);
     if ((index + 1) % 50 === 0 || index + 1 === pairs.length) {

@@ -15,10 +15,14 @@ vi.mock("@/lib/prisma", () => ({
 import { getPrefecturePeerComparison } from "@/lib/data";
 import {
   buildPrefecturePeerComparison,
+  buildPrefecturePeerFeeCostSupplement,
   isOperatingCoverageCritical,
+  mergePrefecturePeerFeeCostSupplement,
   operatingCoverageDisplayValue,
   PREFECTURE_PEER_COST_COMPOSITION_ITEM_CODES,
   PREFECTURE_PEER_INCOME_ITEM_CODES,
+  PREFECTURE_PEER_PURPOSE_COST_ITEM_CODES,
+  withoutPrefecturePeerFeeCostFields,
   type PrefecturePeerAnnualInput,
   type PrefecturePeerBusinessInput,
   type PrefecturePeerMunicipalityInput
@@ -151,11 +155,76 @@ describe("buildPrefecturePeerComparison", () => {
       treatmentCostYenPerM3: 200,
       annualBillableVolume: 50_000,
       wastewaterTreatmentCost: 10_000,
+      purposeCostItems: [
+        { id: "pipeline", label: "管渠費", yenPerM3: 2 },
+        { id: "pump-station", label: "ポンプ場費", yenPerM3: 1 },
+        { id: "treatment-plant", label: "処理場費", yenPerM3: 4 },
+        { id: "general-management", label: "業務費・総係費（一般管理）", yenPerM3: 1 }
+      ],
       costCompositionShares: [
-        { id: "personnel", label: "職員給与費", sharePercent: 20 },
-        { id: "depreciation", label: "減価償却費", sharePercent: 50 }
+        { id: "personnel", label: "職員給与費", sharePercent: 20, yenPerM3: 0.4 },
+        { id: "depreciation", label: "減価償却費", sharePercent: 50, yenPerM3: 1 }
       ]
     });
+  });
+
+  it("keeps the existing peer payload stable and restores fee-cost fields from its supplement", () => {
+    const result = buildPrefecturePeerComparison({
+      prefectureCode: "01",
+      prefectureName: "テスト県",
+      businessKey: "17-1-000",
+      municipalities: [municipality("012025", "比較対象市", [business({ annuals: [annual({
+        costComposition: {
+          repair_cost: 25,
+          total_cost: 100
+        }
+      })] })])]
+    });
+    const supplement = buildPrefecturePeerFeeCostSupplement(result);
+    const stablePayload = withoutPrefecturePeerFeeCostFields(result);
+
+    expect(stablePayload.rows[0]).not.toHaveProperty("maintenanceCostYenPerM3");
+    expect(stablePayload.rows[0]).not.toHaveProperty("purposeCostItems");
+    expect(stablePayload.rows[0].costCompositionShares[0]).not.toHaveProperty("yenPerM3");
+    expect(supplement.rows[0]).toMatchObject({
+      sourceAnnualBillableVolume: 5_000,
+      sourceWastewaterTreatmentCost: 800,
+      sourceTreatmentCostYenPerM3: 160,
+      maintenanceCostYenPerM3: 100,
+      capitalCostYenPerM3: 60,
+      natureCostItems: [{ id: "repair", yenPerM3: 5 }]
+    });
+    expect(supplement.rows[0].purposeCostItems).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "pipeline", yenPerM3: 20 })
+    ]));
+
+    const merged = mergePrefecturePeerFeeCostSupplement(stablePayload, supplement).rows[0];
+    expect(merged).toMatchObject({
+      maintenanceCostYenPerM3: 100,
+      capitalCostYenPerM3: 60,
+      costCompositionShares: [{ id: "repair", sharePercent: 25, yenPerM3: 5 }]
+    });
+    expect(merged.purposeCostItems).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "pipeline", yenPerM3: 20 })
+    ]));
+
+    const staleSupplement = {
+      ...supplement,
+      rows: supplement.rows.map((row) => ({
+        ...row,
+        sourceAnnualBillableVolume: (row.sourceAnnualBillableVolume ?? 0) + 1
+      }))
+    };
+    expect(mergePrefecturePeerFeeCostSupplement(stablePayload, staleSupplement)).toBe(stablePayload);
+    expect(mergePrefecturePeerFeeCostSupplement(stablePayload, {
+      ...supplement,
+      rows: [{ ...supplement.rows[0], natureCostItems: null }]
+    })).toBe(stablePayload);
+
+    expect(() => buildPrefecturePeerFeeCostSupplement({
+      ...result,
+      rows: [{ ...result.rows[0], treatmentCostYenPerM3: 200 }]
+    })).toThrow("汚水処理費の内訳が合計と一致しません");
   });
 
   it("keeps Niigata R6 operating coverage and expense recovery distinct", () => {
@@ -508,7 +577,12 @@ describe("getPrefecturePeerComparison", () => {
                     OR: [
                       {
                         statementType: "income_statement",
-                        itemCode: { in: expect.arrayContaining([...PREFECTURE_PEER_INCOME_ITEM_CODES]) }
+                        itemCode: {
+                          in: expect.arrayContaining([
+                            ...PREFECTURE_PEER_INCOME_ITEM_CODES,
+                            ...PREFECTURE_PEER_PURPOSE_COST_ITEM_CODES
+                          ])
+                        }
                       },
                       {
                         statementType: "cost_composition",
@@ -539,7 +613,20 @@ describe("getPrefecturePeerComparison", () => {
       "operating_expense"
     ]);
     expect(PREFECTURE_PEER_COST_COMPOSITION_ITEM_CODES).toContain("total_cost");
-    expect(result.rows[0]).toMatchObject({ municipalityCode: "012025", isCurrent: true, operatingCoverageRatio: 80 });
+    expect(PREFECTURE_PEER_PURPOSE_COST_ITEM_CODES).toEqual([
+      "pipeline_expense",
+      "pump_station_expense",
+      "treatment_plant_expense",
+      "business_expense",
+      "general_administration_expense"
+    ]);
+    expect(result.rows[0]).toMatchObject({
+      municipalityCode: "012025",
+      isCurrent: true,
+      maintenanceCostYenPerM3: 100,
+      capitalCostYenPerM3: 60,
+      operatingCoverageRatio: 80
+    });
   });
 
   it("queries only the exact key for business types outside the public-sewerage family", async () => {
@@ -663,8 +750,17 @@ function annual({
   treatmentCostYenPerM3 = 160,
   annualBillableVolume = 5_000,
   wastewaterTreatmentCost = 800,
+  opexComponent = 500,
+  capitalCostComponent = 300,
   operatingRevenue = 800,
   operatingExpense = 1_000,
+  purposeCosts = {
+    pipeline_expense: 100,
+    pump_station_expense: 50,
+    treatment_plant_expense: 200,
+    business_expense: 30,
+    general_administration_expense: 20
+  },
   costComposition = null
 }: {
   year?: number;
@@ -675,8 +771,11 @@ function annual({
   treatmentCostYenPerM3?: number | null;
   annualBillableVolume?: number | null;
   wastewaterTreatmentCost?: number | null;
+  opexComponent?: number | null;
+  capitalCostComponent?: number | null;
   operatingRevenue?: number;
   operatingExpense?: number;
+  purposeCosts?: Record<string, number>;
   costComposition?: Record<string, number> | null;
 } = {}): PrefecturePeerAnnualInput {
   return {
@@ -686,6 +785,8 @@ function annual({
     householdFee20m3Yen,
     annualBillableVolume,
     wastewaterTreatmentCost,
+    opexComponent,
+    capitalCostComponent,
     servicePopulation: 10_000,
     connectedPopulation: 9_000,
     diagnosisResult: {
@@ -696,6 +797,7 @@ function annual({
     financialStatementItems: [
       { itemCode: "operating_revenue", amount: operatingRevenue },
       { itemCode: "operating_expense", amount: operatingExpense },
+      ...Object.entries(purposeCosts).map(([itemCode, amount]) => ({ itemCode, amount })),
       ...Object.entries(costComposition ?? {}).map(([itemCode, amount]) => ({ itemCode, amount }))
     ]
   };

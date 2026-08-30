@@ -23,6 +23,10 @@ const assessmentPanelSource = readFileSync(
   path.join(root, "components/municipality-detail/CitizenAssessmentPanel.tsx"),
   "utf8"
 );
+const feeAnalysisPanelSource = readFileSync(
+  path.join(root, "components/municipality-detail/FeeLevelAnalysisPanel.tsx"),
+  "utf8"
+);
 
 describe("municipality detail safety boundaries", () => {
   it("treats the peer comparison as unavailable when no row exactly matches the selected business", () => {
@@ -96,9 +100,10 @@ describe("municipality detail safety boundaries", () => {
   });
 
   it("always keeps top cost items and adds only non-duplicate peer outliers", () => {
-    expect(assessmentPanelSource).toContain("buildCostCompositionDisplay(assessment.costComposition)");
-    expect(assessmentPanelSource).toContain("主な費目：");
-    expect(assessmentPanelSource).toContain("中央値を5ポイント以上上回るほかの費目");
+    expect(feeAnalysisPanelSource).toContain("buildCostCompositionDisplay(assessment.costComposition)");
+    expect(feeAnalysisPanelSource).toContain("主な費目：");
+    expect(feeAnalysisPanelSource).toContain("中央値を5ポイント以上上回るほかの費目");
+    expect(assessmentPanelSource).not.toContain("buildCostCompositionDisplay(assessment.costComposition)");
   });
 });
 

@@ -45,6 +45,18 @@ describe("municipality business switch UI", () => {
     expect(pageSource).toContain("<CitizenAssessmentPanel");
     expect(pageSource).toContain("businessKey={latestBusiness.businessKey}");
     expect(pageSource).toContain("businessLabel={displayBusinessName(latestBusiness)}");
+    expect(pageSource).toContain('feeAnalysisHref={detailHref(municipalityCode, selectedGroup.key, "fee-analysis")}');
+  });
+
+  it("keeps the same selected business in the analysis return, finance, and official-data links", () => {
+    const analysisStart = pageSource.indexOf("<FeeLevelAnalysisPanel");
+    const analysisEnd = pageSource.indexOf("/>", analysisStart);
+    const analysisProps = pageSource.slice(analysisStart, analysisEnd);
+
+    expect(analysisStart).toBeGreaterThan(-1);
+    expect(analysisProps).toContain('diagnosisHref={detailHref(municipalityCode, selectedGroup.key, "fees")}');
+    expect(analysisProps).toContain('financeHref={detailHref(municipalityCode, selectedGroup.key, "finance")}');
+    expect(analysisProps).toContain('yearbookHref={detailHref(municipalityCode, selectedGroup.key, "yearbook")}');
   });
 
   it("labels unavailable R6 financial views without implying that statements exist", () => {

@@ -19,6 +19,7 @@ import {
   ShieldCheck
 } from "lucide-react";
 import { CitizenAssessmentPanel } from "@/components/municipality-detail/CitizenAssessmentPanel";
+import { FeeLevelAnalysisPanel } from "@/components/municipality-detail/FeeLevelAnalysisPanel";
 import { FinancialStory } from "@/components/municipality-detail/FinancialStory";
 import { PrefecturePeerComparison } from "@/components/municipality-detail/PrefecturePeerComparison";
 import { YearbookOriginalData } from "@/components/municipality-detail/YearbookOriginalData";
@@ -36,13 +37,14 @@ import {
   type FundShortageAssessment
 } from "@/lib/fundShortage";
 import type { MunicipalityFeeRevisionComparison } from "@/lib/municipalityFeeRevision";
-import type {
-  PrefecturePeerComparisonResult,
-  PrefecturePeerComparisonRow
+import {
+  mergePrefecturePeerFeeCostSupplement,
+  type PrefecturePeerComparisonResult,
+  type PrefecturePeerComparisonRow
 } from "@/lib/prefecturePeerComparison";
 import styles from "@/app/municipalities/[municipalityCode]/page.module.css";
 
-type DetailView = "fees" | "finance" | "prefecture" | "yearbook";
+type DetailView = "fees" | "fee-analysis" | "finance" | "prefecture" | "yearbook";
 type MunicipalityDetail = any;
 type DetailBusiness = MunicipalityDetail["businesses"][number];
 type DetailAnnual = DetailBusiness["annualFinancials"][number];
@@ -60,6 +62,12 @@ type CurrentFundingContext = {
   operatingLoss: number | null;
 };
 
+type PeerComparisonLoadState = {
+  requestKey: string | null;
+  status: "idle" | "loading" | "ready" | "error";
+  model: PrefecturePeerComparisonResult | null;
+};
+
 type MunicipalityDetailClientProps = {
   municipalityCode: string;
   fundShortageAssessments: Record<string, FundShortageAssessment>;
@@ -67,6 +75,17 @@ type MunicipalityDetailClientProps = {
   availableJointOperatorMunicipalityCodes: string[];
   availableMunicipalityDetailCodes: string[];
 };
+
+export function selectPeerComparisonView(
+  requestKey: string | null,
+  state: PeerComparisonLoadState
+) {
+  const matchesCurrentRequest = requestKey != null && state.requestKey === requestKey;
+  return {
+    peerLoading: requestKey != null && (!matchesCurrentRequest || state.status === "loading"),
+    prefecturePeerComparison: matchesCurrentRequest ? state.model : null
+  };
+}
 
 export function MunicipalityDetailClient({
   municipalityCode,
@@ -106,41 +125,61 @@ export function MunicipalityDetailClient({
   const requestedBusiness = searchParams.get("business") ?? undefined;
   const view = parseDetailView(searchParams.get("view") ?? undefined);
   const selectedGroup = selectBusinessGroup(groups, requestedBusiness);
-  const [prefecturePeerComparison, setPrefecturePeerComparison] = useState<PrefecturePeerComparisonResult | null>(null);
-  const [peerLoading, setPeerLoading] = useState(false);
+  const peerRequestKey = municipality && selectedGroup
+    ? [
+        municipality.municipalityCode,
+        municipality.prefectureCode,
+        selectedGroup.key,
+        selectedGroup.latestBusiness.businessKey
+      ].join(":")
+    : null;
+  const [peerComparisonState, setPeerComparisonState] = useState<PeerComparisonLoadState>({
+    requestKey: null,
+    status: "idle",
+    model: null
+  });
+  const { peerLoading, prefecturePeerComparison } = selectPeerComparisonView(
+    peerRequestKey,
+    peerComparisonState
+  );
 
   useEffect(() => {
     let cancelled = false;
-    if (!municipality || !selectedGroup) {
-      setPrefecturePeerComparison(null);
-      setPeerLoading(false);
+    if (!municipality || !selectedGroup || !peerRequestKey) {
+      setPeerComparisonState({ requestKey: null, status: "idle", model: null });
       return;
     }
-    setPrefecturePeerComparison(null);
-    setPeerLoading(true);
+    setPeerComparisonState({ requestKey: peerRequestKey, status: "loading", model: null });
     const currentFundingContext = buildCurrentFundingContext(selectedGroup);
-    fetch(`/data/static/citizen-peers/${municipality.prefectureCode}/${encodeURIComponent(selectedGroup.key)}.json`)
+    const peerRequest = fetch(`/data/static/citizen-peers/${municipality.prefectureCode}/${encodeURIComponent(selectedGroup.key)}.json`)
       .then((response) => {
         if (!response.ok) throw new Error("Peer comparison unavailable");
         return response.json() as Promise<PrefecturePeerComparisonResult>;
-      })
-      .then((model) => {
+      });
+    const feeCostRequest = fetch(`/data/static/citizen-fee-costs/${municipality.prefectureCode}/${encodeURIComponent(selectedGroup.key)}.json`)
+      .then((response) => response.ok ? response.json() as Promise<unknown> : null)
+      .catch(() => null);
+    Promise.all([peerRequest, feeCostRequest])
+      .then(([model, feeCosts]) => {
         if (cancelled) return;
-        setPrefecturePeerComparison(bindPeerComparisonToSelectedBusiness({
-          model,
-          municipalityCode: municipality.municipalityCode,
-          businessKey: selectedGroup.latestBusiness.businessKey,
-          currentFundingContext
-        }));
+        setPeerComparisonState({
+          requestKey: peerRequestKey,
+          status: "ready",
+          model: bindPeerComparisonToSelectedBusiness({
+            model: mergePrefecturePeerFeeCostSupplement(model, feeCosts),
+            municipalityCode: municipality.municipalityCode,
+            businessKey: selectedGroup.latestBusiness.businessKey,
+            currentFundingContext
+          })
+        });
       })
       .catch(() => {
-        if (!cancelled) setPrefecturePeerComparison(null);
-      })
-      .finally(() => {
-        if (!cancelled) setPeerLoading(false);
+        if (!cancelled) {
+          setPeerComparisonState({ requestKey: peerRequestKey, status: "error", model: null });
+        }
       });
     return () => { cancelled = true; };
-  }, [municipality, selectedGroup]);
+  }, [municipality, peerRequestKey, selectedGroup]);
 
   if (loadFailed) {
     return <div className={styles.page}><div className={styles.container}><p className={styles.emptySupport}>自治体データを読み込めませんでした。</p></div></div>;
@@ -199,6 +238,11 @@ export function MunicipalityDetailClient({
     expenseRecoveryRate: diagnosis?.expenseRecoveryRate,
     sewerFeeRevenue: latest.sewerFeeRevenue,
     wastewaterTreatmentCost: latest.wastewaterTreatmentCost,
+    annualBillableVolume: latest.annualBillableVolume,
+    opexComponent: latest.opexComponent,
+    capitalCostComponent: latest.capitalCostComponent,
+    accountingType: latestBusiness.accountingType,
+    purposeCostItems: buildPurposeCostItems(financialStory?.income?.expenseBreakdown),
     annuals: trendPoints.map((point) => ({
       surveyYear: point.year,
       annualBillableVolume: point.annualBillableVolume,
@@ -308,7 +352,7 @@ export function MunicipalityDetailClient({
             revisionComparison={feeRevisionComparison}
             businessLabelsByKey={businessLabelsByKey}
             prefectureHref={detailHref(municipalityCode, selectedGroup.key, "prefecture")}
-            financeHref={detailHref(municipalityCode, selectedGroup.key, "finance")}
+            feeAnalysisHref={detailHref(municipalityCode, selectedGroup.key, "fee-analysis")}
             yearbookHref={detailHref(municipalityCode, selectedGroup.key, "yearbook")}
           />
         ) : null}
@@ -316,8 +360,8 @@ export function MunicipalityDetailClient({
         <nav className={styles.viewTabs} aria-label="詳細の表示切り替え">
           <Link
             href={detailHref(municipalityCode, selectedGroup.key, "fees")}
-            className={view === "fees" ? styles.activeTab : undefined}
-            aria-current={view === "fees" ? "page" : undefined}
+            className={view === "fees" || view === "fee-analysis" ? styles.activeTab : undefined}
+            aria-current={view === "fees" ? "page" : view === "fee-analysis" ? "location" : undefined}
             aria-label="このまちの診断"
           >
             <ChartNoAxesCombined size={18} aria-hidden="true" />
@@ -378,6 +422,18 @@ export function MunicipalityDetailClient({
               <TrendChart points={trendPoints} />
             </section>
           </>
+        ) : view === "fee-analysis" ? (
+          <FeeLevelAnalysisPanel
+            assessment={assessment}
+            municipalityName={municipality.municipalityName}
+            prefectureName={municipality.prefectureName}
+            businessLabel={displayBusinessName(latestBusiness)}
+            fiscalLabel={fiscal}
+            peerLoading={peerLoading}
+            diagnosisHref={detailHref(municipalityCode, selectedGroup.key, "fees")}
+            financeHref={detailHref(municipalityCode, selectedGroup.key, "finance")}
+            yearbookHref={detailHref(municipalityCode, selectedGroup.key, "yearbook")}
+          />
         ) : view === "finance" ? (
           <section className={styles.financeSection} aria-label="R6財務の読み解き">
             <FinancialStory {...financialStory} />
@@ -656,7 +712,9 @@ function detailHref(municipalityCode: string, business: string, view: DetailView
 }
 
 function parseDetailView(value?: string): DetailView {
-  return value === "finance" || value === "prefecture" || value === "yearbook" ? value : "fees";
+  return value === "fee-analysis" || value === "finance" || value === "prefecture" || value === "yearbook"
+    ? value
+    : "fees";
 }
 
 function prefectureComparisonLabel(prefectureName: string) {
@@ -845,6 +903,24 @@ export function buildCurrentFundingContext(group: BusinessGroup): CurrentFunding
       ? null
       : Math.max(operatingExpense - operatingRevenue, 0)
   };
+}
+
+function buildPurposeCostItems(
+  items: Array<{ id?: string; label: string; value?: number | null }> | null | undefined
+) {
+  const value = (id: string) => finiteOrNull(items?.find((item) => item.id === id)?.value);
+  const business = value("business");
+  const administration = value("administration");
+  return [
+    { id: "pipeline", label: "管渠費", value: value("pipeline") },
+    { id: "pump-station", label: "ポンプ場費", value: value("pump-station") },
+    { id: "treatment-plant", label: "処理場費", value: value("treatment-plant") },
+    {
+      id: "general-management",
+      label: "業務費・総係費（一般管理）",
+      value: business == null || administration == null ? null : business + administration
+    }
+  ];
 }
 
 function mergeFundingContext(row: PrefecturePeerComparisonRow, context: CurrentFundingContext) {

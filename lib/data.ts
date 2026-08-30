@@ -9,6 +9,7 @@ import {
   PREFECTURE_PEER_COMPARISON_SURVEY_YEAR,
   PREFECTURE_PEER_COST_COMPOSITION_ITEM_CODES,
   PREFECTURE_PEER_INCOME_ITEM_CODES,
+  PREFECTURE_PEER_PURPOSE_COST_ITEM_CODES,
   type PrefecturePeerComparisonResult,
   type PrefecturePeerComparisonSurveyYear
 } from "@/lib/prefecturePeerComparison";
@@ -524,7 +525,12 @@ export async function getPrefecturePeerComparison({
                     OR: [
                       {
                         statementType: "income_statement",
-                        itemCode: { in: [...PREFECTURE_PEER_INCOME_ITEM_CODES] }
+                        itemCode: {
+                          in: [
+                            ...PREFECTURE_PEER_INCOME_ITEM_CODES,
+                            ...PREFECTURE_PEER_PURPOSE_COST_ITEM_CODES
+                          ]
+                        }
                       },
                       {
                         statementType: "cost_composition",

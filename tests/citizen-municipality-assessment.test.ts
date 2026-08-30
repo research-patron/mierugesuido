@@ -6,6 +6,7 @@ import {
   buildCostCompositionAssessment,
   buildCostCompositionDisplay,
   buildFeeCostRelationship,
+  buildFeeLevelCostAnalysis,
   buildFeeRankSummary,
   buildRecoveryBand,
   buildSimpleFeeScenario,
@@ -95,6 +96,131 @@ describe("citizen municipality assessment", () => {
 
     expect(result.kind).toBe(kind);
     expect(result.explanation).not.toContain("原因です");
+  });
+
+  it("splits treatment cost into maintenance and capital drivers per cubic meter", () => {
+    const result = buildFeeLevelCostAnalysis({
+      feePosition: "higher",
+      annualBillableVolume: 1_000,
+      wastewaterTreatmentCost: 100,
+      opexComponent: 80,
+      capitalCostComponent: 20,
+      accountingType: "legal_applied",
+      peerRows: [
+        peerRow("current", 3_000, {
+          isCurrent: true,
+          maintenanceCostYenPerM3: 80,
+          capitalCostYenPerM3: 20
+        }),
+        peerRow("peer", 2_500, {
+          maintenanceCostYenPerM3: 50,
+          capitalCostYenPerM3: 20
+        })
+      ]
+    });
+
+    expect(result).toMatchObject({
+      state: "ready",
+      componentsReconciled: true,
+      components: [
+        {
+          kind: "maintenance",
+          yenPerM3: 80,
+          sharePercent: 80,
+          comparison: { median: 65, position: "higher" }
+        },
+        {
+          kind: "capital",
+          yenPerM3: 20,
+          sharePercent: 20,
+          comparison: { median: 20, position: "similar" }
+        }
+      ]
+    });
+    expect(result.headline).toContain("維持管理費分");
+    expect(result.headline).toContain("単年度費用だけでは");
+    expect(result.components.find((component) => component.kind === "capital")?.shortDefinition)
+      .toContain("減価償却費等");
+    expect(result.explanation).toContain("1m³当たり");
+    expect(result.explanation).toContain("断定");
+  });
+
+  it("explains capital cost according to the selected accounting basis", () => {
+    const base = {
+      feePosition: "unavailable" as const,
+      annualBillableVolume: 1_000,
+      wastewaterTreatmentCost: 100,
+      opexComponent: 60,
+      capitalCostComponent: 40,
+      peerRows: []
+    };
+    const legal = buildFeeLevelCostAnalysis({ ...base, accountingType: "legal_applied" });
+    const nonLegal = buildFeeLevelCostAnalysis({ ...base, accountingType: "non_legal_applied" });
+
+    expect(legal.components.find((component) => component.kind === "capital")?.shortDefinition)
+      .toContain("減価償却費等");
+    expect(nonLegal.components.find((component) => component.kind === "capital")?.shortDefinition)
+      .toContain("地方債元利償還費等");
+    expect(legal.components.find((component) => component.kind === "capital")?.shortDefinition)
+      .toContain("資産維持費");
+  });
+
+  it("shows current cost composition without inventing a peer comparison", () => {
+    const result = buildFeeLevelCostAnalysis({
+      feePosition: "unavailable",
+      annualBillableVolume: 1_000,
+      wastewaterTreatmentCost: 100,
+      opexComponent: 60,
+      capitalCostComponent: 40,
+      peerRows: []
+    });
+
+    expect(result.state).toBe("current_only");
+    expect(result.headline).toContain("維持管理費分60.0%");
+    expect(result.components.every((component) => component.comparison.median == null)).toBe(true);
+  });
+
+  it("compares purpose-based and nature-based cost items per cubic meter", () => {
+    const result = buildFeeLevelCostAnalysis({
+      feePosition: "higher",
+      annualBillableVolume: 1_000,
+      wastewaterTreatmentCost: 100,
+      opexComponent: 60,
+      capitalCostComponent: 40,
+      purposeCostItems: [{ id: "pipeline", label: "管渠費", value: 10 }],
+      natureCostItems: [{ id: "power", label: "動力費", value: 20 }],
+      peerRows: [
+        peerRow("current", 3_000, {
+          purposeCostItems: [{ id: "pipeline", label: "管渠費", yenPerM3: 10 }],
+          costCompositionShares: [{ id: "power", label: "動力費", sharePercent: 20, yenPerM3: 20 }]
+        }),
+        peerRow("peer", 2_500, {
+          purposeCostItems: [{ id: "pipeline", label: "管渠費", yenPerM3: 4 }],
+          costCompositionShares: [{ id: "power", label: "動力費", sharePercent: 10, yenPerM3: 10 }]
+        })
+      ]
+    });
+
+    expect(result.purposeItems).toMatchObject([
+      { id: "pipeline", yenPerM3: 10, comparison: { median: 7, position: "higher" } }
+    ]);
+    expect(result.natureItems).toMatchObject([
+      { id: "power", yenPerM3: 20, comparison: { median: 15, position: "higher" } }
+    ]);
+  });
+
+  it("does not explain fee levels from unreconciled cost components", () => {
+    const result = buildFeeLevelCostAnalysis({
+      feePosition: "higher",
+      annualBillableVolume: 1_000,
+      wastewaterTreatmentCost: 100,
+      opexComponent: 60,
+      capitalCostComponent: 30,
+      peerRows: []
+    });
+
+    expect(result).toMatchObject({ state: "unavailable", componentsReconciled: false, components: [] });
+    expect(result.explanation).toContain("一致しない");
   });
 
   it("requires both R2 and R6 for the five-year volume trend", () => {
@@ -293,6 +419,9 @@ describe("citizen municipality assessment", () => {
       peerRows,
       sewerFeeRevenue: 80,
       wastewaterTreatmentCost: 100,
+      annualBillableVolume: 1_000,
+      opexComponent: 70,
+      capitalCostComponent: 30,
       annuals: [
         { surveyYear: 2020, annualBillableVolume: 100 },
         { surveyYear: 2024, annualBillableVolume: 90 }
@@ -302,6 +431,7 @@ describe("citizen municipality assessment", () => {
 
     expect(result.feeRank).toMatchObject({ rank: 1, total: 2, differenceYen: 500 });
     expect(result.feeCostRelationship.kind).toBe("high_fee_high_cost");
+    expect(result.feeLevelCostAnalysis.state).toBe("ready");
     expect(result.recovery.band).toBe("attention");
     expect(result.volumeTrend.kind).toBe("decreasing");
     expect(result.feeScenario.revenueIncreaseRatePercent).toBe(25);
@@ -439,6 +569,8 @@ function peerRow(
     treatmentCostYenPerM3: 100,
     annualBillableVolume: 100,
     wastewaterTreatmentCost: 100,
+    maintenanceCostYenPerM3: 60,
+    capitalCostYenPerM3: 40,
     costCompositionShares: [],
     expenseRecoveryRate: 100,
     operatingRevenue: 100,

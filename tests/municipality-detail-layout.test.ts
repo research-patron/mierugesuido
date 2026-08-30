@@ -20,6 +20,7 @@ describe("municipality detail visual rhythm", () => {
 
   it("puts the citizen diagnosis before tabs and removes the repeated KPI-card row", () => {
     expect(detailSource.indexOf("<CitizenAssessmentPanel")).toBeLessThan(detailSource.indexOf("<nav className={styles.viewTabs}"));
+    expect(detailSource.indexOf("<FeeLevelAnalysisPanel")).toBeGreaterThan(detailSource.indexOf("<nav className={styles.viewTabs}"));
     expect(detailSource).not.toContain("styles.kpiGrid");
     expect(cssSource).toMatch(/\.businessSelectControl select\s*\{[^}]*min-height:\s*44px/s);
     expect(cssSource).toMatch(/\.viewTabs\s*\{[^}]*margin-bottom:\s*8px/s);

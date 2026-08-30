@@ -2,12 +2,20 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { buildCitizenMunicipalityAssessment } from "@/lib/citizenMunicipalityAssessment";
-import type { PrefecturePeerComparisonResult } from "@/lib/prefecturePeerComparison";
+import {
+  mergePrefecturePeerFeeCostSupplement,
+  type PrefecturePeerComparisonResult,
+  type PrefecturePeerFeeCostSupplement
+} from "@/lib/prefecturePeerComparison";
 
 const root = process.cwd();
-const hokkaidoPeers = readJson<PrefecturePeerComparisonResult>(
+const hokkaidoPeerBase = readJson<PrefecturePeerComparisonResult>(
   "public/data/static/citizen-peers/01/17-1-000.json"
 );
+const hokkaidoFeeCosts = readJson<PrefecturePeerFeeCostSupplement>(
+  "public/data/static/citizen-fee-costs/01/17-1-000.json"
+);
+const hokkaidoPeers = mergePrefecturePeerFeeCostSupplement(hokkaidoPeerBase, hokkaidoFeeCosts);
 
 describe("citizen diagnosis derived static data", () => {
   it("answers the Sapporo low-fee but recovery-shortfall case", () => {
@@ -20,6 +28,7 @@ describe("citizen diagnosis derived static data", () => {
       differenceYen: -2_259
     });
     expect(result.feeCostRelationship.kind).toBe("low_fee_low_cost");
+    expect(result.feeLevelCostAnalysis.state).toBe("ready");
     expect(result.recovery.band).toBe("slight_shortfall");
     expect(result.feeScenario).toMatchObject({
       status: "gap",
@@ -52,14 +61,26 @@ describe("citizen diagnosis derived static data", () => {
   });
 
   it("publishes only the diagnosis fields required by the peer UI", () => {
-    const source = readFileSync(
+    const peerSource = readFileSync(
       path.join(root, "public/data/static/citizen-peers/01/17-1-000.json"),
+      "utf8"
+    );
+    const feeCostSource = readFileSync(
+      path.join(root, "public/data/static/citizen-fee-costs/01/17-1-000.json"),
       "utf8"
     );
     expect(hokkaidoPeers.rows.length).toBeGreaterThan(100);
     expect(hokkaidoPeers.rows[0]).toHaveProperty("costCompositionShares");
-    expect(source).not.toContain("nonStandardTransfer");
-    expect(source).not.toContain("基準外繰入金");
+    expect(hokkaidoPeers.rows[0]).toHaveProperty("maintenanceCostYenPerM3");
+    expect(hokkaidoPeers.rows[0]).toHaveProperty("capitalCostYenPerM3");
+    expect(hokkaidoPeers.rows[0]).toHaveProperty("purposeCostItems");
+    expect(hokkaidoPeers.rows[0].costCompositionShares[0]).toHaveProperty("yenPerM3");
+    expect(peerSource).not.toContain("maintenanceCostYenPerM3");
+    expect(peerSource).not.toContain("purposeCostItems");
+    expect(feeCostSource).toContain("maintenanceCostYenPerM3");
+    expect(feeCostSource).toContain("purposeCostItems");
+    expect(`${peerSource}\n${feeCostSource}`).not.toContain("nonStandardTransfer");
+    expect(`${peerSource}\n${feeCostSource}`).not.toContain("基準外繰入金");
   });
 });
 
@@ -86,6 +107,9 @@ function buildAssessment(municipalityCode: string) {
     expenseRecoveryRate: annual.diagnosisResult?.expenseRecoveryRate,
     sewerFeeRevenue: annual.sewerFeeRevenue,
     wastewaterTreatmentCost: annual.wastewaterTreatmentCost,
+    annualBillableVolume: annual.annualBillableVolume,
+    opexComponent: annual.opexComponent,
+    capitalCostComponent: annual.capitalCostComponent,
     annuals: business.annualFinancials.map((item: any) => ({
       surveyYear: item.surveyYear,
       annualBillableVolume: item.annualBillableVolume,

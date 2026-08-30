@@ -164,6 +164,45 @@ Header navigation, search, filters, table/card views, sorting, pagination, munic
 
 final result: passed
 
+## Final superseding municipality fee-level explanation gate — 2026-08-30
+
+This gate supersedes the municipality-detail evidence for `なぜ、この料金水準？` after replacing the former single-year dead end with a bounded, source-traceable cost-driver analysis.
+
+### Fee-level reasoning and source boundary
+
+- The R6 wastewater-treatment cost is now shown as `維持管理費分 + 資本費分 = 汚水処理原価`, with each component converted from the official thousand-yen amount to yen per annual billed cubic metre. The current business and the same-prefecture, same-family, law-applied median use the same unit and comparison population.
+- The first conclusion cross-checks any above-median component against the total wastewater-treatment unit cost. It uses `背景候補` only when the total is also above the median; when one component is high but the total is not, it states that the single-year costs do not fully explain the high household tariff. Every result is described as a same-year association, not the municipality's official rationale or a causal finding.
+- The disclosure adds the yearbook's purpose-based Table 20 view (pipeline, pump station, treatment plant, and business/general-administration expenses) and nature-based Table 21 view (personnel, interest, power, chemicals, repairs, regional-sewer burden, outsourcing, depreciation and the remaining published items). Both use yen per billed cubic metre and retain explicit high, low, similar, or unavailable wording without relying on colour. All available nature-based items are shown in the disclosure, ordered by the current business's unit cost rather than truncating the list into a misleading top five.
+- The Table 20 and Table 21 values are labelled as broader financial-statement expense views. They are not relabelled as the exact subcomponents of wastewater-treatment cost, and their different aggregation boundaries are permanently stated.
+- Capital-cost wording follows the accounting basis: depreciation etc. for law-applied businesses and debt principal/interest repayments etc. for law-non-applied businesses. The remaining evidence needed to explain an adopted tariff is progressively disclosed: a three-to-five-year demand and cost forecast, the asset-maintenance amount derived from a medium/long-term renewal plan, and tariff allocation/design. The Japan Sewage Works Association source is identified as the 2016 edition; the interface does not imply that a single yearbook settlement replaces a municipality's strategy, council material, ordinance, or tariff calculation.
+
+### Derived-data integrity
+
+- The clean R6 generation produced 312 tracked-baseline-equivalent prefecture/business peer payloads plus 312 cost-only supplements. Among 2,802 eligible comparison rows, 2,794 contain comparable maintenance and capital unit costs, all 2,794 reconcile to the published wastewater-treatment unit cost within 0.001 yen/m³, and all 2,794 also contain the four purpose-based and nature-based comparison inputs.
+- A structural audit compared every generated base payload with tracked HEAD. All 312 were equivalent after the fee-cost fields were separated, so no existing peer value was rewritten and no unrelated peer drift was adopted. The complete supplement set is 6,124,936 bytes, with a 233,752-byte maximum file; only the selected business's supplement is fetched with its existing peer payload.
+- All 10,316 supplement rows are bound to the matching base row's billed volume, wastewater-treatment amount, and published treatment unit cost, with zero duplicate comparison keys. A stale or malformed supplement is rejected as a whole, while a missing supplement safely retains the base comparison and shows only the current business's reconciled maintenance/capital split without peer medians. The full generator now also stops instead of publishing empty comparison payloads, and supplement generation stops if any comparable peer's two components fail to reconcile with its treatment unit cost within 0.001 yen/m³.
+- The protected SQLite database SHA-256 remained `8c7bf571586fc9f40d3feed9f9b18131aa04d13f87004fa647d6c1171a0f449b`. No schema, migration, ETL mapping, official workbook, imported accounting value, GIS source, ranking formula, or fee-revision formula changed.
+
+### Rendered interaction evidence
+
+- The real Kushiro public-sewer record was inspected because it exercises the former explanatory gap: the household fee is above the Hokkaido median, the total treatment cost is not, while the capital component is above its median. The resulting headline says that capital cost is high but the total does not exceed the median, then exposes all purpose/nature evidence instead of overstating capital as a complete explanation or stopping at `年間の費用データだけでは説明できない`.
+- Tomioka's real law-non-applied public-sewer record was also inspected. It retains a current-only maintenance/capital split, labels the capital component as debt principal/interest repayments etc., and does not invent a law-applied peer median.
+- At 1491 × 1055, the two-part equation, median cards, total-cost relationship, disclosure, two-column purpose/nature evidence, next-step boundary, and source links remained readable in one calm hierarchy. At 390 × 844, the equation, component cards, evidence sections, and links stacked without horizontal scrolling.
+- Both documents reported `scrollWidth < innerWidth`. The disclosure opened and closed with Enter and Space, retained focus on the native summary, and both source links measured 44 px high on mobile. Detail body text is 12 px with measured contrast from 5.56:1 to 5.94:1; the 11.5 px scope notes measure 5.35:1. Browser error logs were empty.
+- Current-run screenshots are stored outside the repository as `sewer-fee-analysis-final-desktop-1491x1055.png`, `sewer-fee-analysis-final-mobile-390x844.png`, and `sewer-fee-analysis-final-detail-mobile-390x844.png`.
+
+### Verification and pre-existing worktree condition
+
+- `pnpm lint`: passed in the primary worktree and the clean validation tree.
+- Clean full `pnpm test`: 50/50 files passed, 367 tests passed, and one official-workbook-dependent test was skipped.
+- Clean production `pnpm build`: passed; all 1,656 static pages generated. The publication verifier passed for 1,647 public routes, 1,647 sitemap URLs, install assets, 404, robots, manifest, and headers.
+- `git diff --check`: passed before this gate and is rerun in the final diff audit.
+- The primary worktree's full test still has one unrelated failure because its pre-existing deleted `data/static/manifest.json` cannot be opened; the identical requested change passed the full suite and production build when applied over tracked HEAD data in the clean validation tree.
+- The primary worktree also retains its pre-existing tracked static-file deletions and untracked conflict copies. They were not restored, removed, staged, or included in this scope. Existing peer payloads were left byte-equivalent to tracked HEAD, while the complete 312-file fee-cost supplement set was added separately so the user-owned deletions were not overwritten.
+- No commit, push, preview deployment, or production deployment was performed.
+
+final result: passed
+
 ## Final superseding ranking-selector experience gate — 2026-08-11
 
 This gate supersedes the preceding ranking-condition layout evidence. It is UI-only and does not change the retained indicators, ranking values, or sort formulas.
@@ -2269,5 +2308,54 @@ This gate covers the public-launch surface: site icons, route metadata, canonica
 - Next.js was updated within the supported 15.5 line to 15.5.24. `pnpm audit --prod` still reports 10 transitive or toolchain advisories (8 high, 2 moderate), including workbook-processing and build-only packages; the exported Cloudflare site ships no Node dependency runtime. These findings remain explicit maintenance items rather than being hidden with unreviewed breaking overrides.
 - The primary worktree already contained 1,114 tracked static-file deletions, 401 untracked byte-identical conflict copies, an unrelated untracked video workspace, and a 51-byte session-marker file. They were neither repaired nor included; the session marker must never be staged or committed, and all final gates ran in a clean detached clone with only the publication allowlist overlaid.
 - No database, Prisma schema, migration, ETL implementation, official workbook, imported accounting value, GIS source, or generated public financial payload changed. No commit, push, preview deployment, or production deployment was performed.
+
+final result: passed
+
+## Final superseding municipality fee-analysis completion gate — 2026-08-30
+
+This final gate makes the detailed `Final superseding municipality fee-level explanation gate — 2026-08-30` the current municipality-detail evidence after all later code, derived-data, rendered-interaction, and production-build checks.
+
+- The visible conclusion now decomposes R6 wastewater-treatment cost into maintenance and capital unit costs and compares both with same-prefecture, same-family, law-applied medians.
+- The disclosure compares the yearbook's purpose-based Table 20 items and every available nature-based Table 21 item in yen per billed cubic metre, labels their different aggregation scopes, distinguishes law-applied depreciation from law-non-applied debt repayments, and preserves the three-to-five-year forecast, asset-maintenance, and tariff-design boundary from the Japan Sewage Works Association material.
+- Clean derived-data audit: all 312 base peer payloads match tracked HEAD after separating fee-cost fields; all 312 source-bound cost supplements were generated; 2,794/2,794 comparable rows reconcile and contain component, purpose, and nature comparisons.
+- Desktop 1491 × 1055 and mobile 390 × 844 passed visual, overflow, 44 px link, Enter/Space disclosure, and zero-browser-error checks.
+- Clean validation passed TypeScript, all 50 test files (367 passed, one workbook-dependent test skipped), 1,656-page production generation, and the 1,647-route publication verifier.
+- The primary worktree's sole full-test failure remains its pre-existing deleted `data/static/manifest.json`; the clean validation tree proves the requested diff independently. Existing static deletions and conflict copies remain untouched.
+- Database SHA-256 is unchanged. No schema, migration, ETL mapping, official workbook, imported accounting value, GIS source, commit, push, or deployment changed.
+
+final result: passed
+
+## Final superseding progressive fee-analysis navigation gate — 2026-08-30
+
+This gate supersedes the municipality-detail presentation evidence above for how the fee-level explanation is entered, navigated, and progressively disclosed.
+
+### Progressive disclosure and navigation
+
+- The initial `このまちの診断` view keeps the R6 fee-level conclusion and its short non-causality note, but no longer renders the cost equation, maintenance/capital cards, Table 20/21 breakdowns, or source links.
+- Its single detailed-analysis CTA is `料金水準の考察を見る` and opens the same municipality and selected business at `view=fee-analysis`.
+- The dedicated view keeps the existing four-tab navigation. `このまちの診断` remains the visible parent location with `aria-current="location"`, while an explicit `このまちの診断に戻る` link provides the local return path.
+- Direct URLs, browser Back/Forward, analysis-time business switching, and the same-business `費用と財務の根拠を見る` transition were exercised. An unknown `view` continues to show the diagnosis fallback. Peer comparison state is keyed to the requested municipality and business, so a switch hides the prior result and reports loading from the first render rather than briefly showing a false unavailable result.
+
+### Analysis content and guarded interpretation
+
+- The dedicated view shows the R6 conclusion, maintenance plus capital cost equation, the exact implemented same-prefecture/same-accounting-basis comparison scope, household 20m³ fee, total treatment cost, billed-volume change, and a closed detailed disclosure for the complete available Table 20 and Table 21 item lists.
+- Maintenance is explained by facility/work purpose and expense nature. Capital is explained separately for law-applied depreciation and law-non-applied debt principal/interest, with asset-maintenance cost retained as a further confirmation item.
+- The page explicitly preserves the three-to-five-year calculation period, demand forecast, public-cost deductions, asset maintenance, and tariff-system limits that cannot be concluded from one yearbook year. A law-non-applied Tomioka record correctly reports the missing R6 analysis and links to its R2 evidence; a Wakayama zero-median case retains the absolute `+99.9円/m³` gap and labels only the rate comparison unavailable.
+- The Japan Sewage Works Association material, official yearbook evidence, and `費用と財務の根拠を見る` remain available only after entering the dedicated analysis.
+
+### Rendered evidence
+
+- Current-run captures are stored outside the repository in `fee-analysis-qa`: `01-sapporo-diagnosis-desktop-1491x1055.png`, `02-sapporo-fee-analysis-desktop-1491x1055.png`, `03-sapporo-diagnosis-mobile-390x844.png`, `04-sapporo-diagnosis-cta-mobile-390x844.png`, `05-sapporo-fee-analysis-mobile-390x844.png`, and `06-sapporo-fee-analysis-costs-mobile-390x844.png`.
+- The 1491 x 1055 and 390 x 844 inspections found no horizontal overflow or clipped fee-analysis content. The three fee/cost/volume metrics form three equal desktop columns and one full-width mobile stack; the analysis and finance links retain 44 px targets.
+- The first cost-detail disclosure opened with Enter and closed with Space. Its focused summary rendered a visible 3 px teal outline with a 2 px offset. Browser console warnings and errors were empty.
+
+### Verification and protected scope
+
+- `pnpm lint`: passed.
+- Clean full `pnpm test`: 51/51 files passed, 379 tests passed, and one source-workbook-dependent test was skipped.
+- Clean production `pnpm build`: passed; all 1,656 static pages generated and the publication verifier passed all 1,647 public routes.
+- The first sandboxed build attempt was blocked only because the existing Next.js font pipeline could not resolve Google Fonts; the permitted network retry completed successfully.
+- No database, Prisma schema, migration, ETL mapping, official workbook, imported accounting value, GIS source, fee formula, or compact public value changed for this progressive-disclosure follow-up. The shared PDF and its local path remain outside the repository.
+- The primary worktree's pre-existing tracked deletions, conflict copies, videos, and unrelated local files remain excluded. The complete validation ran in a clean worktree containing only the approved fee-analysis change set.
 
 final result: passed

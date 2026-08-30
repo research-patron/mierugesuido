@@ -9,6 +9,10 @@ import {
   buildMunicipalityFeeRevisionStaticIndex,
   type MunicipalityFeeRevisionStaticSource
 } from "@/lib/municipalityFeeRevisionStatic";
+import {
+  buildPrefecturePeerFeeCostSupplement,
+  withoutPrefecturePeerFeeCostFields
+} from "@/lib/prefecturePeerComparison";
 import { prisma } from "@/lib/prisma";
 
 const publicRoot = path.join(process.cwd(), "public", "data", "static");
@@ -17,15 +21,22 @@ const sourceRoot = path.join(process.cwd(), "data", "static");
 async function main() {
   const peerPairs = await loadPeerPairs();
   await rm(path.join(publicRoot, "citizen-peers"), { recursive: true, force: true });
+  await rm(path.join(publicRoot, "citizen-fee-costs"), { recursive: true, force: true });
   await mapConcurrent(peerPairs, 8, async ({ prefectureCode, prefectureName, businessKey }, index) => {
     const comparison = await getPrefecturePeerComparison({ prefectureName, businessKey });
     if (comparison.rows.length === 0) {
       throw new Error(`県内比較データを生成できません: ${prefectureName}/${businessKey}`);
     }
-    await writeJson(
-      path.join(publicRoot, "citizen-peers", prefectureCode, `${encodeURIComponent(businessKey)}.json`),
-      comparison
-    );
+    await Promise.all([
+      writeJson(
+        path.join(publicRoot, "citizen-peers", prefectureCode, `${encodeURIComponent(businessKey)}.json`),
+        withoutPrefecturePeerFeeCostFields(comparison)
+      ),
+      writeJson(
+        path.join(publicRoot, "citizen-fee-costs", prefectureCode, `${encodeURIComponent(businessKey)}.json`),
+        buildPrefecturePeerFeeCostSupplement(comparison)
+      )
+    ]);
     if ((index + 1) % 50 === 0 || index + 1 === peerPairs.length) {
       process.stdout.write(`citizen peers: ${index + 1}/${peerPairs.length}\n`);
     }

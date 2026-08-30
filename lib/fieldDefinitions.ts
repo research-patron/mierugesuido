@@ -44,7 +44,7 @@ export const fieldDefinitions: Record<string, FieldDefinition> = {
   },
   capitalCostComponent: {
     label: "汚水処理費（資本費分）",
-    meaning: "汚水処理費のうち、減価償却費や企業債利息など資本費に係る費用です。",
+    meaning: "汚水処理費のうち、法適用では減価償却費等、法非適用では地方債元利償還費等からなる実績の資本費分です。使用料算定上の資産維持費は単年度年鑑だけでは確認できません。",
     unit: "千円",
     sourceTable: "経営分析に関する調（一）",
     role: "費用内訳"

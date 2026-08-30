@@ -37,6 +37,27 @@ export type PrefecturePeerCostCompositionShare = {
   id: PrefecturePeerCostCompositionItemId;
   label: string;
   sharePercent: number;
+  yenPerM3?: number | null;
+};
+
+export const PREFECTURE_PEER_PURPOSE_COST_DEFINITIONS = [
+  { id: "pipeline", label: "管渠費", itemCodes: ["pipeline_expense"] },
+  { id: "pump-station", label: "ポンプ場費", itemCodes: ["pump_station_expense"] },
+  { id: "treatment-plant", label: "処理場費", itemCodes: ["treatment_plant_expense"] },
+  {
+    id: "general-management",
+    label: "業務費・総係費（一般管理）",
+    itemCodes: ["business_expense", "general_administration_expense"]
+  }
+] as const;
+
+export type PrefecturePeerPurposeCostItemId =
+  (typeof PREFECTURE_PEER_PURPOSE_COST_DEFINITIONS)[number]["id"];
+
+export type PrefecturePeerPurposeCostItem = {
+  id: PrefecturePeerPurposeCostItemId;
+  label: string;
+  yenPerM3: number;
 };
 
 export type PrefecturePeerAnnualInput = {
@@ -46,6 +67,8 @@ export type PrefecturePeerAnnualInput = {
   householdFee20m3Yen?: number | null;
   annualBillableVolume?: number | null;
   wastewaterTreatmentCost?: number | null;
+  opexComponent?: number | null;
+  capitalCostComponent?: number | null;
   servicePopulation?: number | null;
   connectedPopulation?: number | null;
   diagnosisResult?: {
@@ -111,6 +134,11 @@ export type PrefecturePeerComparisonRow = {
   treatmentCostYenPerM3: number | null;
   annualBillableVolume: number | null;
   wastewaterTreatmentCost: number | null;
+  /** 汚水処理費の維持管理費分を年間有収水量で除した比較値。 */
+  maintenanceCostYenPerM3?: number | null;
+  /** 汚水処理費の資本費分を年間有収水量で除した比較値。 */
+  capitalCostYenPerM3?: number | null;
+  purposeCostItems?: PrefecturePeerPurposeCostItem[];
   costCompositionShares: PrefecturePeerCostCompositionShare[];
   expenseRecoveryRate: number | null;
   operatingRevenue: number | null;
@@ -152,6 +180,172 @@ export type PrefecturePeerComparisonResult = {
   summary: PrefecturePeerComparisonSummary;
 };
 
+export type PrefecturePeerFeeCostSupplementRow = {
+  comparisonUnitKey: string;
+  sourceAnnualBillableVolume: number | null;
+  sourceWastewaterTreatmentCost: number | null;
+  sourceTreatmentCostYenPerM3: number | null;
+  maintenanceCostYenPerM3: number | null;
+  capitalCostYenPerM3: number | null;
+  purposeCostItems: PrefecturePeerPurposeCostItem[];
+  natureCostItems: Array<{
+    id: PrefecturePeerCostCompositionItemId;
+    label: string;
+    yenPerM3: number;
+  }>;
+};
+
+export type PrefecturePeerFeeCostSupplement = {
+  prefectureCode: string | null;
+  prefectureName: string;
+  businessKey: string;
+  surveyYear: PrefecturePeerComparisonSurveyYear;
+  rows: PrefecturePeerFeeCostSupplementRow[];
+};
+
+export function buildPrefecturePeerFeeCostSupplement(
+  model: PrefecturePeerComparisonResult
+): PrefecturePeerFeeCostSupplement {
+  assertPrefecturePeerFeeCostsReconciled(model);
+  return {
+    prefectureCode: model.prefectureCode,
+    prefectureName: model.prefectureName,
+    businessKey: model.businessKey,
+    surveyYear: model.surveyYear,
+    rows: model.rows.map((row) => ({
+      comparisonUnitKey: row.comparisonUnitKey,
+      sourceAnnualBillableVolume: row.annualBillableVolume,
+      sourceWastewaterTreatmentCost: row.wastewaterTreatmentCost,
+      sourceTreatmentCostYenPerM3: row.treatmentCostYenPerM3,
+      maintenanceCostYenPerM3: row.maintenanceCostYenPerM3 ?? null,
+      capitalCostYenPerM3: row.capitalCostYenPerM3 ?? null,
+      purposeCostItems: row.purposeCostItems ?? [],
+      natureCostItems: (row.costCompositionShares ?? []).flatMap((item) => (
+        item.yenPerM3 == null ? [] : [{ id: item.id, label: item.label, yenPerM3: item.yenPerM3 }]
+      ))
+    }))
+  };
+}
+
+export function assertPrefecturePeerFeeCostsReconciled(
+  model: PrefecturePeerComparisonResult,
+  toleranceYenPerM3 = 0.001
+) {
+  for (const row of model.rows) {
+    if (!row.eligible
+      || row.maintenanceCostYenPerM3 == null
+      || row.capitalCostYenPerM3 == null
+      || row.treatmentCostYenPerM3 == null) continue;
+    const difference = Math.abs(
+      row.maintenanceCostYenPerM3 + row.capitalCostYenPerM3 - row.treatmentCostYenPerM3
+    );
+    if (difference > toleranceYenPerM3) {
+      throw new Error(
+        `汚水処理費の内訳が合計と一致しません: ${row.comparisonUnitKey} (${difference.toFixed(6)}円/m³)`
+      );
+    }
+  }
+}
+
+export function mergePrefecturePeerFeeCostSupplement(
+  model: PrefecturePeerComparisonResult,
+  supplement: unknown
+): PrefecturePeerComparisonResult {
+  if (!isPrefecturePeerFeeCostSupplement(supplement)
+    || supplement.prefectureCode !== model.prefectureCode
+    || supplement.prefectureName !== model.prefectureName
+    || supplement.businessKey !== model.businessKey
+    || supplement.surveyYear !== model.surveyYear
+    || supplement.rows.length !== model.rows.length) return model;
+  const supplementalRows = new Map(supplement.rows.map((row) => [row.comparisonUnitKey, row]));
+  if (supplementalRows.size !== supplement.rows.length || model.rows.some((row) => {
+    const supplemental = supplementalRows.get(row.comparisonUnitKey);
+    return !supplemental
+      || supplemental.sourceAnnualBillableVolume !== row.annualBillableVolume
+      || supplemental.sourceWastewaterTreatmentCost !== row.wastewaterTreatmentCost
+      || supplemental.sourceTreatmentCostYenPerM3 !== row.treatmentCostYenPerM3;
+  })) return model;
+  return {
+    ...model,
+    rows: model.rows.map((row) => {
+      const supplemental = supplementalRows.get(row.comparisonUnitKey);
+      if (!supplemental) return row;
+      const natureById = new Map(supplemental.natureCostItems.map((item) => [item.id, item]));
+      return {
+        ...row,
+        maintenanceCostYenPerM3: supplemental.maintenanceCostYenPerM3,
+        capitalCostYenPerM3: supplemental.capitalCostYenPerM3,
+        purposeCostItems: supplemental.purposeCostItems,
+        costCompositionShares: row.costCompositionShares.map((item) => ({
+          ...item,
+          yenPerM3: natureById.get(item.id)?.yenPerM3 ?? null
+        }))
+      };
+    })
+  };
+}
+
+export function isPrefecturePeerFeeCostSupplement(
+  value: unknown
+): value is PrefecturePeerFeeCostSupplement {
+  if (!isRecord(value)
+    || !(value.prefectureCode == null || typeof value.prefectureCode === "string")
+    || typeof value.prefectureName !== "string"
+    || typeof value.businessKey !== "string"
+    || value.surveyYear !== PREFECTURE_PEER_COMPARISON_SURVEY_YEAR
+    || !Array.isArray(value.rows)) return false;
+
+  const purposeIds = new Set<string>(PREFECTURE_PEER_PURPOSE_COST_DEFINITIONS.map((item) => item.id));
+  const natureIds = new Set<string>(COST_COMPOSITION_ITEM_DEFINITIONS.map((item) => item.id));
+  return value.rows.every((row) => isRecord(row)
+    && typeof row.comparisonUnitKey === "string"
+    && isNonNegativeFiniteOrNull(row.sourceAnnualBillableVolume)
+    && isNonNegativeFiniteOrNull(row.sourceWastewaterTreatmentCost)
+    && isNonNegativeFiniteOrNull(row.sourceTreatmentCostYenPerM3)
+    && isNonNegativeFiniteOrNull(row.maintenanceCostYenPerM3)
+    && isNonNegativeFiniteOrNull(row.capitalCostYenPerM3)
+    && Array.isArray(row.purposeCostItems)
+    && row.purposeCostItems.every((item) => isSupplementCostItem(item, purposeIds))
+    && Array.isArray(row.natureCostItems)
+    && row.natureCostItems.every((item) => isSupplementCostItem(item, natureIds)));
+}
+
+function isSupplementCostItem(value: unknown, permittedIds: Set<string>) {
+  return isRecord(value)
+    && typeof value.id === "string"
+    && permittedIds.has(value.id)
+    && typeof value.label === "string"
+    && typeof value.yenPerM3 === "number"
+    && Number.isFinite(value.yenPerM3)
+    && value.yenPerM3 >= 0;
+}
+
+function isNonNegativeFiniteOrNull(value: unknown) {
+  return value === null
+    || (typeof value === "number" && Number.isFinite(value) && value >= 0);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+export function withoutPrefecturePeerFeeCostFields(
+  model: PrefecturePeerComparisonResult
+): PrefecturePeerComparisonResult {
+  return {
+    ...model,
+    rows: model.rows.map(({
+      maintenanceCostYenPerM3,
+      capitalCostYenPerM3,
+      purposeCostItems,
+      ...row
+    }) => ({
+      ...row,
+      costCompositionShares: row.costCompositionShares.map(({ yenPerM3, ...item }) => item)
+    }))
+  };
+}
+
 export type BuildPrefecturePeerComparisonParams = {
   prefectureCode?: string | null;
   prefectureName: string;
@@ -192,12 +386,16 @@ const INCOME_ITEM_CODES = {
 } as const;
 
 export const PREFECTURE_PEER_INCOME_ITEM_CODES = Object.freeze(Object.values(INCOME_ITEM_CODES));
+export const PREFECTURE_PEER_PURPOSE_COST_ITEM_CODES = Object.freeze(
+  PREFECTURE_PEER_PURPOSE_COST_DEFINITIONS.flatMap((item) => [...item.itemCodes])
+);
 export const PREFECTURE_PEER_COST_COMPOSITION_ITEM_CODES = Object.freeze([
   ...COST_COMPOSITION_ITEM_DEFINITIONS.map((item) => item.itemCode),
   "total_cost"
 ]);
 export const PREFECTURE_PEER_FINANCIAL_STATEMENT_ITEM_CODES = Object.freeze([
   ...PREFECTURE_PEER_INCOME_ITEM_CODES,
+  ...PREFECTURE_PEER_PURPOSE_COST_ITEM_CODES,
   ...PREFECTURE_PEER_COST_COMPOSITION_ITEM_CODES
 ]);
 
@@ -403,6 +601,7 @@ function buildRow({
   const operatingCoverageRatio = operatingRevenue == null || operatingExpense == null || operatingExpense <= 0
     ? null
     : (operatingRevenue / operatingExpense) * 100;
+  const annualBillableVolume = positiveFiniteOrNull(annual.annualBillableVolume);
   return {
     ...legalBase,
     eligible: true,
@@ -410,9 +609,12 @@ function buildRow({
     householdFee20m3Yen: positiveFiniteOrNull(annual.householdFee20m3Yen),
     feeUnitPriceYenPerM3: positiveFiniteOrNull(annual.diagnosisResult?.feeUnitPriceYenPerM3),
     treatmentCostYenPerM3: positiveFiniteOrNull(annual.diagnosisResult?.treatmentCostYenPerM3),
-    annualBillableVolume: positiveFiniteOrNull(annual.annualBillableVolume),
+    annualBillableVolume,
     wastewaterTreatmentCost: nonNegativeFiniteOrNull(annual.wastewaterTreatmentCost),
-    costCompositionShares: buildCostCompositionShares(items),
+    maintenanceCostYenPerM3: costPerCubicMeter(annual.opexComponent, annualBillableVolume),
+    capitalCostYenPerM3: costPerCubicMeter(annual.capitalCostComponent, annualBillableVolume),
+    purposeCostItems: buildPurposeCostItems(items, annualBillableVolume),
+    costCompositionShares: buildCostCompositionShares(items, annualBillableVolume),
     expenseRecoveryRate,
     operatingRevenue,
     operatingExpense,
@@ -460,6 +662,9 @@ function excludedRow(
     treatmentCostYenPerM3: null,
     annualBillableVolume: null,
     wastewaterTreatmentCost: null,
+    maintenanceCostYenPerM3: null,
+    capitalCostYenPerM3: null,
+    purposeCostItems: [],
     costCompositionShares: [],
     expenseRecoveryRate: null,
     operatingRevenue: null,
@@ -534,7 +739,34 @@ function nonNegativeFiniteOrNull(value: number | null | undefined) {
   return value == null || !Number.isFinite(value) || value < 0 ? null : value;
 }
 
-function buildCostCompositionShares(items: Map<string, number | null>): PrefecturePeerCostCompositionShare[] {
+function costPerCubicMeter(
+  amountThousandYen: number | null | undefined,
+  annualBillableVolume: number | null | undefined
+) {
+  const amount = nonNegativeFiniteOrNull(amountThousandYen);
+  const volume = positiveFiniteOrNull(annualBillableVolume);
+  return amount == null || volume == null ? null : amount * 1_000 / volume;
+}
+
+function buildPurposeCostItems(
+  items: Map<string, number | null>,
+  annualBillableVolume: number | null
+): PrefecturePeerPurposeCostItem[] {
+  return PREFECTURE_PEER_PURPOSE_COST_DEFINITIONS.flatMap((definition) => {
+    const amounts = definition.itemCodes.map((itemCode) => nonNegativeFiniteOrNull(items.get(itemCode)));
+    if (amounts.some((amount) => amount == null)) return [];
+    const yenPerM3 = costPerCubicMeter(
+      amounts.reduce<number>((sum, amount) => sum + (amount ?? 0), 0),
+      annualBillableVolume
+    );
+    return yenPerM3 == null ? [] : [{ id: definition.id, label: definition.label, yenPerM3 }];
+  });
+}
+
+function buildCostCompositionShares(
+  items: Map<string, number | null>,
+  annualBillableVolume: number | null
+): PrefecturePeerCostCompositionShare[] {
   const total = positiveFiniteOrNull(items.get("total_cost"));
   if (total == null) return [];
   return COST_COMPOSITION_ITEM_DEFINITIONS.flatMap((definition) => {
@@ -542,7 +774,8 @@ function buildCostCompositionShares(items: Map<string, number | null>): Prefectu
     return amount == null ? [] : [{
       id: definition.id,
       label: definition.label,
-      sharePercent: amount / total * 100
+      sharePercent: amount / total * 100,
+      yenPerM3: costPerCubicMeter(amount, annualBillableVolume)
     }];
   });
 }

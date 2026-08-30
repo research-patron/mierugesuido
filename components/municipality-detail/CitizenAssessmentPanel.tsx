@@ -9,11 +9,7 @@ import {
   Scale,
   TrendingUp
 } from "lucide-react";
-import {
-  buildCostCompositionDisplay,
-  type CitizenCostCompositionInsight,
-  type CitizenMunicipalityAssessment
-} from "@/lib/citizenMunicipalityAssessment";
+import type { CitizenMunicipalityAssessment } from "@/lib/citizenMunicipalityAssessment";
 import type { FundShortageAssessment } from "@/lib/fundShortage";
 import {
   formatFeeRevisionEffectiveDate,
@@ -34,7 +30,7 @@ type CitizenAssessmentPanelProps = {
   revisionComparison: MunicipalityFeeRevisionComparison | null;
   businessLabelsByKey: Record<string, string>;
   prefectureHref: string;
-  financeHref: string;
+  feeAnalysisHref: string;
   yearbookHref: string;
 };
 
@@ -50,7 +46,7 @@ export function CitizenAssessmentPanel({
   revisionComparison,
   businessLabelsByKey,
   prefectureHref,
-  financeHref,
+  feeAnalysisHref,
   yearbookHref
 }: CitizenAssessmentPanelProps) {
   const fee = assessment.feeCostRelationship.fee.current;
@@ -60,7 +56,8 @@ export function CitizenAssessmentPanel({
   const revisionStatus = municipalityFeeRevisionStatus(revisionComparison);
   const areaLabel = prefectureAreaLabel(prefectureName);
   const selectedRevision = revisionComparison?.changes.find((change) => change.businessKey === businessKey) ?? null;
-  const costDisplay = buildCostCompositionDisplay(assessment.costComposition);
+  const feeLevelCostAnalysis = assessment.feeLevelCostAnalysis;
+  const feeComparisonLoading = assessment.r6DataAvailability.status === "available" && peerLoading;
   const sustainabilityTone = fundShortage?.status === "shortage"
     && fundShortage.isAtOrAboveManagementImprovementThreshold
     ? "critical"
@@ -135,31 +132,16 @@ export function CitizenAssessmentPanel({
             <div><span>データから考えられる要因</span><h3 id="citizen-cost-title">なぜ、この料金水準？</h3></div>
           </div>
           <div className={styles.questionAnswer}>
-            <strong>{localizeAreaLabel(assessment.feeCostRelationship.headline, areaLabel)}</strong>
-            <p>{localizeAreaLabel(assessment.feeCostRelationship.explanation, areaLabel)}</p>
-            <dl className={styles.compactMetrics}>
-              <div>
-                <dt>汚水処理原価（1m³あたり）</dt>
-                <dd>{formatMetricComparison(assessment.feeCostRelationship.treatmentCost, "円/m³", areaLabel)}</dd>
-              </div>
-              <div>
-                <dt>R2→R6 有収水量（料金収入につながる水量）</dt>
-                <dd>{assessment.volumeTrend.changePercent == null ? "比較不可" : formatSignedPercent(assessment.volumeTrend.changePercent)}</dd>
-              </div>
-            </dl>
-            {costDisplay.topItems.length > 0 ? (
-              <p className={styles.subEvidence}>
-                主な費目：{costDisplay.topItems.map((item) => formatCostCompositionItem(item, areaLabel)).join("、")}
-              </p>
-            ) : null}
-            {costDisplay.additionalAbovePeerMedianItems.length > 0 ? (
-              <p className={styles.subEvidence}>
-                {areaLabel}中央値を5ポイント以上上回るほかの費目：
-                {costDisplay.additionalAbovePeerMedianItems.map((item) => formatCostCompositionItem(item, areaLabel)).join("、")}
-              </p>
-            ) : null}
+            <div className={styles.costConclusion} data-state={feeLevelCostAnalysis.state}>
+              <strong>{feeComparisonLoading
+                ? `${areaLabel}の費用比較を読み込んでいます`
+                : localizeAreaLabel(feeLevelCostAnalysis.headline, areaLabel)}</strong>
+              <p>{feeComparisonLoading
+                ? "維持管理費分・資本費分と比較対象の中央値を確認しています。"
+                : localizeAreaLabel(feeLevelCostAnalysis.explanation, areaLabel)}</p>
+            </div>
           </div>
-          <Link href={financeHref} className={styles.evidenceLink}>費用と財務の根拠を見る <ArrowRight size={15} aria-hidden="true" /></Link>
+          <Link href={feeAnalysisHref} className={styles.evidenceLink}>料金水準の考察を見る <ArrowRight size={15} aria-hidden="true" /></Link>
         </article>
 
         <article className={styles.questionRow} data-topic="sustainability" data-tone={sustainabilityTone} aria-labelledby="citizen-sustainability-title">
@@ -296,23 +278,6 @@ function revisionStatusLabel(
   if (selectedRevision) return "選択中の事業で施行年月日が変化";
   if (comparison.status === "changed") return "自治体内の別事業で施行年月日が変化";
   return "比較済み・施行年月日の変化なし";
-}
-
-function formatMetricComparison(
-  comparison: CitizenMunicipalityAssessment["feeCostRelationship"]["treatmentCost"],
-  unit: string,
-  areaLabel: string
-) {
-  if (comparison.current == null || comparison.median == null) return "比較不可";
-  const position = comparison.position === "higher" ? "高い" : comparison.position === "lower" ? "低い" : "同程度";
-  return `${comparison.current.toFixed(1)}${unit}（${areaLabel}中央値より${position}）`;
-}
-
-function formatCostCompositionItem(item: CitizenCostCompositionInsight, areaLabel: string) {
-  const comparison = item.differencePoints != null && item.differencePoints >= 5
-    ? `（${areaLabel}中央値より+${item.differencePoints.toFixed(1)}ポイント）`
-    : "";
-  return `${item.label} ${item.sharePercent.toFixed(1)}%${comparison}`;
 }
 
 function localizeAreaLabel(text: string | null | undefined, areaLabel: string) {

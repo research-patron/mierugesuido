@@ -48,6 +48,44 @@ export type FeeCostRelationship = {
   evidenceTarget: "prefecture";
 };
 
+export type FeeLevelCostComponentKind = "maintenance" | "capital";
+
+export type FeeLevelCostComponentAssessment = {
+  kind: FeeLevelCostComponentKind;
+  label: string;
+  shortDefinition: string;
+  amountThousandYen: number;
+  yenPerM3: number;
+  sharePercent: number;
+  comparison: MetricMedianComparison;
+};
+
+export type FeeLevelDetailedCostItemInput = {
+  id: string;
+  label: string;
+  value?: number | null;
+};
+
+export type FeeLevelDetailedCostItemAssessment = {
+  id: string;
+  label: string;
+  yenPerM3: number;
+  comparison: MetricMedianComparison;
+};
+
+export type FeeLevelCostAnalysis = {
+  state: "ready" | "current_only" | "unavailable";
+  headline: string;
+  explanation: string;
+  components: FeeLevelCostComponentAssessment[];
+  purposeItems: FeeLevelDetailedCostItemAssessment[];
+  natureItems: FeeLevelDetailedCostItemAssessment[];
+  totalCostThousandYen: number | null;
+  annualBillableVolume: number | null;
+  componentsReconciled: boolean | null;
+  evidenceTarget: "yearbook";
+};
+
 export type CitizenR6DataAvailability =
   | {
     status: "available";
@@ -200,6 +238,11 @@ export type CitizenMunicipalityAssessmentInput = {
   expenseRecoveryRate?: number | null;
   sewerFeeRevenue?: number | null;
   wastewaterTreatmentCost?: number | null;
+  annualBillableVolume?: number | null;
+  opexComponent?: number | null;
+  capitalCostComponent?: number | null;
+  accountingType?: string | null;
+  purposeCostItems?: FeeLevelDetailedCostItemInput[] | null;
   annuals?: CitizenAnnualMetricPoint[];
   costComposition?: CitizenCostCompositionInput | null;
   finance?: CitizenFinanceInput | null;
@@ -218,6 +261,7 @@ export type CitizenMunicipalityAssessment = {
   feeRank: FeeRankSummary | null;
   feeRankUnavailableReason: string | null;
   feeCostRelationship: FeeCostRelationship;
+  feeLevelCostAnalysis: FeeLevelCostAnalysis;
   volumeTrend: VolumeTrendAssessment;
   recovery: RecoveryBandAssessment;
   costComposition: CitizenCostCompositionAssessment;
@@ -339,7 +383,7 @@ export function buildFeeCostRelationship({
       ...base,
       kind: "high_fee_cost_not_high",
       headline: "料金は高い一方、処理原価は高い水準ではありません",
-      explanation: "年鑑の費用データだけでは料金水準を説明できません。料金体系や自治体の経営戦略も確認が必要です。"
+      explanation: "総原価だけでは高い料金との強い対応は見られません。維持管理費分・資本費分と料金体系を分けて確認します。"
     };
   }
   if (fee.position !== "higher" && treatmentCost.position === "higher") {
@@ -362,7 +406,233 @@ export function buildFeeCostRelationship({
     ...base,
     kind: "mixed_or_similar",
     headline: "料金と処理原価は県内中央値に近いか、異なる動きです",
-    explanation: "料金水準の背景を年鑑データだけで特定できないため、料金体系や施設更新計画も確認が必要です。"
+    explanation: "総原価の比較に加え、維持管理費分・資本費分と料金体系を分けて確認します。"
+  };
+}
+
+export function buildFeeLevelCostAnalysis({
+  feePosition,
+  annualBillableVolume,
+  wastewaterTreatmentCost,
+  opexComponent,
+  capitalCostComponent,
+  accountingType,
+  purposeCostItems,
+  natureCostItems,
+  peerRows
+}: {
+  feePosition: MetricMedianPosition;
+  annualBillableVolume: number | null | undefined;
+  wastewaterTreatmentCost: number | null | undefined;
+  opexComponent: number | null | undefined;
+  capitalCostComponent: number | null | undefined;
+  accountingType?: string | null;
+  purposeCostItems?: FeeLevelDetailedCostItemInput[] | null;
+  natureCostItems?: FeeLevelDetailedCostItemInput[] | null;
+  peerRows: PrefecturePeerComparisonRow[];
+}): FeeLevelCostAnalysis {
+  const volume = positiveFiniteOrNull(annualBillableVolume);
+  const total = positiveFiniteOrNull(wastewaterTreatmentCost);
+  const maintenance = nonNegativeFiniteOrNull(opexComponent);
+  const capital = nonNegativeFiniteOrNull(capitalCostComponent);
+  const componentsReconciled = total == null || maintenance == null || capital == null
+    ? null
+    : Math.abs(maintenance + capital - total) < 0.5;
+
+  if (volume == null || total == null || maintenance == null || capital == null || !componentsReconciled) {
+    return {
+      state: "unavailable",
+      headline: "維持管理費分と資本費分を分けて確認できません",
+      explanation: componentsReconciled === false
+        ? "R6の汚水処理費と二つの内訳が一致しないため、誤った要因比較を表示しません。原表の確認が必要です。"
+        : "R6の有収水量、汚水処理費、維持管理費分、資本費分のいずれかが未取得のため、要因比較を行いません。",
+      components: [],
+      purposeItems: [],
+      natureItems: [],
+      totalCostThousandYen: total,
+      annualBillableVolume: volume,
+      componentsReconciled,
+      evidenceTarget: "yearbook"
+    };
+  }
+
+  const eligiblePeers = uniqueComparisonRows(peerRows).filter((row) => row.eligible);
+  const maintenanceYenPerM3 = maintenance * 1_000 / volume;
+  const capitalYenPerM3 = capital * 1_000 / volume;
+  const components: FeeLevelCostComponentAssessment[] = [
+    {
+      kind: "maintenance",
+      label: "維持管理費分",
+      shortDefinition: "管渠・ポンプ場・処理場など、既存施設を動かし維持する費用",
+      amountThousandYen: maintenance,
+      yenPerM3: maintenanceYenPerM3,
+      sharePercent: maintenance / total * 100,
+      comparison: compareNonNegativeMetricToMedian(
+        maintenanceYenPerM3,
+        eligiblePeers.map((row) => row.maintenanceCostYenPerM3)
+      )
+    },
+    {
+      kind: "capital",
+      label: "資本費分",
+      shortDefinition: accountingType === "non_legal_applied"
+        ? "施設整備に係る地方債元利償還費等の費用。資産維持費は中長期計画で別途確認"
+        : accountingType === "legal_applied"
+          ? "施設整備に係る減価償却費等の費用。資産維持費は中長期計画で別途確認"
+          : "施設整備に係る費用。会計方式に応じて減価償却費等または地方債元利償還費等で構成",
+      amountThousandYen: capital,
+      yenPerM3: capitalYenPerM3,
+      sharePercent: capital / total * 100,
+      comparison: compareNonNegativeMetricToMedian(
+        capitalYenPerM3,
+        eligiblePeers.map((row) => row.capitalCostYenPerM3)
+      )
+    }
+  ];
+  const comparisonReady = components.every((component) => component.comparison.median != null);
+  const higherComponents = components.filter((component) => component.comparison.position === "higher");
+  const totalCostComparison = compareNonNegativeMetricToMedian(
+    total * 1_000 / volume,
+    eligiblePeers.map((row) => row.treatmentCostYenPerM3)
+  );
+  const headline = buildFeeLevelCostHeadline(
+    feePosition,
+    higherComponents,
+    comparisonReady,
+    components,
+    totalCostComparison.position
+  );
+  const purposeItems = buildDetailedCostItems({
+    currentItems: purposeCostItems,
+    annualBillableVolume: volume,
+    peerRows: eligiblePeers,
+    peerItems: (row) => row.purposeCostItems ?? []
+  });
+  const natureItems = buildDetailedCostItems({
+    currentItems: natureCostItems,
+    annualBillableVolume: volume,
+    peerRows: eligiblePeers,
+    peerItems: (row) => (row.costCompositionShares ?? []).flatMap((item) => (
+      item.yenPerM3 == null ? [] : [{ id: item.id, label: item.label, yenPerM3: item.yenPerM3 }]
+    ))
+  });
+
+  return {
+    state: comparisonReady ? "ready" : "current_only",
+    headline,
+    explanation: comparisonReady
+      ? "R6の汚水処理費を有収水量1m³当たりにそろえ、比較対象となる県内の法適用事業と比較しました。同じ年度の関連性を示すもので、料金改定の原因や自治体の公式判断を断定するものではありません。"
+      : "R6の実績費用は二つに分けられますが、同じ会計基準の県内比較値が揃わないため、構成と1m³当たりの実績だけを表示します。",
+    components,
+    purposeItems,
+    natureItems,
+    totalCostThousandYen: total,
+    annualBillableVolume: volume,
+    componentsReconciled: true,
+    evidenceTarget: "yearbook"
+  };
+}
+
+function buildDetailedCostItems({
+  currentItems,
+  annualBillableVolume,
+  peerRows,
+  peerItems
+}: {
+  currentItems: FeeLevelDetailedCostItemInput[] | null | undefined;
+  annualBillableVolume: number;
+  peerRows: PrefecturePeerComparisonRow[];
+  peerItems: (row: PrefecturePeerComparisonRow) => Array<{ id: string; label: string; yenPerM3: number }>;
+}): FeeLevelDetailedCostItemAssessment[] {
+  return (currentItems ?? []).flatMap((item) => {
+    const amount = nonNegativeFiniteOrNull(item.value);
+    if (amount == null) return [];
+    const yenPerM3 = amount * 1_000 / annualBillableVolume;
+    const peerValues = peerRows.flatMap((row) => {
+      const peerItem = peerItems(row).find((candidate) => candidate.id === item.id);
+      return peerItem == null ? [] : [peerItem.yenPerM3];
+    });
+    return [{
+      id: item.id,
+      label: item.label,
+      yenPerM3,
+      comparison: compareNonNegativeMetricToMedian(yenPerM3, peerValues)
+    }];
+  });
+}
+
+function buildFeeLevelCostHeadline(
+  feePosition: MetricMedianPosition,
+  higherComponents: FeeLevelCostComponentAssessment[],
+  comparisonReady: boolean,
+  components: FeeLevelCostComponentAssessment[],
+  totalCostPosition: MetricMedianPosition
+) {
+  if (!comparisonReady) {
+    const [maintenance, capital] = components;
+    return `汚水処理費の内訳は、維持管理費分${formatOneDecimal(maintenance.sharePercent)}%・資本費分${formatOneDecimal(capital.sharePercent)}%です`;
+  }
+  if (higherComponents.length > 0) {
+    const labels = higherComponents.map((component) => component.label).join("と");
+    if (feePosition === "higher") {
+      if (totalCostPosition === "higher") {
+        return `${labels}と汚水処理原価が県内中央値より高く、高い料金水準の背景候補です`;
+      }
+      if (totalCostPosition === "lower" || totalCostPosition === "similar") {
+        return `${labels}は県内中央値より高い一方、汚水処理原価は中央値を上回らず、単年度費用だけでは高い料金水準を説明しきれません`;
+      }
+      return `${labels}が県内中央値より高く、高い料金水準を考える材料です`;
+    }
+    if (feePosition === "lower") return `${labels}は県内中央値より高い一方、家庭料金は低い水準です`;
+    return `${labels}が県内中央値より高く、料金水準を考える主な材料です`;
+  }
+  if (feePosition === "higher") {
+    return "維持管理費分・資本費分は県内中央値を大きく上回らず、料金体系や将来計画の確認が重要です";
+  }
+  if (feePosition === "lower") {
+    return "維持管理費分・資本費分は県内中央値を大きく上回らず、低い料金水準と矛盾しない実績です";
+  }
+  return "維持管理費分・資本費分は県内中央値に近いか、それより低い水準です";
+}
+
+function compareNonNegativeMetricToMedian(
+  currentValue: number | null | undefined,
+  peerValues: Array<number | null | undefined>,
+  sameRangePercent = CITIZEN_METRIC_SAME_RANGE_PERCENT
+): MetricMedianComparison {
+  const current = nonNegativeFiniteOrNull(currentValue);
+  const peerMedian = medianOfFiniteValues(peerValues.map(nonNegativeFiniteOrNull));
+  if (current == null || peerMedian == null) {
+    return {
+      position: "unavailable",
+      current,
+      median: peerMedian,
+      difference: null,
+      differencePercent: null,
+      sameRangePercent
+    };
+  }
+  const difference = current - peerMedian;
+  if (peerMedian === 0) {
+    return {
+      position: current === 0 ? "similar" : "higher",
+      current,
+      median: peerMedian,
+      difference,
+      differencePercent: current === 0 ? 0 : null,
+      sameRangePercent
+    };
+  }
+  const differencePercent = difference / peerMedian * 100;
+  return {
+    position: Math.abs(differencePercent) <= sameRangePercent + Number.EPSILON * 100
+      ? "similar"
+      : differencePercent > 0 ? "higher" : "lower",
+    current,
+    median: peerMedian,
+    difference,
+    differencePercent,
+    sameRangePercent
   };
 }
 
@@ -697,6 +967,24 @@ export function buildCitizenMunicipalityAssessment(
     : null;
   const volumeTrend = buildVolumeTrend(r6Available ? input.annuals ?? [] : []);
   const recovery = buildRecoveryBand(recoveryRate);
+  const feeCostRelationship = buildFeeCostRelationship({
+    currentHouseholdFee20m3Yen: householdFee,
+    peerHouseholdFees: eligiblePeerRows.map((row) => row.householdFee20m3Yen),
+    currentTreatmentCostYenPerM3: treatmentCost,
+    peerTreatmentCostsYenPerM3: eligiblePeerRows.map((row) => row.treatmentCostYenPerM3),
+    unavailableReason: comparisonUnavailableReason
+  });
+  const feeLevelCostAnalysis = buildFeeLevelCostAnalysis({
+    feePosition: feeCostRelationship.fee.position,
+    annualBillableVolume: r6Available ? input.annualBillableVolume : null,
+    wastewaterTreatmentCost: r6Available ? input.wastewaterTreatmentCost : null,
+    opexComponent: r6Available ? input.opexComponent : null,
+    capitalCostComponent: r6Available ? input.capitalCostComponent : null,
+    accountingType: input.accountingType,
+    purposeCostItems: r6Available ? input.purposeCostItems : null,
+    natureCostItems: r6Available ? input.costComposition?.items : null,
+    peerRows: currentPeerEligible ? peerRows : []
+  });
 
   return {
     r6DataAvailability: input.r6DataAvailability,
@@ -715,13 +1003,8 @@ export function buildCitizenMunicipalityAssessment(
           ? "特定公共下水道は一般家庭向け20m³月額料金の比較対象ではありません。"
           : feeRankReason(current, eligiblePeerRows)
       : null,
-    feeCostRelationship: buildFeeCostRelationship({
-      currentHouseholdFee20m3Yen: householdFee,
-      peerHouseholdFees: eligiblePeerRows.map((row) => row.householdFee20m3Yen),
-      currentTreatmentCostYenPerM3: treatmentCost,
-      peerTreatmentCostsYenPerM3: eligiblePeerRows.map((row) => row.treatmentCostYenPerM3),
-      unavailableReason: comparisonUnavailableReason
-    }),
+    feeCostRelationship,
+    feeLevelCostAnalysis,
     volumeTrend,
     recovery,
     costComposition: buildCostCompositionAssessment(

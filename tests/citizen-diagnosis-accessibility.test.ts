@@ -8,6 +8,10 @@ const assessmentSource = readFileSync(
   path.join(root, "components/municipality-detail/CitizenAssessmentPanel.tsx"),
   "utf8"
 );
+const feeAnalysisSource = readFileSync(
+  path.join(root, "components/municipality-detail/FeeLevelAnalysisPanel.tsx"),
+  "utf8"
+);
 const assessmentCss = readFileSync(
   path.join(root, "components/municipality-detail/CitizenAssessmentPanel.module.css"),
   "utf8"
@@ -42,6 +46,13 @@ describe("citizen diagnosis accessibility and plain-language guardrails", () => 
   it("keeps key mobile controls at least 44px and detailed evidence collapsed", () => {
     expect(assessmentCss).not.toContain("min-height: 32px");
     expect(assessmentCss).toMatch(/\.evidenceLink\s*\{[^}]*min-height:\s*44px/s);
+    expect(assessmentCss).toMatch(/\.costReasonDetails > summary\s*\{[^}]*min-height:\s*44px/s);
+    expect(assessmentCss).toMatch(/\.costSourceLinks a\s*\{[^}]*min-height:\s*44px/s);
+    expect(feeAnalysisSource).toContain("onKeyDown={toggleDetailsFromKeyboard}");
+    expect(feeAnalysisSource).toContain('event.key !== "Enter" && event.key !== " "');
+    expect(feeAnalysisSource).toContain('<Link href={diagnosisHref}');
+    expect(feeAnalysisSource).toContain('<Link href={financeHref}');
+    expect(feeAnalysisSource).toContain('<Link href={yearbookHref}');
     expect(detailCss).toMatch(/\.backLink\s*\{[^}]*min-height:\s*44px/s);
     expect(detailCss).toMatch(/\.jointOperationLinks > a\s*\{[^}]*min-height:\s*44px/s);
     expect(detailCss).toMatch(/\.jointOperationLinks > \.jointOperationSource\s*\{[^}]*min-height:\s*44px/s);
@@ -100,7 +111,7 @@ describe("citizen diagnosis accessibility and plain-language guardrails", () => 
     expect(assessmentSource).toContain('if (prefectureName === "東京都") return "都内"');
     expect(assessmentSource).toContain('if (prefectureName === "大阪府" || prefectureName === "京都府") return "府内"');
     expect(peerSource).toContain('const areaLabel = prefectureAreaLabel(model.prefectureName)');
-    expect(assessmentSource).toContain("有収水量（料金収入につながる水量）");
+    expect(feeAnalysisSource).toContain("有収水量（料金収入につながる水量）");
     expect(assessmentSource).toContain("会計単位とは、同じ決算書にまとめられる事業のまとまりです");
   });
 
@@ -110,7 +121,7 @@ describe("citizen diagnosis accessibility and plain-language guardrails", () => 
   });
 
   it("does not publish the misleading claims prohibited by the assessment rules", () => {
-    const publicCopy = [detailSource, assessmentSource, peerSource, sourcePage, sharedCopy].join("\n");
+    const publicCopy = [detailSource, assessmentSource, feeAnalysisSource, peerSource, sourcePage, sharedCopy].join("\n");
     expect(publicCopy).not.toContain("自動的な起債禁止");
     expect(publicCopy).not.toContain("将来料金の予測");
     expect(publicCopy).not.toContain("安全です");

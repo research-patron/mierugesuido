@@ -90,11 +90,11 @@ describe("revision schedule correctness", () => {
     const source = readFileSync(path.join(process.cwd(), "app/revisions/page.tsx"), "utf8");
     expect(source).toContain("主判定項目");
     expect(source).toContain("現行使用料施行年月日");
-    expect(source).toContain("金額差だけでは一覧に含めません");
+    expect(source).toContain("R5からR6で変わった事業の一覧です");
     expect(source).toContain("hasChangedEffectiveDateShape");
     expect(source).toContain("第33表の公式記載");
     expect(source).toContain("20m³月額の前年比");
-    expect(source).toContain("第33表「実質使用料改定率」ではありません。R5・R6の表示月額から算定しています。");
+    expect(source).toContain("R5・R6の20m³月額から計算した変化率です。");
     expect(source).toContain("業務用料金・料金体系・関連項目を見る");
     expect(source).toContain("自治体が公式に公表した改定情報");
     expect(source.match(/<StatCard\b/g)).toHaveLength(2);

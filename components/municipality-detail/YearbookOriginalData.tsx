@@ -123,7 +123,7 @@ export function YearbookOriginalData({
     return (
       <div className={styles.yearbookEmpty}>
         <strong>R{data.fiscalYear - 2018}の該当する公式個表列はありません</strong>
-        <p>表示中の事業・会計区分に一致する自治体列を確認できませんでした。総務省の原資料もあわせて確認してください。</p>
+        <p>選択中の事業・会計区分に該当するデータは未取得です。</p>
         <a href={data.sourcePageUrl} target="_blank" rel="noreferrer">
           総務省「12．個表」
           <ExternalLink size={13} aria-hidden="true" />
@@ -140,7 +140,7 @@ export function YearbookOriginalData({
           <div>
             <span>R{data.fiscalYear - 2018} / {data.fiscalYear}年度決算</span>
             <h3 id="yearbook-original-title">地方公営企業年鑑「個表」の自治体別抜粋</h3>
-            <p>総務省Excelの自治体列を、公式の項目順・階層・表示値のまま読みやすく縦に並べています。Excelの画面そのものを再現した表示ではありません。</p>
+            <p>総務省Excelの項目順・階層・表示値を保った一覧です。</p>
           </div>
           <a className={styles.yearbookSourcePageLink} href={data.sourcePageUrl} target="_blank" rel="noreferrer">
             総務省「12．個表」
@@ -336,7 +336,7 @@ function YearbookCalculationAudit({
       </div>
       {diagnosis?.requiredRevisionRateTo100 != null && requiredIncrease != null ? (
         <p className={styles.yearbookAuditFootnote}>
-          診断データの単純シナリオ {(Math.max(Number(diagnosis.requiredRevisionRateTo100), 0) * 100).toFixed(1)}% と、上記の元値からの再計算結果 {requiredIncrease.toFixed(1)}% を照合しています。公式の将来予測や推奨改定率ではありません。
+          費用・有収水量を固定した収入不足の試算：診断値 {(Math.max(Number(diagnosis.requiredRevisionRateTo100), 0) * 100).toFixed(1)}% ／ 原表からの再計算 {requiredIncrease.toFixed(1)}%
         </p>
       ) : null}
     </section>

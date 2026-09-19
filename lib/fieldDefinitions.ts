@@ -201,7 +201,7 @@ export const fieldDefinitions: Record<string, FieldDefinition> = {
 export function getFieldDefinition(field: string) {
   return fieldDefinitions[field] ?? {
     label: field,
-    meaning: "原資料から取り込んだ補助項目です。詳細は原資料の表名と項目名を確認してください。",
+    meaning: "原資料に掲載されている補助項目です。",
     unit: "不明",
     sourceTable: "原資料",
     role: "補助項目"

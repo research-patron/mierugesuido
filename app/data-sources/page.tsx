@@ -24,7 +24,7 @@ export default async function DataSourcesPage() {
           <div className="min-w-0">
             <h1 className="text-3xl font-black text-ink sm:text-4xl">データの見方・出典</h1>
             <p className="mt-2 max-w-4xl text-sm font-medium leading-7 text-slate-700">
-              本サービスで使用しているデータの概要、指標の計算方法、判定ロジック、出典を説明します。
+              データの出典と対象年度、各指標の意味や計算方法を紹介します。
             </p>
           </div>
           <div className="min-w-0 rounded-md border border-teal/40 bg-white/90 p-4">
@@ -47,8 +47,8 @@ export default async function DataSourcesPage() {
               <ul className="grid gap-2 text-sm font-medium leading-7 text-slate-700">
                 <li>対象: 地方公共団体が経営する公共下水道・特定環境保全公共下水道等</li>
                 <li>対象年度: 取り込んだ公表年度の決算値</li>
-                <li>県内比較: 公共下水道と特環の横並びは本サイト独自。総務省の公式類似団体区分では別区分</li>
-                <li>地図・一覧: 複数事業がある自治体は、最新年度とデータ品質を優先し、会計区分・事業コードの順で決定した1事業を表示。自治体全体の合算値ではない</li>
+                <li>県内比較: 同じ会計基準で比較。公共下水道と特定環境保全公共下水道は一緒に集計</li>
+                <li>地図・一覧: 自治体ごとに1事業。最新年度・データ品質を優先し、会計区分・事業コード順で選定</li>
               </ul>
             </InfoCard>
             <div className="rounded-md border border-line bg-white p-4">
@@ -65,7 +65,7 @@ export default async function DataSourcesPage() {
             <InfoCard icon={CircleHelp} title="色分けルール">
               <div className="grid gap-2 text-sm font-medium leading-7 text-slate-700">
                 <p className="rounded-md border border-line bg-panel px-3 py-2 text-xs font-bold leading-6 text-ink">
-                  色分けは、公式指標を読みやすくするための本サイト独自の参考区分です。
+                  経費回収率を4段階の色で表示します。
                 </p>
                 <p><strong className="text-ink">全国地図は経費回収率だけで色分け</strong></p>
                 <p><strong className="text-ink">経費回収率100%以上</strong></p>
@@ -73,7 +73,7 @@ export default async function DataSourcesPage() {
                 <p><strong className="text-ink">経費回収率80%以上90%未満</strong></p>
                 <p><strong className="text-ink">経費回収率80%未満</strong></p>
                 <p className="rounded-md bg-panel px-3 py-2 text-xs leading-6 text-slate-600">
-                  全国地図は「公共下水道」と「特定環境保全公共下水道」を切り替え、選択した事業区分だけを対象に、各市区町村の最新年度の経費回収率を都道府県ごとに単純平均して色分けします。公式の都道府県平均や加重平均ではありません。使用料単価は地域性があるため、全国地図の評価には使いません。同一都道府県内の市町村マップでは、80%未満に限り使用料単価150円/m³以上等と150円/m³未満を分けて参考表示します。この単価は「一般家庭20m³／月の使用料」とは別の指標です。
+                  全国地図は「公共下水道」と「特定環境保全公共下水道」を切り替え、選択した事業区分だけを対象に、各市区町村の最新年度の経費回収率を都道府県ごとに単純平均して色分けします。同一都道府県内の市町村マップでは、80%未満に限り使用料単価150円/m³以上等と150円/m³未満を分けて参考表示します。
                 </p>
               </div>
             </InfoCard>
@@ -86,15 +86,15 @@ export default async function DataSourcesPage() {
             <h2 className="text-xl font-black text-ink">2. 「このまちの診断」の読み方</h2>
           </div>
           <p className="mt-3 max-w-5xl text-sm font-medium leading-7 text-slate-700">
-            市町村詳細では、公式値と本サイトの計算を組み合わせ、住民が知りたい順に結論を整理します。将来の料金や経営状態を断定するものではなく、表示した根拠から確認できる範囲を説明します。
+            市町村ページでは、料金、費用の内訳、経営状況を順に見られます。
           </p>
           <dl className="mt-4 divide-y divide-line rounded-md border border-line bg-white">
             {[
               ["料金は県内で高いか", "同一都道府県のR6法適用・公共下水道と特定環境保全公共下水道を比較し、高い方からの順位、母数、中央値との差を表示します。共同運営の会計は一度だけ数えます。"],
-              ["何が背景にあるか", "家庭用20m³料金、汚水処理原価、有収水量、費用構成を別々に確認します。費用の集中先を示すもので、料金が高い原因を断定するものではありません。"],
-              ["将来も続けられるか", "資金不足、経費回収率、有収水量、損益、純資産、企業債残高を根拠別に示します。人口予測、更新投資計画、将来物価等を含まないため、長期的な持続可能性は断定しません。"],
-              ["料金が上がる可能性", "公式の改定情報と、現在年度の費用回収だけを使う単純シナリオを分離します。改定の確率、時期、自治体の料金案を予測しません。"],
-              ["資金不足の状態", "総務省確報の『資金不足額がある公営企業会計』一覧を正本とし、e-Statの会計単位と照合します。掲載会計だけに公式の資金不足額・比率を表示し、非掲載会計は0円ではなく『一覧に掲載なし』と表示します。事業や構成市町村へ配分した値ではありません。"]
+              ["費用の内訳", "減価償却費などの年間費用を、有収水量とともに散布図で比較。1m³当たりの費用は、県内中央値との差を棒グラフで表示します。"],
+              ["経営の状況", "経費回収率、利用量の変化、損益、資金不足などを表示します。"],
+              ["料金改定と収入不足", "R5・R6の使用料施行日の変更と、現在の費用を賄うための収入不足の試算を表示します。"],
+              ["資金不足の状態", "総務省の「資金不足額がある公営企業会計」一覧を、会計単位で照合。掲載がある場合は金額・比率、それ以外は「一覧に掲載なし」または「未確認」と表示します。"]
             ].map(([term, description]) => (
               <div key={term} className="grid gap-1 px-4 py-3 md:grid-cols-[210px_minmax(0,1fr)] md:gap-5">
                 <dt className="text-sm font-black text-ink">{term}</dt>
@@ -115,15 +115,15 @@ export default async function DataSourcesPage() {
           <div className="mt-4 grid gap-3 lg:grid-cols-3">
             <div className="rounded-md border border-line bg-panel p-4">
               <h3 className="font-black text-ink">原則は経営に伴う収入で賄う</h3>
-              <p className="mt-2 text-sm font-medium leading-7 text-slate-700">地方公営企業法第17条の2は、一般会計等が負担すべき経費を除き、企業の経営に伴う収入で経費を賄うことを原則としています。すべての経費を使用料だけで賄う、という規定ではありません。</p>
+              <p className="mt-2 text-sm font-medium leading-7 text-slate-700">地方公営企業法第17条の2は、公費で負担する経費を除き、経営に伴う収入で費用を賄うことを原則としています。</p>
             </div>
             <div className="rounded-md border border-line bg-panel p-4">
               <h3 className="font-black text-ink">下水道には正当な公費負担がある</h3>
-              <p className="mt-2 text-sm font-medium leading-7 text-slate-700">「雨水公費・汚水私費」が基本です。雨水処理負担金は公費負担ですが、損益計算書では営業収益に含まれるため、営業収益は使用料収入だけを表しません。</p>
+              <p className="mt-2 text-sm font-medium leading-7 text-slate-700">「雨水公費・汚水私費」が基本です。雨水処理負担金などの公費負担も、営業収益に含まれます。</p>
             </div>
             <div className="rounded-md border border-line bg-panel p-4">
               <h3 className="font-black text-ink">営業損益と経費回収率は範囲が異なる</h3>
-              <p className="mt-2 text-sm font-medium leading-7 text-slate-700">営業収益÷営業費用の簡易比率が100%未満なら、営業収益が営業費用に届かない状態です。営業収益には雨水処理負担金等も含まれるため、使用料による汚水処理費の回収状況は、別の指標である経費回収率で確認します。</p>
+              <p className="mt-2 text-sm font-medium leading-7 text-slate-700">営業収益÷営業費用の簡易比率が100%未満なら、営業収益が営業費用に届かない状態です。営業収益には雨水処理負担金等も含まれるため、使用料で汚水処理費をどれだけ賄えているかは、経費回収率に表れます。</p>
             </div>
           </div>
           <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm font-black">
@@ -247,11 +247,11 @@ export default async function DataSourcesPage() {
                 ["流域下水道が対象外なのはなぜですか？", "使用料の決め方や費用負担の構造が市区町村の公共下水道と異なるため、同列比較から外しています。"],
                 ["データなしと表示されるのはなぜですか？", "必要な分母・分子のどちらかが未取得、または該当事業の決算データが未登録の場合に表示します。"],
                 ["一般家庭用20m³／月使用料と使用料単価は同じですか？", "同じではありません。20m³月額は料金表上の税込標準額で、年鑑の『その1m³平均使用料』はその金額を20で割り、整数に丸めた表示です。一方、使用料単価は年間使用料収入÷年間有収水量で求める事業全体の決算実績です。使用料単価に20を掛けても家庭用20m³月額にはなりません。"],
-                ["料金改定はどの項目で確認しますか？", "本サイトのR5・R6変更一覧には、地方公営企業決算状況調査の第33表にある『現行使用料施行年月日』が年度間で変わった事業だけを掲載します。前回使用料改定年月日、実質使用料改定率、家庭用・業務用料金、料金体系は各行の関連情報として表示しますが、20m³月額などの金額差だけでは一覧に含めません。"],
+                ["改定情報の基準は？", "本サイトのR5・R6変更一覧には、地方公営企業決算状況調査の第33表にある『現行使用料施行年月日』が年度間で変わった事業だけを掲載します。前回使用料改定年月日、実質使用料改定率、家庭用・業務用料金、料金体系は各行の関連情報として表示しますが、20m³月額などの金額差だけでは一覧に含めません。"],
                 ["県内順位はどのように決めますか？", "比較できる月20m³料金を高い順に並べ、同額は同率として1位・2位・2位・4位の方式で表示します。法非適用や比較対象外の事業、料金が確認できない事業には順位を付けません。"],
                 ["将来の20m³料金を予測していますか？", "予測していません。費用と有収水量等が変わらず、すべての料金区分が同率で変わると仮定した場合だけ、現在額への単純換算を開閉式で示します。実際の改定率や料金体系は自治体の条例・経営戦略等で決まります。"],
                 ["資金不足比率が20%以上なら、すぐに起債できなくなりますか？", "20%以上は原則として経営健全化計画の策定基準です。地方債の発行が一律に禁じられる制度ではありませんが、計画の実行や地方債の協議・許可において経営見通しが確認されます。本サイトは総務省確報の会計単位の比率を表示します。"],
-                ["営業費用は営業収益で賄うべきですか？", "一般会計等が負担すべき経費を除き、企業の経営に伴う収入で経費を賄うのが地方公営企業法上の原則です。ただし、下水道の営業収益には雨水処理負担金等の正当な公費負担も含まれます。営業収益÷営業費用は営業損益を見る補足指標で、使用料の十分性は経費回収率で確認します。"],
+                ["営業費用は営業収益で賄うべきですか？", "一般会計等が負担すべき経費を除き、企業の経営に伴う収入で経費を賄うのが地方公営企業法上の原則です。ただし、下水道の営業収益には雨水処理負担金等の正当な公費負担も含まれます。営業収益÷営業費用は営業損益を見る補足指標で、使用料による費用回収は経費回収率に表れます。"],
                 ["ランキングの並び順はどう決まりますか？", "算定不可を除外し、選択した指標の昇順または降順で並べます。"],
               ].map(([question, answer]) => (
                 <details key={question} className="rounded-md border border-line bg-white p-3">
@@ -266,7 +266,7 @@ export default async function DataSourcesPage() {
         <section className="panel min-w-0 p-4">
           <h2 className="text-xl font-black text-ink">7. 資金不足比率と料金シナリオの公式根拠</h2>
           <p className="mt-2 max-w-5xl text-sm font-medium leading-7 text-slate-700">
-            資金不足比率は総務省R6確報の「資金不足額がある公営企業会計」一覧を正本とし、地方公営企業決算状況調査の会計単位と照合します。一覧に掲載された会計は公式の資金不足額・比率を表示し、照合済みの非掲載会計は「資金不足額0円」ではなく「一覧に掲載なし」と表示します。料金シナリオは現在年度の費用回収だけを示し、人口・投資・物価・料金体系を含む正式な将来推計とは区別します。
+            資金不足額・比率は、総務省R6確報の会計単位の公表値です。
           </p>
           <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm font-black">
             <a href="https://www.soumu.go.jp/menu_news/s-news/01zaisei07_02000434.html" className="inline-flex min-h-11 items-center gap-2 text-teal hover:underline">

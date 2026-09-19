@@ -138,11 +138,11 @@ describe("citizen municipality assessment", () => {
       ]
     });
     expect(result.headline).toContain("維持管理費分");
-    expect(result.headline).toContain("単年度費用だけでは");
+    expect(result.headline).toBe("維持管理費分が県内中央値より高めです");
     expect(result.components.find((component) => component.kind === "capital")?.shortDefinition)
       .toContain("減価償却費等");
     expect(result.explanation).toContain("1m³当たり");
-    expect(result.explanation).toContain("断定");
+    expect(result.explanation).not.toContain("断定");
   });
 
   it("explains capital cost according to the selected accounting basis", () => {
@@ -161,8 +161,7 @@ describe("citizen municipality assessment", () => {
       .toContain("減価償却費等");
     expect(nonLegal.components.find((component) => component.kind === "capital")?.shortDefinition)
       .toContain("地方債元利償還費等");
-    expect(legal.components.find((component) => component.kind === "capital")?.shortDefinition)
-      .toContain("資産維持費");
+    expect(legal.components.find((component) => component.kind === "capital")?.yenPerM3).toBe(40);
   });
 
   it("shows current cost composition without inventing a peer comparison", () => {
@@ -378,7 +377,7 @@ describe("citizen municipality assessment", () => {
         monthlyDifferenceYen: 4_500
       }
     });
-    expect(result.caveat).toContain("予測");
+    expect(result.caveat).toContain("固定した単純試算");
     expect(result.householdIllustration?.assumption).toContain("すべての料金区分");
   });
 
@@ -389,7 +388,7 @@ describe("citizen municipality assessment", () => {
       wastewaterTreatmentCost: 80
     });
     expect(result).toMatchObject({ status: "no_current_gap", revenueIncreaseRatePercent: 0 });
-    expect(result.explanation).toContain("将来の値上げがないこと");
+    expect(result.explanation).toContain("R6は使用料収入で現在の汚水処理費を賄えています");
   });
 
   it("returns unavailable instead of infinity when revenue is zero", () => {
@@ -485,7 +484,7 @@ describe("citizen municipality assessment", () => {
     });
 
     expect(result.r6DataAvailability).toEqual(r6DataAvailability);
-    expect(result.r6DataAvailability.reason).toContain("R5の値をR6診断に代用していません");
+    expect(result.r6DataAvailability.reason).toContain("R6データは未取得です（最新：R5）");
     expect(result.feeRank).toBeNull();
     expect(result.feeCostRelationship.fee.current).toBeNull();
     expect(result.feeCostRelationship.treatmentCost.current).toBeNull();

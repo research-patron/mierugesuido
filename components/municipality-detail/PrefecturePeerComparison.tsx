@@ -111,7 +111,7 @@ export function PrefecturePeerComparison({
                 <li key={row.comparisonUnitKey}>
                   <div className={styles.nearestPeerName}>
                     <span className={styles.municipalityNameLine}><MunicipalityLink row={row} availableDetailCodes={availableDetailCodes} /><BusinessTypeBadge row={row} /><JointOperationBadge row={row} /></span>
-                    {row.isJointOperation ? <small>組合全体の料金であり、構成市町村へ配分した額ではありません</small> : null}
+                    {row.isJointOperation ? <small>組合全体の料金</small> : null}
                   </div>
                   <div className={styles.nearestPeerValue}>
                     <strong>{formatHouseholdFee(row.householdFee20m3Yen)}</strong>
@@ -199,7 +199,7 @@ export function PrefecturePeerComparison({
               referenceLabel="100%（全額）"
               criticalBelow={OPERATING_COVERAGE_CRITICAL_THRESHOLD}
               contextText={operatingCoverageContext(current)}
-              formulaNote="営業収支比率は一般に（営業収益−受託工事収益等）÷（営業費用−受託工事費等）×100で分析します。本データでは受託工事収益を別掲できないため、営業収益÷営業費用×100の簡易比率です。値は改変せず、50%未満は赤、50%以上は緑で区別します。50%は表示上の注意区分で十分性の基準ではありません。"
+              formulaNote="営業収益÷営業費用×100の簡易比率です。50%未満は赤、50%以上は緑で表示しています。"
             />
           </div>
         </details>
@@ -656,7 +656,7 @@ function expenseRecoveryContext(row: PrefecturePeerComparisonRow | null) {
   if (!row?.eligible || row.expenseRecoveryRate == null) return null;
   const rate = formatPercent(row.expenseRecoveryRate);
   if (row.expenseRecoveryRate >= 100) {
-    return `${rate}で、この年度の下水道使用料収入が対象となる汚水処理費を全額賄っています。将来の更新費用まで含めた料金判断ではありません。`;
+    return `${rate}で、この年度の下水道使用料収入が対象となる汚水処理費を全額賄っています。`;
   }
   return `${rate}で、この年度の下水道使用料収入だけでは対象となる汚水処理費の全額に届いていません。`;
 }

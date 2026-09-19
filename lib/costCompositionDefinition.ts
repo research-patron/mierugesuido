@@ -1,7 +1,7 @@
 export const COST_COMPOSITION_ITEM_DEFINITIONS = [
   { id: "personnel", label: "職員給与費", sourceKey: "personnelCost", itemCode: "personnel_cost_total", note: "職員の給与・手当・退職給付費・法定福利費など" },
   { id: "interest", label: "支払利息", sourceKey: "interestCost", itemCode: "interest_cost_total", note: "企業債などの資金調達に伴う利息" },
-  { id: "depreciation", label: "減価償却費", sourceKey: "depreciationCost", itemCode: "depreciation_cost", note: "施設・設備の取得額を使用年数に分けて計上した費用。今期の現金支出とは限りません" },
+  { id: "depreciation", label: "減価償却費", sourceKey: "depreciationCost", itemCode: "depreciation_cost", note: "施設・設備の取得額を使用年数に分けて計上した費用" },
   { id: "power", label: "動力費", sourceKey: "powerCost", itemCode: "power_cost", note: "ポンプや処理設備を動かす電力・燃料など" },
   { id: "utilities", label: "光熱水費", sourceKey: "utilitiesCost", itemCode: "water_and_utilities_cost", note: "事業所などの照明・水道・冷暖房など" },
   { id: "communications", label: "通信運搬費", sourceKey: "communicationsCost", itemCode: "communications_transport_cost", note: "通信や物品の運搬にかかる費用" },

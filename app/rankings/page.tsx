@@ -24,7 +24,7 @@ export default async function RankingsPage() {
             <p className="mt-2 max-w-4xl text-sm font-medium leading-7 text-slate-700">
               経費回収率、使用料単価、汚水処理原価を、自治体・運営団体の事業別に比較します。自治体・運営団体名を選ぶと「このまちの診断」を開きます。
             </p>
-            <p className="mt-1 text-xs font-bold leading-6 text-slate-600">全国単純比較であり、類似団体区分や事業規模の差を調整した評価ではありません。法非適用事業は、総務省調査の共通定義による料金指標だけを参考比較します。</p>
+            <p className="mt-1 text-xs font-bold leading-6 text-slate-600">対象年度の公表値を全国で比較。法非適用事業は料金指標の参考比較です。</p>
           </div>
           <RankingNav current={defaultRankingType} />
         </div>

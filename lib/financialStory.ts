@@ -345,7 +345,7 @@ export function analyzeIncome(income: FinancialIncome | null): IncomeAnalysis {
 
   if (available && netIncome != null && gap != null) {
     if (gap !== netIncome) {
-      messages.push("総収益−総費用と当年度純損益が一致しません。原表の区分または丸め差を確認してください。");
+      messages.push("総収益−総費用と当年度純損益が一致しません。");
     }
   }
 
@@ -615,11 +615,11 @@ export function analyzeBalance(balance: FinancialBalance | null): BalanceAnalysi
   if (!available) {
     messages.unshift("資産・負債・純資産のいずれかが未取得のため、貸借の比較を表示できません。");
   } else if (reconciled === false) {
-    messages.unshift("資産合計と「負債＋純資産」が一致しません。原表または取込値を確認してください。");
+    messages.unshift("資産合計と「負債＋純資産」が一致しません。");
   } else if (hasNetAssetsDeficit) {
     messages.unshift("純資産がマイナスで、負債が資産を上回っています。債務超過として別の図で示します。");
   } else if (!visualizable) {
-    messages.unshift("負数または0を含むため、標準的な金額比例のボックス図では貸借を表示できません。数値表で確認してください。");
+    messages.unshift("負数または0を含むため、金額比例の図を表示できません。");
   }
 
   const state = !available

@@ -102,7 +102,7 @@ function MunicipalitiesContent() {
       <section className="mx-auto grid max-w-[1491px] gap-5 px-9 py-7">
         <div className="search-page-heading">
           <h1>自治体検索</h1>
-          <p>条件を指定して、自治体の下水道使用料や経営指標を検索できます。自治体名を選ぶと「このまちの診断」を開きます。複数事業がある場合は診断画面で表示事業を切り替えられます。</p>
+          <p>自治体名や条件から、下水道使用料と経営状況を探せます。自治体名を選ぶと「このまちの診断」を開きます。</p>
         </div>
 
         <MunicipalitySearchFilterPanel
@@ -121,13 +121,13 @@ function MunicipalitiesContent() {
         <div className="search-summary-panel">
           <div className="search-kpi-rail grid gap-3 md:grid-cols-2 lg:grid-cols-4">
             <StatCard icon={Users} label="検索結果" value={data.total.toLocaleString("ja-JP")} unit="自治体" sub="流域下水道を除く比較対象" tone="teal" />
-            <StatCard icon={Filter} label="サイト内平均：経費回収率" value={formatPercent(overview.averageExpenseRecoveryRate).replace("%", "")} unit={overview.averageExpenseRecoveryRate == null ? undefined : "%"} sub="表示事業値の単純平均・公式全国平均ではない" tone="violet" />
-            <StatCard icon={CircleDollarSign} label="サイト内平均：使用料単価" value={formatYenPerM3(overview.averageFeeUnitPriceYenPerM3).replace("円/m³", "")} unit={overview.averageFeeUnitPriceYenPerM3 == null ? undefined : "円/m³"} sub="法非適用を含む参考値・検索条件に非連動" tone="blue" />
+            <StatCard icon={Filter} label="サイト内平均：経費回収率" value={formatPercent(overview.averageExpenseRecoveryRate).replace("%", "")} unit={overview.averageExpenseRecoveryRate == null ? undefined : "%"} sub="全表示事業の単純平均（絞り込み前）" tone="violet" />
+            <StatCard icon={CircleDollarSign} label="サイト内平均：使用料単価" value={formatYenPerM3(overview.averageFeeUnitPriceYenPerM3).replace("円/m³", "")} unit={overview.averageFeeUnitPriceYenPerM3 == null ? undefined : "円/m³"} sub="法非適用を含む参考平均（絞り込み前）" tone="blue" />
             <StatCard icon={Bell} label="改定情報の掲載" value={feeRevisionMunicipalityCount.toLocaleString("ja-JP")} unit="自治体" sub="検索対象内・R5→R6第33表の施行年月日変化" tone="amber" />
           </div>
           <div className="search-summary-footer">
             <p className="text-xs font-bold leading-6 text-slate-600">
-              一覧は自治体ごと1件です。複数事業がある場合は、最新年度とデータ品質を優先し、会計区分・事業コードの順で決定した1事業を表示します。自治体全体の合算値ではありません。
+              一覧は自治体ごとに1事業を表示。ほかの事業は「このまちの診断」で選べます。
             </p>
             <div className="view-toggle" aria-label="表示形式">
               <Link

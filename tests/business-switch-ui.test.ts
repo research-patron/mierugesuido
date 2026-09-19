@@ -30,7 +30,7 @@ describe("municipality business switch UI", () => {
   });
 
   it("explains that the control switches the displayed accounting dataset without redundant caveat copy", () => {
-    expect(pageSource).toContain("料金・財務・{areaLabel}比較を、選んだ事業の決算へ切り替えます");
+    expect(pageSource).toContain("事業ごとの料金と経営状況を見られます");
     expect(pageSource).not.toContain("処理区域や契約先を変える操作ではありません");
     expect(pageSource).not.toContain("styles.businessSelectorNote");
     expect(cssSource).not.toContain(".businessSelectorNote");

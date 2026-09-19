@@ -530,8 +530,8 @@ export function NationalMapExplorer({
               </div>
               <InfoDisclosure label="全国マップの使い方">
                 {variant === "home"
-                  ? `都道府県を選ぶと、市区町村別の詳細マップへ移動します。色は${activeScopeLabel}だけを対象に、各市区町村の最新年度の経費回収率を都道府県ごとに単純平均したものです。公式の都道府県平均や加重平均ではありません。`
-                  : `都道府県を選ぶと、市区町村別の詳細マップを表示します。色は${activeScopeLabel}だけを対象に、各市区町村の最新年度の経費回収率を都道府県ごとに単純平均したものです。公式の都道府県平均や加重平均ではありません。`}
+                  ? `都道府県を選ぶと、市区町村別の詳細マップへ移動します。色は${activeScopeLabel}の経費回収率を、都道府県ごとに単純平均したものです（各市町村の最新年度）。`
+                  : `都道府県を選ぶと、市区町村別の詳細マップを表示します。色は${activeScopeLabel}の経費回収率を、都道府県ごとに単純平均したものです（各市町村の最新年度）。`}
               </InfoDisclosure>
             </div>
           </div>
@@ -1593,7 +1593,7 @@ function RankingPair({ items }: { items: MapMunicipality[] }) {
         <div className="flex items-center gap-1">
           <h2>使用料水準ランキング（経費回収率）</h2>
           <InfoDisclosure label="ランキングの算出条件">
-            流域下水道を除き、複数事業がある市区町村は、最新年度とデータ品質を優先し、会計区分・事業コードの順で決定した1事業を掲載します。合算値ではありません。法非適用は共通定義の料金指標のみ参考比較します。
+            市区町村ごとに1事業を掲載。最新年度とデータ品質を優先し、会計区分・事業コード順で選んでいます。
           </InfoDisclosure>
         </div>
         <Link href="/rankings/expense-recovery-low" className="text-xs font-black text-ink hover:text-teal">もっと見る →</Link>
@@ -1602,9 +1602,6 @@ function RankingPair({ items }: { items: MapMunicipality[] }) {
         <RankingList title="高い自治体 TOP5" rows={highRows} tone="high" />
         <RankingList title="低い自治体 TOP5" rows={lowRows} tone="low" />
       </div>
-      {items.some((item) => item.accountingType === "non_legal_applied") ? (
-        <p className="mt-2 text-[10px] font-bold text-muted">※法非適用は料金指標のみ参考比較</p>
-      ) : null}
     </section>
   );
 }

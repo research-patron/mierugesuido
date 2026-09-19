@@ -1,3 +1,4 @@
+import React from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -24,6 +25,7 @@ type CitizenAssessmentPanelProps = {
   prefectureName: string;
   businessKey: string;
   businessLabel: string;
+  financeHref: string;
   fiscalLabel: string;
   peerLoading: boolean;
   fundShortage: FundShortageAssessment | null;
@@ -47,7 +49,8 @@ export function CitizenAssessmentPanel({
   businessLabelsByKey,
   prefectureHref,
   feeAnalysisHref,
-  yearbookHref
+  yearbookHref,
+  financeHref
 }: CitizenAssessmentPanelProps) {
   const fee = assessment.feeCostRelationship.fee.current;
   const feeRank = assessment.feeRank;
@@ -79,10 +82,10 @@ export function CitizenAssessmentPanel({
     <section className={styles.root} aria-labelledby="citizen-assessment-title">
       <header className={styles.heading}>
         <div>
-          <span>{fiscalLabel}・市民向け診断</span>
+          <span>{fiscalLabel}・{businessLabel}</span>
           <h2 id="citizen-assessment-title">{municipalityName}の下水道を、知りたい順に見る</h2>
         </div>
-        <p>{businessLabel}の公式値と本サイトの計算を分け、結論の根拠までたどれるように整理しています。</p>
+
       </header>
 
       {assessment.r6DataAvailability.status === "unavailable" ? (
@@ -96,7 +99,6 @@ export function CitizenAssessmentPanel({
         <div className={styles.questionLead}>
           <span className={styles.questionIcon} aria-hidden="true"><CircleDollarSign size={21} /></span>
           <div>
-            <span>まず知りたいこと</span>
             <h3 id="citizen-fee-position-title">料金は{areaLabel}で高い？</h3>
           </div>
         </div>
@@ -107,10 +109,10 @@ export function CitizenAssessmentPanel({
         <div className={styles.rankAnswer} aria-live="polite">
           {feeRank ? (
             <>
-              <strong>{feeRank.tied ? "同率" : ""}{feeRank.rank}位 <span>／ {feeRank.total}事業体</span></strong>
+              <strong>{feeRank.tied ? "同率" : ""}{feeRank.rank}位 <span>／ {feeRank.total}事業体・高い順</span></strong>
               <p>
-                高い方からの順位。{areaLabel}中央値 {formatYen(feeRank.median)}に対して
-                <b>{formatSignedYen(feeRank.differenceYen)}（{formatSignedPercent(feeRank.differencePercent)}）</b>です。
+                {areaLabel}中央値 {formatYen(feeRank.median)}より
+                <b>{formatSignedYen(feeRank.differenceYen)}（{formatSignedPercent(feeRank.differencePercent)}）</b>
               </p>
             </>
           ) : (
@@ -121,7 +123,7 @@ export function CitizenAssessmentPanel({
           )}
         </div>
         <Link href={prefectureHref} className={styles.evidenceLink}>
-          {areaLabel}の比較根拠を見る <ArrowRight size={15} aria-hidden="true" />
+          {areaLabel}で比べる <ArrowRight size={15} aria-hidden="true" />
         </Link>
       </article>
 
@@ -129,16 +131,13 @@ export function CitizenAssessmentPanel({
         <article className={styles.questionRow} data-topic="cost" aria-labelledby="citizen-cost-title">
           <div className={styles.questionLead}>
             <span className={styles.questionIcon} aria-hidden="true"><FileSearch size={20} /></span>
-            <div><span>データから考えられる要因</span><h3 id="citizen-cost-title">なぜ、この料金水準？</h3></div>
+            <div><h3 id="citizen-cost-title">なぜ、この料金水準？</h3></div>
           </div>
           <div className={styles.questionAnswer}>
             <div className={styles.costConclusion} data-state={feeLevelCostAnalysis.state}>
               <strong>{feeComparisonLoading
                 ? `${areaLabel}の費用比較を読み込んでいます`
                 : localizeAreaLabel(feeLevelCostAnalysis.headline, areaLabel)}</strong>
-              <p>{feeComparisonLoading
-                ? "維持管理費分・資本費分と比較対象の中央値を確認しています。"
-                : localizeAreaLabel(feeLevelCostAnalysis.explanation, areaLabel)}</p>
             </div>
           </div>
           <Link href={feeAnalysisHref} className={styles.evidenceLink}>料金水準の考察を見る <ArrowRight size={15} aria-hidden="true" /></Link>
@@ -147,11 +146,10 @@ export function CitizenAssessmentPanel({
         <article className={styles.questionRow} data-topic="sustainability" data-tone={sustainabilityTone} aria-labelledby="citizen-sustainability-title">
           <div className={styles.questionLead}>
             <span className={styles.questionIcon} aria-hidden="true"><Scale size={20} /></span>
-            <div><span>根拠別の見立て</span><h3 id="citizen-sustainability-title">将来も続けられる？</h3></div>
+            <div><h3 id="citizen-sustainability-title">経営の状況は？</h3></div>
           </div>
           <div className={styles.questionAnswer}>
             <strong>{assessment.sustainability.headline}</strong>
-            <p>{assessment.sustainability.derivedConclusion || "確認できる指標が限られるため、根拠を追加して判断する必要があります。"}</p>
             <ul className={styles.reasonList}>
               {assessment.sustainability.reasons.map((reason) => (
                 <li
@@ -160,36 +158,34 @@ export function CitizenAssessmentPanel({
                   data-critical={reason.category === "fund_shortage" && fundShortage?.isAtOrAboveManagementImprovementThreshold ? "true" : undefined}
                 >
                   <span>{reason.title}</span>
-                  <small>{reason.detail}</small>
+                  {reason.category === "expense_recovery" && assessment.recovery.rate != null ? <b>{assessment.recovery.rate.toFixed(1)}%</b> : null}
+                  {reason.category === "billable_volume" && assessment.volumeTrend.changePercent != null ? <b>{formatSignedPercent(assessment.volumeTrend.changePercent)}<small>R2→R6</small></b> : null}
                 </li>
               ))}
             </ul>
-            <details className={styles.limitations}>
-              <summary>この診断だけでは判断できないこと <ChevronDown size={15} aria-hidden="true" /></summary>
-              <ul>{assessment.sustainability.limitations.map((item) => <li key={item}>{item}</li>)}</ul>
-            </details>
           </div>
+          <Link href={financeHref} className={styles.evidenceLink}>財務を見る <ArrowRight size={15} aria-hidden="true" /></Link>
         </article>
 
         <article className={styles.questionRow} data-topic="future" data-tone={futureTone} aria-labelledby="citizen-fee-future-title">
           <div className={styles.questionLead}>
             <span className={styles.questionIcon} aria-hidden="true"><TrendingUp size={20} /></span>
-            <div><span>公式情報と単純計算を分離</span><h3 id="citizen-fee-future-title">料金が上がる可能性は？</h3></div>
+            <div><h3 id="citizen-fee-future-title">料金改定と収入の不足は？</h3></div>
           </div>
           <div className={styles.questionAnswer}>
             <div className={styles.revisionStatus} data-status={revisionStatus}>
-              <span>R5・R6 公式施行年月日</span>
+              <span>改定履歴 R5→R6</span>
               <strong>{revisionStatusLabel(revisionComparison, selectedRevision)}</strong>
               {selectedRevision ? (
                 <small>{formatFeeRevisionEffectiveDate(selectedRevision.r5EffectiveDate)} → {formatFeeRevisionEffectiveDate(selectedRevision.r6EffectiveDate)}</small>
               ) : null}
             </div>
             <strong>{scenario.status === "gap" && scenario.revenueIncreaseRatePercent != null
-              ? `現在の費用を使用料収入だけで回収する単純シナリオ：事業全体で +${scenario.revenueIncreaseRatePercent.toFixed(1)}%`
+              ? `費用を賄うための使用料収入：あと +${scenario.revenueIncreaseRatePercent.toFixed(1)}%`
               : scenario.status === "no_current_gap"
-                ? "現在の費用を使用料収入だけで回収する単純シナリオ：追加増収は不要"
-                : "現在の費用を使用料収入だけで回収する単純シナリオ：計算できません"}</strong>
-            <p>{scenario.explanation}</p>
+                ? "使用料収入で現在の費用を賄えています"
+                : "収入不足の試算：データ不足"}</strong>
+            {scenario.status !== "unavailable" ? <p>R6の費用・有収水量を固定した、事業全体の単純試算</p> : null}
             {scenario.householdIllustration && scenario.status === "gap" ? (
               <details className={styles.householdScenario}>
                 <summary>月20m³料金へ単純換算すると <ChevronDown size={15} aria-hidden="true" /></summary>
@@ -200,7 +196,6 @@ export function CitizenAssessmentPanel({
                 </div>
               </details>
             ) : null}
-            <p className={styles.caveat}>{scenario.caveat} 施行年月日の変化は将来の改定予定を示すものではありません。</p>
           </div>
           <Link href={yearbookHref} className={styles.evidenceLink}>公式値と計算式を見る <ArrowRight size={15} aria-hidden="true" /></Link>
         </article>
@@ -208,7 +203,7 @@ export function CitizenAssessmentPanel({
         <article className={styles.questionRow} data-topic="fund" data-tone={fundTone} aria-labelledby="citizen-fund-shortage-title">
           <div className={styles.questionLead}>
             <span className={styles.questionIcon} aria-hidden="true"><Landmark size={20} /></span>
-            <div><span>会計単位の公式値</span><h3 id="citizen-fund-shortage-title">この事業を含む会計の資金不足</h3></div>
+            <div><h3 id="citizen-fund-shortage-title">資金不足は？</h3></div>
           </div>
           <div className={styles.questionAnswer}>
             <FundShortageStatus
@@ -223,8 +218,8 @@ export function CitizenAssessmentPanel({
       </div>
 
       <details className={styles.comparisonBasis}>
-        <summary>{areaLabel}順位・要因整理の比較条件 <ChevronDown size={15} aria-hidden="true" /></summary>
-        <p>{prefectureName}内の{assessment.comparisonBasis.scopeLabel.replace("同一都道府県の", "")}を比較しています。総務省の公式類似団体区分ではなく、本サイト独自の比較です。</p>
+        <summary>{areaLabel}比較の対象 <ChevronDown size={15} aria-hidden="true" /></summary>
+        <p>{prefectureName}内の{assessment.comparisonBasis.scopeLabel.replace("同一都道府県の", "")}（R6・本サイトの比較区分）</p>
       </details>
     </section>
   );
@@ -240,8 +235,8 @@ function FundShortageStatus({
   if (!assessment || assessment.status === "unavailable") {
     return (
       <div className={styles.fundStatus} data-status="unavailable">
-        <strong>公式データとの会計単位の照合ができません</strong>
-        <p>会計単位とは、同じ決算書にまとめられる事業のまとまりです。資金不足なし、または0%とは扱いません。公式資料で会計名を確認してください。</p>
+        <strong>資金不足のデータ未確認</strong>
+
       </div>
     );
   }
@@ -249,8 +244,8 @@ function FundShortageStatus({
     return (
       <div className={styles.fundStatus} data-status="no_shortage">
         <strong>資金不足会計一覧に掲載なし（{assessment.fiscalYearLabel}確報）</strong>
-        <p>総務省の「資金不足額がある公営企業会計」一覧との照合結果です。この会計の資金不足額を直接示す公表値ではなく、長期的な持続可能性を保証するものでもありません。</p>
-        <small>{assessment.municipalityName}・会計単位（同じ決算書のまとまり） {assessment.accountUnit}</small>
+
+        <small>{assessment.municipalityName}・会計単位 {assessment.accountUnit}</small>
       </div>
     );
   }
@@ -261,7 +256,7 @@ function FundShortageStatus({
       <strong>資金不足比率 {assessment.ratioPercent == null ? "比率未確認" : `${assessment.ratioPercent.toFixed(1)}%`}</strong>
       <p>{assessment.accountName ?? "会計名未取得"}・資金不足額 {assessment.amountThousandYen == null ? "未取得" : `${assessment.amountThousandYen.toLocaleString("ja-JP")}千円`}</p>
       {assessment.isAtOrAboveManagementImprovementThreshold ? (
-        <p>20%以上は原則として経営健全化計画の基準です。地方債の発行が一律に禁じられる制度ではありませんが、計画や地方債の協議・許可で経営見通しが確認されます。</p>
+        <p>経営健全化基準の20%以上です。</p>
       ) : (
         <p>資金不足はありますが、20%の経営健全化基準未満です。</p>
       )}
@@ -274,10 +269,10 @@ function revisionStatusLabel(
   comparison: MunicipalityFeeRevisionComparison | null,
   selectedRevision: MunicipalityFeeRevisionComparison["changes"][number] | null
 ) {
-  if (!comparison) return "比較できる公式データが揃っていません";
-  if (selectedRevision) return "選択中の事業で施行年月日が変化";
-  if (comparison.status === "changed") return "自治体内の別事業で施行年月日が変化";
-  return "比較済み・施行年月日の変化なし";
+  if (!comparison) return "改定履歴のデータ不足";
+  if (selectedRevision) return "使用料の施行日が変更";
+  if (comparison.status === "changed") return "別の事業で施行日が変更";
+  return "使用料の施行日に変更なし";
 }
 
 function localizeAreaLabel(text: string | null | undefined, areaLabel: string) {

@@ -17,7 +17,7 @@ describe("financial statement accounting-box UI", () => {
     expect(componentSource).toContain("費用の中心");
     expect(componentSource).toContain("費用合計を構成する上位3項目");
     expect(componentSource).toContain("13費目の公式値と構成比を見る");
-    expect(componentSource).toContain("効率の良し悪しを直接判定するものではありません");
+    expect(componentSource).toContain("第21表の費用合計をもとに計算");
     expect(componentSource.indexOf("<CostComposition")).toBeLessThan(componentSource.indexOf("<IncomeStatement"));
     expect(componentSource).toContain('aria-hidden="true">{index + 1}</span>');
     expect(cssSource).toMatch(/\.summaryGrid\s*{[^}]*grid-template-columns:\s*repeat\(4,/s);
@@ -25,12 +25,11 @@ describe("financial statement accounting-box UI", () => {
     expect(cssSource).toContain(".costTable tbody td::before");
   });
 
-  it("connects each main financial figure to fees and sustainability without claiming causation", () => {
-    expect(componentSource.match(/<CitizenRelationNote>/g)).toHaveLength(3);
-    expect(componentSource).toContain("費用の集中先は料金水準の背景を考える材料の一つですが、効率や将来負担の判断には施設条件や更新計画も必要です。");
-    expect(componentSource).toContain("単年度の収益と費用の関係は現在の経営状況を考える材料の一つで、料金や持続可能性の判断には経費回収率、複数年の推移、更新計画も必要です。");
-    expect(componentSource).toContain("資産と負債の構成は将来負担を考える材料の一つで、持続可能性の判断には更新計画や企業債の償還計画も必要です。");
-    expect(cssSource).toMatch(/\.citizenRelation\s*{[^}]*border-top:[^}]*font-size:\s*12px/s);
+  it("removes repeated interpretation notes while retaining the financial statements", () => {
+    expect(componentSource).not.toContain("<CitizenRelationNote>");
+    expect(componentSource).not.toContain("料金・持続可能性との関係");
+    expect(componentSource).toContain("<IncomeStatement");
+    expect(componentSource).toContain("<BalanceSheet");
   });
 
   it("uses the conventional debit-left and credit-right income equation", () => {
@@ -100,7 +99,7 @@ describe("financial statement accounting-box UI", () => {
     expect(componentSource).toContain('data-balance-derived={item.derived ? "true" : undefined}');
     expect(componentSource).toContain("一部内訳未取得（0円とは扱いません）");
     expect(componentSource).toContain("相殺・不整合を含むため、内訳の割合は表示しません");
-    expect(componentSource).toContain("返済予定額ではありません");
+    expect(componentSource).toContain("今後収益に振り替える残高");
     expect(cssSource).toMatch(/\.balanceEquation\s*{[^}]*min-height:\s*460px[^}]*grid-template-columns:\s*minmax\(0, 1fr\) 32px minmax\(0, 1fr\)/s);
     expect(cssSource).toMatch(/@media \(max-width: 760px\)\s*\{[\s\S]*?\.balanceEquation,\s*\.balanceDeficitEquation\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/s);
     expect(componentSource).toContain('data-balance-frame="asset"');
@@ -135,7 +134,7 @@ describe("financial statement accounting-box UI", () => {
     expect(componentSource).toContain('meaning={`債務超過額（差額）／純資産 ${formatAdaptiveAmount(analysis.totalNetAssets)}`}');
     expect(componentSource).toContain("資産{assetLabel}に債務超過額{deficitLabel}");
     expect(componentSource).toContain("(analysis.totalAssets ?? -1) >= 0");
-    expect(componentSource).toContain("資金不足や返済能力を直接示す指標ではありません");
+    expect(componentSource).toContain("繰延収益を含む貸借対照表上の合計");
   });
 
   it("removes repeated equation strips and normal-state reconciliation noise", () => {
@@ -168,7 +167,7 @@ describe("financial statement accounting-box UI", () => {
     expect(componentSource).toContain("資本剰余金");
     expect(componentSource).toContain("利益剰余金");
     expect(componentSource).toContain("その他有価証券評価差額");
-    expect(componentSource).toContain("各団体の剰余金計算書等で確認する必要があります");
+    expect(componentSource).toContain("貸借対照表の年度末残高の差");
     expect(componentSource).toContain("formatSourceThousandYen(analysis.prior)");
     expect(componentSource).toContain("formatSourceThousandYen(analysis.current)");
     expect(componentSource).not.toContain("丸め差の範囲");

@@ -70,7 +70,7 @@ export function MunicipalityTable({ items }: { items: any[] }) {
               <MetricHeader
                 label="使用料収入の必要増加率"
                 unit="（%）"
-                help="費用や有収水量が変わらない仮定で、事業全体の使用料収入の不足を解消するために必要な増加率です。家庭の20m³月額への換算ではありません"
+                help="費用・有収水量を固定した、事業全体の使用料収入の増加率（単純試算）"
               />
               <th scope="col">診断</th>
               <MetricHeader

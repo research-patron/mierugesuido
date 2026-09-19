@@ -42,8 +42,8 @@ describe("prefecture peer comparison UI", () => {
     expect(componentSource).toContain("営業収益で営業費用をどこまで賄えているか");
     expect(componentSource).toContain('referenceLabel="100%（全額）"');
     expect(componentSource).toContain('axisStartLabel="0%"');
-    expect(componentSource).toContain("営業収支比率は一般に（営業収益−受託工事収益等）÷（営業費用−受託工事費等）×100");
-    expect(componentSource).toContain("本データでは受託工事収益を別掲できない");
+    expect(componentSource).toContain("営業収益÷営業費用×100の簡易比率です");
+    expect(componentSource).toContain("営業収益÷営業費用×100の簡易比率です");
     expect(componentSource).not.toContain("（サイト算定）");
     expect(componentSource).toContain('medianLabel={`${model.prefectureName} 中央値`}');
     expect(componentSource).not.toContain('role="img"');
@@ -82,8 +82,8 @@ describe("prefecture peer comparison UI", () => {
     expect(componentSource).toContain("data-critical={critical || undefined}");
     expect(componentSource).toContain("data-cleared={cleared || undefined}");
     expect(componentSource).toContain("半分未満");
-    expect(componentSource).toContain("50%未満は赤、50%以上は緑で区別します");
-    expect(componentSource).toContain("50%は表示上の注意区分で十分性の基準ではありません");
+    expect(componentSource).toContain("50%未満は赤、50%以上は緑で表示しています");
+    expect(componentSource).toContain("50%未満は赤、50%以上は緑で表示しています");
     expect(componentSource).toContain("半分未満・全額未達");
     expect(componentSource).toContain("`${rounded.toFixed(1)}%`");
     expect(cssSource).toContain('.metricBar[data-critical] div > span { color: #b52f36; }');
@@ -144,7 +144,7 @@ describe("prefecture peer comparison UI", () => {
   it("shows verified joint operations without presenting operator totals as municipality-level allocations", () => {
     expect(pageSource).toContain("availableJointOperatorMunicipalityCodes={availableJointOperatorMunicipalityCodes}");
     expect(pageSource).toContain("組合運営の関連下水道があります");
-    expect(pageSource).toContain("組合全体の決算で、市町村別の配分額ではありません");
+    expect(pageSource).toContain("組合全体の決算です");
     expect(pageSource).toContain("sewerBusinessKeyLabel(membership.businessKey)");
     expect(componentSource).toContain("<JointOperationBadge row={row} />");
     expect(componentSource).toContain("組合全体の決算 · 運営:");

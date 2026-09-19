@@ -57,7 +57,7 @@ describe("citizen diagnosis derived static data", () => {
     const result = buildAssessment("012041");
     expect(result.recovery.band).toBe("covered");
     expect(result.feeScenario.status).toBe("no_current_gap");
-    expect(result.feeScenario.explanation).toContain("将来の値上げがないこと");
+    expect(result.feeScenario.explanation).toContain("R6は使用料収入で現在の汚水処理費を賄えています");
   });
 
   it("publishes only the diagnosis fields required by the peer UI", () => {

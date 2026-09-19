@@ -114,26 +114,25 @@ describe("fee-level analysis progressive-disclosure flow", () => {
     expect(analysisSource).toContain("{fiscalLabel}の公式値と計算式");
   });
 
-  it("does not describe an older latest record as an R6 analysis", () => {
+  it("keeps missing R6 data and loading states distinct", () => {
     expect(analysisSource).toContain('assessment.r6DataAvailability.status === "available"');
-    expect(analysisSource).toContain("R6実績の確認状況");
-    expect(analysisSource).toContain("R6実績が揃わないため、料金水準の費用分析は行いません");
+    expect(analysisSource).toContain("R6のデータ不足");
     expect(analysisSource).toContain("comparisonLoading");
     expect(analysisSource).toContain("比較データを読み込み中");
-    expect(analysisSource).toContain("比較を読み込み中");
+    expect(analysisSource).toContain("r6Available && currentPeer?.eligible ? peerComparison?.rows ?? [] : []");
   });
 
-  it("shows the household fee together with total cost and billed-volume change", () => {
-    expect(analysisSource).toContain("一般家庭用20m³／月（税込）");
-    expect(analysisSource).toContain("assessment.feeCostRelationship.fee");
-    expect(analysisSource).toContain("汚水処理原価（1m³あたり）");
-    expect(analysisSource).toContain("R2→R6 有収水量（料金収入につながる水量）");
+  it("connects the analysis to real selected-business comparison data", () => {
+    expect(detailSource).toContain("peerComparison={selectedPeerComparison}");
+    expect(detailSource).toContain("currentComparisonUnitKey={currentPeerRow?.comparisonUnitKey}");
+    expect(analysisSource).toContain("<CostComparisonScatter");
+    expect(analysisSource).toContain("汚水処理原価");
   });
 
-  it("keeps detailed cost evidence collapsed until requested", () => {
-    expect(analysisSource).toContain("<details");
-    expect(analysisSource).toContain("費目の内訳と、ここから先の確認事項");
-    expect(analysisSource).not.toMatch(/<details\b[^>]*\bopen(?:=|\s|>)/);
+  it("keeps detailed cost evidence visible on entry", () => {
+    expect(analysisSource).toContain('aria-labelledby="cost-breakdown-title"');
+    expect(analysisSource).toContain("費用の内訳");
+    expect(analysisSource).not.toContain("<details");
   });
 
   it("keeps the absolute cost gap when a zero median makes the percentage undefined", () => {

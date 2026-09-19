@@ -145,18 +145,9 @@ function RevisionsContent() {
           <div className="text-xs font-black text-teal">地方公営企業決算状況調査 R5 → R6</div>
           <h1 className="mt-1 text-3xl font-black text-ink sm:text-4xl">使用料施行年月日の変更一覧</h1>
           <p className="revision-lead">
-            同一事業の「現行使用料施行年月日」がR5からR6で変わった記録だけを表示します。まず施行日を比較し、料金額や改定率は各行の参考情報として確認できます。
+            「現行使用料施行年月日」がR5からR6で変わった事業の一覧です。各行で施行日・料金額・改定率を見られます。
           </p>
 
-          <div className="revision-evidence-note" role="note">
-            <Info className="mt-0.5 shrink-0 text-teal" size={20} aria-hidden="true" />
-            <div>
-              <strong>金額差だけでは一覧に含めません</strong>
-              <p>
-                抽出条件は第33表の施行年月日の変化だけです。料金改定の内容や理由は、条例、議会資料、広報など各自治体の公式資料で最終確認してください。
-              </p>
-            </div>
-          </div>
 
           <div
             className="revision-kpi-grid grid gap-3 sm:grid-cols-2"
@@ -298,7 +289,7 @@ function RevisionsContent() {
                 </div>
               </article>
             )) : (
-              <p>登録済みの自治体公式公表はありません。第33表の比較結果と混同しないよう、0件のまま別枠で表示しています。</p>
+              <p>自治体の公式発表は、現在登録されていません。</p>
             )}
           </div>
         </details>
@@ -420,7 +411,7 @@ function YearbookChangeRow({ item }: { item: YearbookFeeChange }) {
         <div className="revision-simple-rate" data-tone={householdFeeDelta.tone}>
           <span>20m³月額の前年比</span>
           <strong>{formatSimpleChangeRate(item.householdFee20m3.changeRate)}</strong>
-          <small>第33表「実質使用料改定率」ではありません。R5・R6の表示月額から算定しています。</small>
+          <small>R5・R6の20m³月額から計算した変化率です。</small>
         </div>
       </div>
 

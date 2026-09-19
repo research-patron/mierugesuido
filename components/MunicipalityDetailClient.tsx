@@ -29,7 +29,7 @@ import {
   buildCitizenMunicipalityAssessment,
   buildCitizenR6DataAvailability
 } from "@/lib/citizenMunicipalityAssessment";
-import { detailDisclaimer, formulaCopy } from "@/lib/copy";
+import { formulaCopy } from "@/lib/copy";
 import { mergeCostCompositionIntoDetail, type StaticCostCompositionBundle } from "@/lib/costCompositionStatic";
 import { formatSettlementFiscalLabel } from "@/lib/format";
 import {
@@ -309,7 +309,7 @@ export function MunicipalityDetailClient({
             <div className={styles.businessSelectorCopy}>
               <span>{groups.length}種類の下水道事業</span>
               <h2 id="business-selector-title">表示する事業を選ぶ</h2>
-              <p>料金・財務・{areaLabel}比較を、選んだ事業の決算へ切り替えます。</p>
+              <p>事業ごとの料金と経営状況を見られます。</p>
             </div>
             <label className={styles.businessSelectControl}>
               <span>選択中の決算事業</span>
@@ -330,7 +330,7 @@ export function MunicipalityDetailClient({
         {qualityFlags.length > 0 ? (
           <aside className={styles.qualityWarning} role="note" aria-label="データ品質の注記">
             <AlertTriangle size={18} aria-hidden="true" />
-            <div><strong>この決算データには要確認項目があります</strong><p>{qualityFlags.join("／")} — 0を欠損と断定せず、原資料とあわせて確認してください。</p></div>
+            <div><strong>データの確認状況</strong><p>{qualityFlags.join("／")}</p></div>
           </aside>
         ) : null}
 
@@ -353,6 +353,7 @@ export function MunicipalityDetailClient({
             businessLabelsByKey={businessLabelsByKey}
             prefectureHref={detailHref(municipalityCode, selectedGroup.key, "prefecture")}
             feeAnalysisHref={detailHref(municipalityCode, selectedGroup.key, "fee-analysis")}
+            financeHref={detailHref(municipalityCode, selectedGroup.key, "finance")}
             yearbookHref={detailHref(municipalityCode, selectedGroup.key, "yearbook")}
           />
         ) : null}
@@ -417,13 +418,16 @@ export function MunicipalityDetailClient({
                   <span>R2—R6</span>
                   <h2 id="trend-heading">5年間の料金指標</h2>
                 </div>
-                <p>家庭向け料金と経営指標を分けて表示します。空欄は未取得です。</p>
+                <p>料金と経営指標の推移（空欄はデータ未取得）</p>
               </div>
               <TrendChart points={trendPoints} />
             </section>
           </>
         ) : view === "fee-analysis" ? (
           <FeeLevelAnalysisPanel
+            key={`${municipalityCode}:${selectedGroup.key}`}
+            peerComparison={selectedPeerComparison}
+            currentComparisonUnitKey={currentPeerRow?.comparisonUnitKey}
             assessment={assessment}
             municipalityName={municipality.municipalityName}
             prefectureName={municipality.prefectureName}
@@ -443,7 +447,7 @@ export function MunicipalityDetailClient({
             <div className={styles.yearbookViewHeading}>
               <span>{fiscal}・選択中の決算事業</span>
               <h2 id="yearbook-view-title">公式データと計算根拠</h2>
-              <p>総務省「地方公営企業年鑑」の公式個表を先に確認し、その下でこのサイトの主要項目・計算式・参照行を照合できます。</p>
+              <p>総務省「地方公営企業年鑑」の原表と、各指標の計算に使った数値です。</p>
             </div>
             <YearbookOriginalData
               enabled={view === "yearbook"}
@@ -484,10 +488,7 @@ export function MunicipalityDetailClient({
           </div>
         </section>
 
-        <details className={styles.disclaimer}>
-          <summary><AlertTriangle size={16} aria-hidden="true" />免責と読み方</summary>
-          <p>{detailDisclaimer}</p>
-        </details>
+
       </div>
     </div>
   );
@@ -514,7 +515,7 @@ function JointOperationLinks({
         <span aria-hidden="true"><Landmark size={18} /></span>
         <div>
           <strong>組合運営の関連下水道があります</strong>
-          <p>{operatorNames.join("・")}が運営します。表示先の数値は組合全体の決算で、市町村別の配分額ではありません。</p>
+          <p>{operatorNames.join("・")}が運営する、組合全体の決算です。</p>
         </div>
       </div>
       <div className={styles.jointOperationLinks}>
@@ -818,7 +819,7 @@ function FeeRecoveryStory({
         <div>
           <span>{fiscal} 計算根拠</span>
           <h2 id="fee-decision-heading">料金と費用回収の根拠</h2>
-          <p>上の診断で使った家庭向け料金表と事業全体の決算を、対象と単位を分けて確認します。</p>
+          <p>家庭の月額料金と、事業全体の年間収支です。</p>
         </div>
         <span className={hasShortfall ? styles.feeDecisionWarning : styles.feeDecisionReady}>
           <ShieldCheck size={15} aria-hidden="true" />
@@ -833,7 +834,7 @@ function FeeRecoveryStory({
             <h3 id="household-tariff-title">一般家庭用20m³／月</h3>
           </div>
           <strong>{currentFee == null ? "未取得" : `${Math.round(currentFee).toLocaleString("ja-JP")}円／月`}</strong>
-          <p>税込。地方公営企業年鑑「個表」の料金表上の金額です。全利用者の実績平均や事業全体の費用回収額ではありません。</p>
+          <p>税込・地方公営企業年鑑の家庭向け料金表より</p>
         </section>
 
         <section className={styles.feeRecoveryPanel} aria-labelledby="business-recovery-title">
@@ -863,8 +864,8 @@ function FeeRecoveryStory({
             {requiredIncreaseRate == null
               ? "使用料収入または汚水処理費が未取得・不適切なため、必要増加率は算定できません。"
               : requiredIncreaseRate > 0
-                ? `費用・有収水量等を一定とすると、事業全体の使用料収入を${requiredIncreaseRate.toFixed(1)}%増やす必要がある単純計算です。家庭の20m³月額への換算ではありません。`
-                : "この年度は、事業全体の使用料収入が経費回収率の対象費用を賄っています。値下げ可能額を示すものではありません。"}
+                ? `費用・有収水量を固定した単純試算：事業全体の使用料収入があと${requiredIncreaseRate.toFixed(1)}%あれば、現在の費用を賄えます。`
+                : "この年度は、使用料収入で汚水処理費を賄えています。"}
           </p>
 
           <details className={styles.costBreakdown}>
@@ -882,7 +883,7 @@ function FeeRecoveryStory({
               <p className={styles.costUnavailable}>内訳が未取得または合計と一致しないため、確認できた合計だけを表示しています。</p>
             )}
             <div className={styles.costBoundaryNote}>
-              <strong>営業費用と、経費回収率の対象となる汚水処理費は同じ範囲ではありません。</strong>
+              <strong>経費回収率の対象は、公費負担分等を除いた汚水処理費です。</strong>
               <p>雨水処理などの公費負担分を除き、汚水に係る維持管理費と資本費を総務省基準で整理した額です。営業費用に含まれない企業債利息等が資本費に入る場合もあります。</p>
             </div>
           </details>

@@ -375,7 +375,7 @@ export function buildFeeCostRelationship({
       ...base,
       kind: "high_fee_high_cost",
       headline: "料金と処理原価はいずれも県内中央値より高い水準です",
-      explanation: "高い汚水処理原価が、料金水準の背景の一つと考えられます。因果関係を断定するものではありません。"
+      explanation: "料金と費用の両方が県内中央値より高めです。"
     };
   }
   if (fee.position === "higher" && treatmentCost.position !== "higher") {
@@ -383,7 +383,7 @@ export function buildFeeCostRelationship({
       ...base,
       kind: "high_fee_cost_not_high",
       headline: "料金は高い一方、処理原価は高い水準ではありません",
-      explanation: "総原価だけでは高い料金との強い対応は見られません。維持管理費分・資本費分と料金体系を分けて確認します。"
+      explanation: "料金に比べて、処理費用は県内中央値に近いか低い水準です。"
     };
   }
   if (fee.position !== "higher" && treatmentCost.position === "higher") {
@@ -391,7 +391,7 @@ export function buildFeeCostRelationship({
       ...base,
       kind: "fee_not_high_high_cost",
       headline: "処理原価は高い一方、料金は高い水準ではありません",
-      explanation: "料金だけで費用を賄えているか、経費回収率と合わせて確認する必要があります。"
+      explanation: "処理費用が県内中央値より高めです。"
     };
   }
   if (fee.position === "lower" && treatmentCost.position === "lower") {
@@ -399,14 +399,14 @@ export function buildFeeCostRelationship({
       ...base,
       kind: "low_fee_low_cost",
       headline: "料金と処理原価はいずれも県内中央値より低い水準です",
-      explanation: "低い処理原価と料金水準が整合している可能性があります。因果関係を断定するものではありません。"
+      explanation: "料金と費用の両方が県内中央値より低めです。"
     };
   }
   return {
     ...base,
     kind: "mixed_or_similar",
     headline: "料金と処理原価は県内中央値に近いか、異なる動きです",
-    explanation: "総原価の比較に加え、維持管理費分・資本費分と料金体系を分けて確認します。"
+    explanation: "維持管理費と資本費の内訳は下のグラフに表示しています。"
   };
 }
 
@@ -442,10 +442,10 @@ export function buildFeeLevelCostAnalysis({
   if (volume == null || total == null || maintenance == null || capital == null || !componentsReconciled) {
     return {
       state: "unavailable",
-      headline: "維持管理費分と資本費分を分けて確認できません",
+      headline: "費用の内訳を表示できません",
       explanation: componentsReconciled === false
-        ? "R6の汚水処理費と二つの内訳が一致しないため、誤った要因比較を表示しません。原表の確認が必要です。"
-        : "R6の有収水量、汚水処理費、維持管理費分、資本費分のいずれかが未取得のため、要因比較を行いません。",
+        ? "R6の汚水処理費と内訳の合計が一致しないため、内訳の比較は表示できません。"
+        : "R6の有収水量または費用の内訳が未取得です。",
       components: [],
       purposeItems: [],
       natureItems: [],
@@ -476,9 +476,9 @@ export function buildFeeLevelCostAnalysis({
       kind: "capital",
       label: "資本費分",
       shortDefinition: accountingType === "non_legal_applied"
-        ? "施設整備に係る地方債元利償還費等の費用。資産維持費は中長期計画で別途確認"
+        ? "施設整備にかかる地方債元利償還費等"
         : accountingType === "legal_applied"
-          ? "施設整備に係る減価償却費等の費用。資産維持費は中長期計画で別途確認"
+          ? "施設整備にかかる減価償却費等"
           : "施設整備に係る費用。会計方式に応じて減価償却費等または地方債元利償還費等で構成",
       amountThousandYen: capital,
       yenPerM3: capitalYenPerM3,
@@ -521,8 +521,8 @@ export function buildFeeLevelCostAnalysis({
     state: comparisonReady ? "ready" : "current_only",
     headline,
     explanation: comparisonReady
-      ? "R6の汚水処理費を有収水量1m³当たりにそろえ、比較対象となる県内の法適用事業と比較しました。同じ年度の関連性を示すもので、料金改定の原因や自治体の公式判断を断定するものではありません。"
-      : "R6の実績費用は二つに分けられますが、同じ会計基準の県内比較値が揃わないため、構成と1m³当たりの実績だけを表示します。",
+      ? "R6の費用を有収水量1m³当たりで比較しています。"
+      : "県内比較のデータ不足のため、この事業の実績を表示しています。",
     components,
     purposeItems,
     natureItems,
@@ -573,26 +573,9 @@ function buildFeeLevelCostHeadline(
     return `汚水処理費の内訳は、維持管理費分${formatOneDecimal(maintenance.sharePercent)}%・資本費分${formatOneDecimal(capital.sharePercent)}%です`;
   }
   if (higherComponents.length > 0) {
-    const labels = higherComponents.map((component) => component.label).join("と");
-    if (feePosition === "higher") {
-      if (totalCostPosition === "higher") {
-        return `${labels}と汚水処理原価が県内中央値より高く、高い料金水準の背景候補です`;
-      }
-      if (totalCostPosition === "lower" || totalCostPosition === "similar") {
-        return `${labels}は県内中央値より高い一方、汚水処理原価は中央値を上回らず、単年度費用だけでは高い料金水準を説明しきれません`;
-      }
-      return `${labels}が県内中央値より高く、高い料金水準を考える材料です`;
-    }
-    if (feePosition === "lower") return `${labels}は県内中央値より高い一方、家庭料金は低い水準です`;
-    return `${labels}が県内中央値より高く、料金水準を考える主な材料です`;
+    return `${higherComponents.map((component) => component.label).join("と")}が県内中央値より高めです`;
   }
-  if (feePosition === "higher") {
-    return "維持管理費分・資本費分は県内中央値を大きく上回らず、料金体系や将来計画の確認が重要です";
-  }
-  if (feePosition === "lower") {
-    return "維持管理費分・資本費分は県内中央値を大きく上回らず、低い料金水準と矛盾しない実績です";
-  }
-  return "維持管理費分・資本費分は県内中央値に近いか、それより低い水準です";
+  return "費用の内訳は、県内中央値に近いか、それ以下です";
 }
 
 function compareNonNegativeMetricToMedian(
@@ -670,7 +653,7 @@ export function buildVolumeTrend(points: CitizenAnnualMetricPoint[]): VolumeTren
       ...base,
       kind: "increasing",
       changePercent,
-      explanation: "R2からR6にかけて有収水量が増加しています。ただし、将来も同じ傾向が続くことを示すものではありません。"
+      explanation: "R2からR6にかけて、料金収入につながる水量が増えています。"
     };
   }
   return {
@@ -697,7 +680,7 @@ export function buildRecoveryBand(value: number | null | undefined): RecoveryBan
       band: "covered",
       rate,
       label: "R6の費用回収を確保",
-      explanation: "R6は、経費回収率の対象となる汚水処理費を使用料収入で賄っています。将来の値上げがないことや値下げ余地を示すものではありません。",
+      explanation: "R6は使用料収入で汚水処理費を賄えています。",
       evidenceTarget: "yearbook"
     };
   }
@@ -715,7 +698,7 @@ export function buildRecoveryBand(value: number | null | undefined): RecoveryBan
       band: "attention",
       rate,
       label: "費用回収に不足",
-      explanation: "R6は使用料収入による費用回収に不足があり、改善策を確認する必要があります。",
+      explanation: "R6は使用料収入が汚水処理費を下回っています。",
       evidenceTarget: "yearbook"
     };
   }
@@ -723,7 +706,7 @@ export function buildRecoveryBand(value: number | null | undefined): RecoveryBan
     band: "large_shortfall",
     rate,
     label: "費用回収の不足が大きい",
-    explanation: "R6は使用料収入で賄えていない汚水処理費の割合が大きく、経営戦略や料金方針の確認が必要です。",
+    explanation: "R6は使用料収入で賄えていない費用の割合が大きい状態です。",
     evidenceTarget: "yearbook"
   };
 }
@@ -776,9 +759,9 @@ export function buildCostCompositionAssessment(
     topItems,
     abovePeerMedianItems,
     explanation: abovePeerMedianItems.length > 0
-      ? "費用構成比が県内中央値より5ポイント以上高い費目を、費用の集中先として示しています。効率性や料金への因果関係を断定するものではありません。"
+      ? "構成比が県内中央値より5ポイント以上高い費目です。"
       : hasPeerMedians
-        ? "県内中央値より5ポイント以上高い費目は確認されませんでした。上位費目は金額構成の説明であり、非効率を示すものではありません。"
+        ? "構成比が県内中央値を5ポイント以上上回る費目はありません。"
         : "費用の上位項目は確認できますが、県内の費用構成との比較に必要な値が揃っていません。",
     evidenceTarget: "finance"
   };
@@ -857,14 +840,14 @@ export function buildSustainabilityAssessment({
   const headline = thresholdReached
     ? "資金不足比率は経営健全化計画の基準以上です"
     : fundShortage?.status === "shortage"
-      ? "資金不足額への対応状況を確認する必要があります"
+      ? "この事業を含む会計に資金不足があります"
       : recoveryPressure && volumePressure
-        ? "費用回収と利用量の両面に改善圧力があります"
+        ? "使用料収入が費用を下回り、利用量も減っています"
         : recoveryPressure
-          ? "R6の費用回収に改善余地があります"
+          ? "R6は使用料収入が汚水処理費を下回っています"
           : recovery.band === "covered"
-            ? "R6の費用回収は確保されています"
-            : "確認できる指標からの見立ては限定的です";
+            ? "R6は使用料収入で汚水処理費を賄えています"
+            : "経営状況のデータが不足しています";
   const conclusionParts = selectedReasons.map((reason) => reason.detail);
 
   return {
@@ -891,7 +874,7 @@ export function buildSimpleFeeScenario({
 }): SimpleFeeScenario {
   const revenue = positiveFiniteOrNull(sewerFeeRevenue);
   const cost = positiveFiniteOrNull(wastewaterTreatmentCost);
-  const caveat = "費用、有収水量、利用者構成などを一定とした単純計算です。料金改定の予測、推奨改定率、公式指標ではありません。";
+  const caveat = "費用・有収水量・利用者構成を固定した単純試算";
   if (revenue == null || cost == null) {
     return {
       status: "unavailable",
@@ -909,7 +892,7 @@ export function buildSimpleFeeScenario({
     currentFeeYen: Math.round(currentFee),
     illustratedFeeYen: illustratedFee,
     monthlyDifferenceYen: illustratedFee - Math.round(currentFee),
-    assumption: "すべての料金区分が同じ率で変わると仮定した20m³月額の機械的な換算です。"
+    assumption: "すべての料金区分が同じ率で変わると仮定した月額です。"
   };
 
   if (increaseRate === 0) {
@@ -917,7 +900,7 @@ export function buildSimpleFeeScenario({
       status: "no_current_gap",
       revenueIncreaseRatePercent: 0,
       householdIllustration,
-      explanation: "R6の費用回収だけを理由とする追加増収は、この単純計算では必要ありません。将来の値上げがないことや値下げ余地を示すものではありません。",
+      explanation: "R6は使用料収入で現在の汚水処理費を賄えています。",
       caveat
     };
   }
@@ -1038,7 +1021,7 @@ export function buildCitizenR6DataAvailability(
   return {
     status: "unavailable",
     sourceSurveyYear,
-    reason: `選択中の事業ではR6決算を確認できないため、${sourceLabel}の値をR6診断に代用していません。`
+    reason: `この事業のR6データは未取得です（最新：${sourceLabel}）。`
   };
 }
 
@@ -1065,9 +1048,9 @@ function buildFinancialReasons(finance: CitizenFinanceInput | null | undefined):
       direction: netIncome < 0 ? "pressure" : netIncome > 0 ? "supportive" : "context",
       title: netIncome < 0 ? "R6は純損失" : netIncome > 0 ? "R6は純利益" : "R6の純損益は均衡",
       detail: netIncome < 0
-        ? "R6は純損失です。単年度の結果だけで持続可能性は断定できないため、複数年度の推移を確認する必要があります。"
+        ? "R6は費用が収益を上回る純損失でした。"
         : netIncome > 0
-          ? "R6は純利益です。単年度の黒字だけで長期的な持続可能性を保証するものではありません。"
+          ? "R6は収益が費用を上回る純利益でした。"
           : "R6の純損益はおおむね均衡しています。",
       evidenceTarget: "finance"
     });
@@ -1082,9 +1065,9 @@ function buildFinancialReasons(finance: CitizenFinanceInput | null | undefined):
       direction: delta < 0 ? "pressure" : delta > 0 ? "supportive" : "context",
       title: delta < 0 ? "純資産が前年度より減少" : delta > 0 ? "純資産が前年度より増加" : "純資産は前年度と同水準",
       detail: delta < 0
-        ? "純資産は前年度より減少しています。減少理由と今後の投資計画を併せて確認する必要があります。"
+        ? "純資産は前年度より減っています。"
         : delta > 0
-          ? "純資産は前年度より増加していますが、将来の更新費用まで賄えることを示すものではありません。"
+          ? "純資産は前年度より増えています。"
           : "純資産は前年度と同水準です。",
       evidenceTarget: "finance"
     });
@@ -1112,9 +1095,9 @@ function buildBondTrend(
     direction: delta > 0 ? "pressure" : delta < 0 ? "supportive" : "context",
     title: delta > 0 ? "企業債残高が増加" : delta < 0 ? "企業債残高が減少" : "企業債残高は同水準",
     detail: delta > 0
-      ? "確認できる期間で企業債残高が増えています。更新投資の内容と償還計画を併せて確認する必要があります。"
+      ? "対象期間の企業債残高は増えています。"
       : delta < 0
-        ? "確認できる期間で企業債残高は減っています。必要な更新投資が確保されているかは別途確認が必要です。"
+        ? "対象期間の企業債残高は減っています。"
         : "確認できる期間の企業債残高は同水準です。",
     evidenceTarget: "finance"
   };

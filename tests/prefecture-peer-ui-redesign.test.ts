@@ -109,7 +109,7 @@ describe("citizen-first prefecture comparison UI", () => {
       model: comparisonModel(rows),
       businessLabel: "公共下水道"
     }));
-    expect(markup).toContain("組合全体の料金であり、構成市町村へ配分した額ではありません");
+    expect(markup).toContain("組合全体の料金");
     expect(markup).toContain("順位・中央値では1事業体として1回だけ数え、平均・合計にも1回だけ集計します");
   });
 

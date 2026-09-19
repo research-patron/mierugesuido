@@ -101,8 +101,8 @@ describe("municipality detail safety boundaries", () => {
 
   it("always keeps top cost items and adds only non-duplicate peer outliers", () => {
     expect(feeAnalysisPanelSource).toContain("buildCostCompositionDisplay(assessment.costComposition)");
-    expect(feeAnalysisPanelSource).toContain("主な費目：");
-    expect(feeAnalysisPanelSource).toContain("中央値を5ポイント以上上回るほかの費目");
+    expect(feeAnalysisPanelSource).toContain("costDisplay.topItems");
+    expect(feeAnalysisPanelSource).toContain("costDisplay.additionalAbovePeerMedianItems");
     expect(assessmentPanelSource).not.toContain("buildCostCompositionDisplay(assessment.costComposition)");
   });
 });

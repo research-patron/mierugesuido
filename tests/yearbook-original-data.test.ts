@@ -219,7 +219,7 @@ describe("地方公営企業年鑑『個表』の自治体別抜粋", () => {
     const evidenceSource = readFileSync("lib/yearbookEvidence.ts", "utf8");
     const generatorSource = readFileSync("scripts/static/generate.ts", "utf8");
 
-    expect(detailSource).toContain("地方公営企業年鑑「個表」");
+    expect(detailSource).toContain("地方公営企業年鑑");
     expect(detailSource).toContain('href={detailHref(municipalityCode, selectedGroup.key, "yearbook")}');
     expect(detailSource).toContain('enabled={view === "yearbook"}');
     expect(detailSource).toContain("公式データと計算根拠");
@@ -228,13 +228,14 @@ describe("地方公営企業年鑑『個表』の自治体別抜粋", () => {
     expect(detailSource.indexOf("<YearbookOriginalData")).toBeGreaterThan(detailSource.indexOf("公式データと計算根拠"));
     expect(viewerSource).toContain("/data/static/yearbook/${municipalityCode}.json");
     expect(viewerSource).toContain("公式個表の全項目を見る");
-    expect(viewerSource).toContain("公式の項目順・階層・表示値");
+    expect(viewerSource).toContain("総務省Excelの項目順・階層・表示値を保った一覧");
     expect(viewerSource.indexOf("yearbookOriginal")).toBeLessThan(viewerSource.indexOf("<YearbookCalculationAudit"));
     expect(viewerSource).toContain("主要指標の計算式と公式個表の参照行");
     expect(viewerSource).toContain('classification: "公式値"');
     expect(viewerSource).toContain('classification: "当サイト再計算"');
     expect(viewerSource).toContain('classification: "単純シナリオ"');
-    expect(viewerSource).toContain("公式の将来予測や推奨改定率ではありません");
+    expect(viewerSource).toContain("費用・有収水量を固定した収入不足の試算");
+    expect(viewerSource).not.toContain("公式の将来予測や推奨改定率ではありません");
     expect(viewerSource).toContain("個表（{reference.groupNumber}）{reference.rowNumber}行");
     expect(evidenceSource).toContain("この値は「12．個表」ではなく");
     expect(viewerSource).not.toContain("e-Stat公開Excelのまま");

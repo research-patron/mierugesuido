@@ -93,12 +93,12 @@ describe("FinancialStory rendered relationships", () => {
     expect(markup).toContain("本サイトが算定しています");
     expect(markup).toContain("年鑑個表の原資料を確認");
     expect(markup).toContain("流域下水道管理運営費負担金");
-    expect(markup).toContain("効率の良し悪しを直接判定するものではありません");
-    expect(markup).toContain("損益の総費用や経費回収率の汚水処理費とは集計範囲が異なります");
-    expect(markup.match(/料金・持続可能性との関係/g)).toHaveLength(3);
-    expect(markup).toContain("効率や将来負担の判断には施設条件や更新計画も必要です");
-    expect(markup).toContain("料金や持続可能性の判断には経費回収率、複数年の推移、更新計画も必要です");
-    expect(markup).toContain("持続可能性の判断には更新計画や企業債の償還計画も必要です");
+    expect(markup).toContain("第21表の費用合計をもとに計算");
+    expect(markup).toContain("費用の構成比");
+    expect(markup).not.toContain("料金・持続可能性との関係");
+    expect(markup).not.toContain("効率や将来負担の判断には施設条件や更新計画も必要です");
+    expect(markup).not.toContain("料金や持続可能性の判断には経費回収率、複数年の推移、更新計画も必要です");
+    expect(markup).not.toContain("持続可能性の判断には更新計画や企業債の償還計画も必要です");
   });
 
   it("fails closed when a cost item is missing instead of treating it as zero", () => {
@@ -146,7 +146,7 @@ describe("FinancialStory rendered relationships", () => {
     expect(markup).toContain("負債内 14.3%");
     expect(markup).toContain('data-balance-detail="capital"');
     expect(markup).toContain("純資産内 66.7%");
-    expect(markup).toContain("返済予定額ではありません");
+    expect(markup).toContain("今後収益に振り替える残高");
     expect(balanceFigure).toContain("資産の内訳はうち固定資産0.8百万円、資産内80.0%");
     expect(markup).not.toContain("<figcaption");
     expect(markup.match(/費用 0.9百万円 ＋ 当年度純利益 100千円 ＝ 収益 1百万円/g)).toHaveLength(1);

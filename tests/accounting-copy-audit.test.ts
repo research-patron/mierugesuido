@@ -9,23 +9,20 @@ const disclaimerSource = readFileSync(path.join(root, "app/disclaimer/page.tsx")
 const fieldDefinitionsSource = readFileSync(path.join(root, "lib/fieldDefinitions.ts"), "utf8");
 
 describe("public-enterprise accounting copy audit", () => {
-  it("states the enterprise-income principle together with the public-expense exception", () => {
-    expect(copySource).toContain("地方公営企業法第17条の2");
-    expect(copySource).toContain("一般会計等が負担すべき経費を除き");
-    expect(copySource).toContain("雨水公費・汚水私費");
-    expect(copySource).toContain("100%未満を営業費用に届かない状態、100%以上を営業費用を賄う状態として説明します");
-    expect(copySource).toContain("使用料の十分性とは分けて読む必要があります");
-    expect(copySource).toContain("使用料による汚水処理費の回収状況は、別の公式指標である経費回収率で確認します");
-    expect(copySource).not.toContain("100%未満は営業損失");
-    expect(copySource).toContain("受託工事収益・費用等を除いて算定する場合があるため");
+  it("states the enterprise-income principle on the source page and explains the two ratios", () => {
+    expect(dataSourcesSource).toContain("地方公営企業法第17条の2");
+    expect(dataSourcesSource).toContain("公費で負担する経費を除き");
+    expect(dataSourcesSource).toContain("雨水公費・汚水私費");
+    expect(copySource).toContain("営業収益÷営業費用×100");
+    expect(copySource).toContain("経費回収率は使用料収入÷汚水処理費×100");
     expect(copySource).toContain('title: "営業収支比率（簡易）"');
-    expect(copySource).not.toContain("営業収益÷営業費用（サイト算定）");
+    expect(copySource).not.toContain("100%未満は営業損失");
   });
 
   it("documents operating loss and fee recovery as different scopes with official public sources", () => {
-    expect(dataSourcesSource).toContain("すべての経費を使用料だけで賄う、という規定ではありません");
+    expect(dataSourcesSource).toContain("公費で負担する経費を除き、経営に伴う収入で費用を賄う");
     expect(dataSourcesSource).toContain("営業損益と経費回収率は範囲が異なる");
-    expect(dataSourcesSource).toContain("使用料による汚水処理費の回収状況は、別の指標である経費回収率で確認します");
+    expect(dataSourcesSource).toContain("使用料で汚水処理費をどれだけ賄えているかは、経費回収率に表れます");
     expect(dataSourcesSource).toContain("https://laws.e-gov.go.jp/law/327AC0000000292");
     expect(dataSourcesSource).toContain("https://laws.e-gov.go.jp/law/327M50000002073/");
     expect(dataSourcesSource).toContain("https://www.mlit.go.jp/mizukokudo/sewerage/crd_sewerage_tk_000140.html");
@@ -37,12 +34,12 @@ describe("public-enterprise accounting copy audit", () => {
 
   it("limits nationwide map colors to expense recovery and confines the fee-unit split to prefecture context", () => {
     expect(dataSourcesSource).toContain("全国地図は経費回収率だけで色分け");
-    expect(dataSourcesSource).toContain("使用料単価は地域性があるため、全国地図の評価には使いません");
+    expect(dataSourcesSource).toContain("最新年度の経費回収率を都道府県ごとに単純平均");
     expect(dataSourcesSource).toContain("同一都道府県内の市町村マップでは");
   });
 
   it("separates the household tariff average from the business-wide realized unit price", () => {
-    expect(copySource).toContain("その1m³平均使用料");
+    expect(copySource).toContain("家庭用料金表に記載された税込月額");
     expect(dataSourcesSource).toContain("整数に丸めた表示");
     expect(dataSourcesSource).toContain("使用料単価に20を掛けても家庭用20m³月額にはなりません");
   });

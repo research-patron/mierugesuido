@@ -51,7 +51,7 @@ export function FinancialStory(props: FinancialStoryProps) {
         titleId={titleId}
         year={year}
         title="法非適用事業はこの決算構造図の対象外です"
-        body="この図は、地方公営企業法の財務規定に基づく損益計算書と貸借対照表を同じ定義で比較するためのものです。会計基準が異なるため、法非適用事業は法適用事業と同じ尺度のボックス図にはしません。"
+        body="財務図の対象は、地方公営企業法の財務規定を適用する事業です。"
         trace={props.trace}
       />
     );
@@ -63,7 +63,7 @@ export function FinancialStory(props: FinancialStoryProps) {
         titleId={titleId}
         year={year}
         title="会計区分を確認できません"
-        body="法適用事業であることを確認できるまで、損益・貸借の図は表示しません。会計区分と原資料を確認してください。"
+        body="会計区分が未取得のため、財務図を表示できません。"
         trace={props.trace}
       />
     );
@@ -106,7 +106,7 @@ export function FinancialStory(props: FinancialStoryProps) {
         <div className={styles.headingCopy}>
           <p className={styles.eyebrow}>{year} 決算構造</p>
           <h2 id={titleId}>{year}の財務を、4つの要点で読む</h2>
-          <p>費用の中心、1年間の損益、年度末の財源、純資産の変化を順に確認します。</p>
+          <p>費用の内訳、1年間の損益、資産と財源の変化がわかります。</p>
         </div>
         <StoryStatus state={overallState} label={statusLabel} />
       </div>
@@ -221,15 +221,11 @@ function CostComposition({
         </>
       )}
 
-      <CitizenRelationNote>
-        費用の集中先は料金水準の背景を考える材料の一つですが、効率や将来負担の判断には施設条件や更新計画も必要です。
-      </CitizenRelationNote>
 
       <p className={styles.costCaveat} role="note">
         <Info size={17} aria-hidden="true" />
         <span>
-          これは費用の集中先を示すもので、効率の良し悪しを直接判定するものではありません。
-          第21表の費用合計は、損益の総費用や経費回収率の汚水処理費とは集計範囲が異なります。
+          費用の構成比は、地方公営企業年鑑第21表の費用合計をもとに計算しています。
         </span>
       </p>
 
@@ -346,9 +342,6 @@ function IncomeStatement({
         </div>
       ) : null}
 
-      <CitizenRelationNote>
-        単年度の収益と費用の関係は現在の経営状況を考える材料の一つで、料金や持続可能性の判断には経費回収率、複数年の推移、更新計画も必要です。
-      </CitizenRelationNote>
 
       <details className={styles.cardDetails}>
         <summary><span>収益・費用の全項目とデータ確認</span><ChevronDown size={16} aria-hidden="true" /></summary>
@@ -412,7 +405,7 @@ function BalanceSheet({
             <AlertCircle size={19} aria-hidden="true" />
             <div>
               <strong>純資産がマイナス（債務超過）</strong>
-              <span>負債が資産を {formatAdaptiveAmount(Math.abs(analysis.totalNetAssets ?? 0))} 上回っています。負債は、繰延収益を含む貸借対照表上の合計です。これは資金不足や返済能力を直接示す指標ではありません。</span>
+              <span>負債が資産を {formatAdaptiveAmount(Math.abs(analysis.totalNetAssets ?? 0))} 上回っています。負債は、繰延収益を含む貸借対照表上の合計です。</span>
             </div>
           </div>
         </>
@@ -422,9 +415,6 @@ function BalanceSheet({
         <BalanceRelationship analysis={analysis} />
       )}
 
-      <CitizenRelationNote>
-        資産と負債の構成は将来負担を考える材料の一つで、持続可能性の判断には更新計画や企業債の償還計画も必要です。
-      </CitizenRelationNote>
 
       <details className={styles.cardDetails}>
         <summary><span>勘定科目の内訳とデータ確認</span><ChevronDown size={16} aria-hidden="true" /></summary>
@@ -497,7 +487,7 @@ function NetAssetsChange({
         icon={<Scale size={21} aria-hidden="true" />}
         titleId={titleId}
         title="純資産｜前年より増えたか"
-        description="純資産は資産から負債を差し引いた差額です。現金の増減とは一致しません。"
+        description="純資産は、資産から負債を差し引いた額です。"
       />
 
       {!analysis.available ? (
@@ -563,7 +553,7 @@ function NetAssetsChange({
               {analysis.currentNetIncome != null ? (
                 <div className={styles.learningNote}>
                   <Banknote size={18} aria-hidden="true" />
-                  <p><strong>当年度の純損益は {formatSignedSourceThousandYen(analysis.currentNetIncome)}。</strong> 利益剰余金は過年度を含む残高なので、前年差と当年度純損益が同額でなくても異常ではありません。</p>
+                  <p><strong>当年度の純損益は {formatSignedSourceThousandYen(analysis.currentNetIncome)}。</strong> 利益剰余金は、過年度から積み上がった残高です。</p>
                 </div>
               ) : null}
 
@@ -575,7 +565,7 @@ function NetAssetsChange({
                     <NetAssetsDriver key={component.id} component={component} />
                   ))}
                 </div>
-                <p className={styles.driverCaveat}>前年差は貸借対照表の残高差です。出資・利益処分などの詳しい理由は、各団体の剰余金計算書等で確認する必要があります。</p>
+                <p className={styles.driverCaveat}>前年差は、貸借対照表の年度末残高の差です。</p>
               </details>
             </section>
           ) : (
@@ -584,7 +574,7 @@ function NetAssetsChange({
               <div>
                 <strong>純資産4項目の前年比較は表示できません</strong>
                 <p>{componentsInvalid
-                  ? `純資産総額と4項目の合計に差額があります（前年度末 ${formatSignedSourceThousandYen(analysis.priorComponentDifference)}、当年度末 ${formatSignedSourceThousandYen(analysis.currentComponentDifference)}、前年差 ${formatSignedSourceThousandYen(analysis.componentDifference)}）。原表または取込値を確認してください。`
+                  ? `純資産総額と4項目の合計に差額があります（前年度末 ${formatSignedSourceThousandYen(analysis.priorComponentDifference)}、当年度末 ${formatSignedSourceThousandYen(analysis.currentComponentDifference)}、前年差 ${formatSignedSourceThousandYen(analysis.componentDifference)}）。`
                   : "前年度が法非適用、または同一事業の内訳データがない場合は、総額だけを表示します。未取得値を0千円とは扱いません。"}</p>
               </div>
             </div>
@@ -976,7 +966,7 @@ function BalanceReadingNote({ hasDeferredRevenue }: { hasDeferredRevenue: boolea
     <p className={styles.balanceReadingNote}>
       <strong>内訳の見方</strong>
       各内訳の「〇〇内」は、その箱の合計に占める割合です。割合は原表の千円値から計算し、金額は読みやすい単位に丸めています。
-      {hasDeferredRevenue ? " 繰延収益は主に施設整備の補助金等の未収益化残高で、返済予定額ではありません。" : ""}
+      {hasDeferredRevenue ? " 繰延収益は、主に施設整備の補助金等のうち今後収益に振り替える残高です。" : ""}
     </p>
   );
 }
@@ -1000,14 +990,6 @@ function NetAssetsDriver({ component }: { component: NetAssetsComponentChange })
   );
 }
 
-function CitizenRelationNote({ children }: { children: ReactNode }) {
-  return (
-    <p className={styles.citizenRelation} role="note">
-      <strong>料金・持続可能性との関係</strong>
-      <span>{children}</span>
-    </p>
-  );
-}
 
 function CardHeading({ icon, titleId, title, description }: { icon: ReactNode; titleId: string; title: string; description: string }) {
   return (
@@ -1063,7 +1045,7 @@ function FinancialStoryState({
       <div className={styles.exclusionState} role="note">
         <AlertCircle size={24} aria-hidden="true" />
         <div>
-          <strong>比較できないものは、図にしません</strong>
+          <strong>表示に必要なデータがありません</strong>
           <p>{body}</p>
         </div>
       </div>
@@ -1380,7 +1362,7 @@ function netAssetsComponentMeta(id: NetAssetsComponentChange["id"]) {
   return {
     capital: {
       kicker: "事業の元手",
-      meaning: "自治体からの出資や剰余金からの組入れなどで動く、返済を原則要しない基礎資本です。料金で稼いだ額とは限りません。"
+      meaning: "自治体からの出資や剰余金からの組入れなどで動く、返済を原則要しない基礎資本です。"
     },
     "capital-surplus": {
       kicker: "利益以外の残高",
@@ -1392,7 +1374,7 @@ function netAssetsComponentMeta(id: NetAssetsComponentChange["id"]) {
     },
     "valuation-difference": {
       kicker: "有価証券の時価差",
-      meaning: "保有有価証券の評価額の変化です。現金収入や下水道事業の営業成果そのものではありません。"
+      meaning: "保有有価証券の評価額の変化です。"
     }
   }[id];
 }
@@ -1424,12 +1406,12 @@ function netAssetsDriverExplanation(components: NetAssetsComponentChange[]) {
     return hasPositive && hasNegative ? `${core} 増加項目と減少項目が一部相殺されています。` : core;
   }
   const leading = changed[0];
-  const directionText = leading.delta > 0 ? "増えた" : "減った";
+  const directionText = leading.delta > 0 ? "増えています" : "減っています";
   const core = {
-    capital: `原則返済不要の基礎資本が${directionText}方向ですが、料金収入の成果とは限りません。`,
-    "capital-surplus": `利益以外の資本取引の残高が${directionText}方向です。`,
-    "retained-earnings": `利益・欠損の蓄積が${directionText}方向ですが、当年度純損益だけでなく処分や組入れも含みます。`,
-    "valuation-difference": `有価証券の評価差が${directionText}方向で、営業成果や現金の増減そのものではありません。`
+    capital: `出資金などの基礎資本が${directionText}。`,
+    "capital-surplus": `利益以外の資本取引の残高が${directionText}。`,
+    "retained-earnings": `利益剰余金の残高が${directionText}。`,
+    "valuation-difference": `有価証券の評価差が${directionText}。`
   }[leading.id];
   return hasPositive && hasNegative ? `${core} 増加項目と減少項目が一部相殺されています。` : core;
 }

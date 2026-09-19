@@ -1,5 +1,14 @@
 # Current Goal: R2-R6 Accounting Eligibility, Data Completion, and Financial Storytelling
 
+## Goal Extension (2026-09-14 — concise municipality copy and visual fee comparison)
+
+- Reduce the municipality diagnosis to short conclusions and clearly labelled figures, with stronger ranking-inspired colors and comfortable spacing.
+- Show fee-analysis cost breakdowns immediately. Add interactive prefecture scatterplots with a fitted trend line and paired cost bars using existing eligible R6 peer records; retain missing-data states, comparison scope, units, and source links.
+- The September 19 clarification narrows the scatterplot to individual expenses, initially depreciation: compare annual billable volume with annual expense, with selectable Table 20/21 items. Do not fit household monthly tariffs against treatment cost; tariff structures differ between businesses.
+- Consolidate interpretation cautions on the existing disclaimer page, remove repeated caveats elsewhere, and revise public copy into concise, natural Japanese. Keep factual labels and calculation assumptions wherever needed to understand a number.
+- Preserve database, schema, migrations, ETL, official workbooks, imported values, static financial payloads, and the pre-existing deleted/conflict-copy files. Validate the code independently against tracked data in a temporary checkout.
+- Verify desktop 1491 x 1055 and mobile 390 x 844 screenshots, keyboard/touch chart selection, business switching, navigation, regression tests, and production build. Development does not authorize commit, push, or deployment.
+
 ## Goal Extension (2026-08-27 — publication metadata and site icons)
 
 - Audit the public launch surface and implement the missing site icon, page metadata descriptions, canonical URLs, social-sharing metadata, web manifest, robots policy, sitemap, branded not-found experience, and safe static-host security headers needed for this service.

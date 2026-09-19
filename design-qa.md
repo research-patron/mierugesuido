@@ -2359,3 +2359,45 @@ This gate supersedes the municipality-detail presentation evidence above for how
 - The primary worktree's pre-existing tracked deletions, conflict copies, videos, and unrelated local files remain excluded. The complete validation ran in a clean worktree containing only the approved fee-analysis change set.
 
 final result: passed
+
+
+## Final superseding concise municipality and individual-expense comparison gate — 2026-09-19
+
+This gate supersedes the August 30 progressive fee-analysis presentation and includes the September 19 clarification: compare individual expenses, rather than fitting household tariffs against treatment cost.
+
+### Requirement audit
+
+| Requirement | Current implementation and verification |
+| --- | --- |
+| Short municipality conclusions | Diagnosis shows five concise question rows with figures, compact status labels, and direct evidence links. Repeated interpretation paragraphs and the limitations disclosure were removed. Desktop and mobile diagnosis captures were inspected. |
+| Stronger color and more space | Navy section heading, teal fee/cost emphasis, amber pressure states, green positive states, and clear row spacing. Text and icons distinguish the states without color alone. |
+| Costs and other fee factors visible on entry | Table 20 purpose items, Table 21 expense items, paired median bars, and the other fee factors are ordinary sections. No disclosure click is needed to see them. |
+| Individual-expense scatterplots | Depreciation is selected initially. Thirteen Table 21 and four Table 20 expenses are selectable. Horizontal axis: annual billable volume in million cubic metres; vertical axis: annual expense in million yen. Household monthly tariffs and aggregate treatment cost do not enter the fit. |
+| Fitted equation and unusual observations | Ordinary least-squares line, equation, R-squared, and selected residual are displayed. At least three observations and differing volumes are required to fit. With at least five observations, absolute internally standardized residuals above two use orange diamonds and selectable text labels. All valid observations remain in the fit. |
+| Existing accounting and data boundaries | Uses existing eligible R6 peer rows and unrounded expense-per-volume supplements. Shared operators count once. Missing amounts are never zero-filled. Zero expenses remain valid; zero or missing volume is excluded. Ineligible selected businesses show comparison unavailable; missing R6 records do not borrow older values. |
+| Cautions in one location | General interpretation cautions are consolidated on the existing disclaimer page, reachable from the footer. Repeated cautions on diagnosis, finance, official data, maps, ranking, revisions, and search were removed. Source definitions, calculation assumptions, units, and genuine missing-data states remain. |
+| Natural Japanese throughout | Public copy was reviewed across home, search, municipality views, maps, ranking, revision, data sources, and about/disclaimer. Awkward procedural language and repeated instructions to check other material were replaced with short descriptions. Official yearbook source rows remain unchanged. |
+
+### Interaction and rendered evidence
+
+- Inspected 1491 × 1055 desktop and 390 × 844 mobile municipality diagnosis and analysis states. No horizontal page overflow: document widths were 1480 and 379 respectively with browser scrollbars.
+- On the Yamagata public-sewerage comparison, 31 eligible units render. Tsuruoka depreciation is 2,410.09 million yen, annual billed volume 9.83 million cubic metres, and unit expense 245.2 yen/m³. The displayed fit is approximately `y = 205.3x + 65.42`, with R-squared 0.96. These are descriptive expense comparisons.
+- Verified depreciation, outsourcing, repair, and pipeline selections; municipality selection through both points and a 44 px native selector; outlier-list selection; reset to the current business; Enter, Space, and Tab navigation with stable point order.
+- Verified switching Tsuruoka from public sewerage to special-environment public sewerage preserves the analysis view and resets the graph selection to the new business. Diagnosis return, browser Back/Forward, direct analysis URL, and same-business finance navigation work.
+- Verified Tomioka law-non-applied comparison exclusion and its R2 special-environment record with missing R6 data. Neither state renders an eligible-peer scatterplot as if it were the selected business.
+- Reviewed related home, search, ranking, revision, data-source, finance, and prefecture-map surfaces. The map still renders its SVG geometry and links to the prefecture view. Browser error logs were empty during the checked flows.
+- Raw screenshots are stored outside Git in the task QA directory, including `diagnosis-desktop.png`, `diagnosis-mobile.png`, `analysis-desktop-full.png`, `analysis-mobile-full.png`, `depreciation-desktop.png`, `depreciation-mobile.png`, and the related-page captures. Temporary intermediate captures are not publication assets.
+
+### Regression, build, and confidentiality
+
+- TypeScript check passed. The final production build also completed type checking.
+- Clean full test suite: 53 files; 393 tests passed and one source-workbook-dependent test skipped. New coverage verifies expense unit conversions, tariff independence, same-operator deduplication, missing and zero values, fitting boundaries, residual highlights, current-business eligibility, and immediate cost sections.
+- Production build passed: 1,656 static pages generated. Publication verifier passed all 1,647 public routes and sitemap entries, plus favicon, 404, robots, manifest, icons, and headers.
+- The initial sandboxed font request failed DNS resolution. An approved build obtained the existing Kiwi Maru assets; the final ordinary build passed using the cache. No font configuration, font substitution, or new dependency was added.
+- A browser permission-review timeout was resolved by the single retry permitted by that tool. It is not an outstanding verification blocker.
+- Dedicated Gitleaks scans found no secrets in the scoped files or 22 commits of repository history. Targeted checks found no personal email or absolute local-path additions in scoped files.
+- No database, Prisma schema, migration, ETL, official workbook, imported value, GIS source, or financial static payload was changed. Validation used tracked HEAD data in a temporary checkout, overlaid with only this task's source/test changes.
+- The primary worktree's pre-existing 1,177 tracked data deletions, conflict copies, videos, and unrelated files remain untouched and excluded. Its missing static manifest still prevents the unrelated manifest test from passing there; the clean validation checkout passes that test.
+- No staging, commit, push, pull request, or deployment was performed. Publication requires a separate review and approval under AGENTS.md.
+
+final result: passed

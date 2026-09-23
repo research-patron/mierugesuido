@@ -1,3 +1,4 @@
+import { buildRankingCoverage } from "@/scripts/static/rankingCoverage";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import {
@@ -146,9 +147,15 @@ async function main() {
     municipalityNameKana: item.municipalityNameKana
   })));
 
-  await Promise.all(rankingTypes.map(async (type) => {
-    await writeJson(path.join(sourceRoot, "rankings", `${type}.json`), await getRankings(type, 50));
+  const rankingCoverageEntries = await Promise.all(rankingTypes.map(async (type) => {
+    const population = await getRankings(type, Number.MAX_SAFE_INTEGER);
+    const published = population.slice(0, 50);
+    await writeJson(path.join(sourceRoot, "rankings", `${type}.json`), published);
+    return [type, buildRankingCoverage(population, published)] as const;
   }));
+  await writeJson(path.join(sourceRoot, "ranking-coverage.json"), {
+    schemaVersion: 1, rankings: Object.fromEntries(rankingCoverageEntries)
+  });
 
   await Promise.all(prefectures.map(async (prefecture) => {
     const data = await getPrefectureMapData(prefecture.code);
@@ -185,6 +192,11 @@ async function main() {
     sourceUrl: source.sourceUrl,
     available: Boolean(source.downloadedAt || source.localPath)
   })));
+
+  await writeJson(path.join(sourceRoot, "source-provenance.json"), { schemaVersion: 1, items: sources.map(source => ({
+    id: source.id, sourceUrl: source.sourceUrl, catalogYear: source.surveyYear,
+    publishedAt: source.publishedAt, downloadedAt: source.downloadedAt?.toISOString() ?? null
+  })) });
 
   const yearbookBusinesses = await prisma.sewerBusiness.findMany({
     where: { annualFinancials: { some: { surveyYear: latestFiscalYear } } },

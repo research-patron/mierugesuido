@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
-import { RankingNav } from "@/components/RankingNav";
-import { RankingComparison } from "@/components/RankingComparison";
-import { RankingTable } from "@/components/RankingTable";
+import { RankingExplorer } from "@/components/RankingExplorer";
 import { defaultRankingType } from "@/lib/rankings";
-import { getStaticRankings } from "@/lib/staticData";
+import { getStaticRankings, getStaticHomeData, getStaticRankingCoverage } from "@/lib/staticData";
 import { createPageMetadata } from "@/lib/siteMetadata";
 
 export const metadata: Metadata = createPageMetadata({
@@ -13,7 +11,7 @@ export const metadata: Metadata = createPageMetadata({
 });
 
 export default async function RankingsPage() {
-  const items = (await getStaticRankings(defaultRankingType)).slice(0, 30);
+  const items = await getStaticRankings(defaultRankingType);
 
   return (
     <div>
@@ -26,12 +24,11 @@ export default async function RankingsPage() {
             </p>
             <p className="mt-1 text-xs font-bold leading-6 text-slate-600">対象年度の公表値を全国で比較。法非適用事業は料金指標の参考比較です。</p>
           </div>
-          <RankingNav current={defaultRankingType} />
+
         </div>
       </section>
       <section className="mx-auto grid max-w-[1500px] gap-5 px-4 py-5 sm:px-6 lg:px-8">
-        <RankingComparison items={items} type={defaultRankingType} />
-        <RankingTable items={items} type={defaultRankingType} />
+        <RankingExplorer items={items} type={defaultRankingType} home={await getStaticHomeData()} coverage={await getStaticRankingCoverage(defaultRankingType)} />
       </section>
     </div>
   );

@@ -5,7 +5,7 @@ import { buildMunicipalityLookup, filterPrefectureMapFeatures } from "@/componen
 import { splitSubpaths } from "@/lib/gisMapLayout";
 
 const root = process.cwd();
-const pageSource = readFileSync(path.join(root, "app/map/[prefectureCode]/page.tsx"), "utf8");
+const pageSource = readFileSync(path.join(root, "components/PrefectureComparisonPage.tsx"), "utf8");
 const componentSource = readFileSync(path.join(root, "components/PrefectureMapExplorer.tsx"), "utf8");
 const cssSource = readFileSync(path.join(root, "components/PrefectureMapExplorer.module.css"), "utf8");
 const hokkaidoGisData = JSON.parse(readFileSync(path.join(root, "public/gis/municipalities/01.json"), "utf8"));

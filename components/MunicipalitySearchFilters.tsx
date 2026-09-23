@@ -8,6 +8,7 @@ import { feeRecoveryBandOptions } from "@/lib/feeRecoveryCopy";
 type ViewMode = "table" | "card";
 
 export function MunicipalitySearchFilterPanel({
+  fiscalYear, rowUnit, intent,
   prefectures,
   q,
   prefecture,
@@ -19,6 +20,9 @@ export function MunicipalitySearchFilterPanel({
   limit,
   view
 }: {
+  fiscalYear?: string;
+  rowUnit?: string;
+  intent?: string;
   prefectures: string[];
   q?: string;
   prefecture?: string;
@@ -47,6 +51,9 @@ export function MunicipalitySearchFilterPanel({
 
   return (
     <form action="/municipalities" className="panel search-filter-panel">
+      <input type="hidden" name="fiscalYear" value={fiscalYear ?? ""} />
+      <input type="hidden" name="rowUnit" value={rowUnit ?? ""} />
+      <input type="hidden" name="intent" value={intent ?? ""} />
       <input type="hidden" name="limit" value={limit} />
       <input type="hidden" name="view" value={view} />
 

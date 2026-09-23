@@ -1011,7 +1011,7 @@ function StoryStatus({
   label?: string;
 }) {
   const copy = {
-    ready: { text: "表示項目確認済み", icon: <CheckCircle2 size={15} aria-hidden="true" />, className: styles.statusReady },
+    ready: { text: "表示項目あり（自動判定）", icon: <CheckCircle2 size={15} aria-hidden="true" />, className: styles.statusReady },
     partial: { text: "一部未取得", icon: <AlertCircle size={15} aria-hidden="true" />, className: styles.statusPartial },
     limited: { text: "図示に制約あり", icon: <AlertCircle size={15} aria-hidden="true" />, className: styles.statusPartial },
     invalid: { text: "要検算", icon: <AlertCircle size={15} aria-hidden="true" />, className: styles.statusInvalid },

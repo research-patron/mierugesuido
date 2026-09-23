@@ -109,7 +109,7 @@ export function YearbookOriginalData({
 
   if (!enabled) return null;
   if (failed) {
-    return <p className={styles.yearbookStatus}>地方公営企業年鑑「個表」の自治体別抜粋を読み込めませんでした。</p>;
+    return <div role="alert" className={styles.yearbookStatus}>地方公営企業年鑑「個表」の自治体別抜粋を読み込めませんでした。<button className="button-secondary ml-3" onClick={() => setFailed(false)}>再試行</button></div>;
   }
   if (!data) {
     return (

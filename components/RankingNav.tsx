@@ -15,6 +15,7 @@ import {
   type RankingMetric,
   type RankingType
 } from "@/lib/rankings";
+import { comparisonHref } from "@/lib/comparison";
 import styles from "./RankingNav.module.css";
 
 const metricPresentation: Record<RankingMetric, { icon: LucideIcon; helper: string }> = {
@@ -36,7 +37,7 @@ function directionLabel(_metric: RankingMetric, direction: RankingDirection) {
   return direction === "high" ? "値が高い順" : "値が低い順";
 }
 
-export function RankingNav({ current }: { current: RankingType }) {
+export function RankingNav({ current, comparisonQuery = "" }: { current: RankingType; comparisonQuery?: string }) {
   const { metric: selectedMetric, direction } = rankingSelection(current);
   const directions: RankingDirection[] = ["high", "low"];
   const selectedDirectionLabel = directionLabel(selectedMetric.metric, direction);
@@ -74,7 +75,7 @@ export function RankingNav({ current }: { current: RankingType }) {
               return (
                 <Link
                   key={metric.metric}
-                  href={`/rankings/${type}`}
+                  href={comparisonHref(`/rankings/${type}`, new URLSearchParams(comparisonQuery))}
                   aria-current={selected ? "page" : undefined}
                   className={`${styles.metricOption} ${selected ? styles.selected : ""}`}
                 >
@@ -106,7 +107,7 @@ export function RankingNav({ current }: { current: RankingType }) {
               return (
                 <Link
                   key={item}
-                  href={`/rankings/${type}`}
+                  href={comparisonHref(`/rankings/${type}`, new URLSearchParams(comparisonQuery))}
                   aria-current={selected ? "page" : undefined}
                   aria-label={`${selectedMetric.label}を${accessibleDirection}で表示`}
                   className={`${styles.directionOption} ${selected ? styles.selected : ""}`}

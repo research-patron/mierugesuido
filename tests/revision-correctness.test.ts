@@ -81,13 +81,13 @@ describe("revision schedule correctness", () => {
   });
 
   it("uses the official formatter only on the official revision page", () => {
-    const source = readFileSync(path.join(process.cwd(), "app/revisions/page.tsx"), "utf8");
+    const source = readFileSync(path.join(process.cwd(), "components/RevisionsContent.tsx"), "utf8");
     expect(source).toContain("formatOfficialRevisionRate");
     expect(source).not.toContain("formatRevisionRate(");
   });
 
   it("lists only effective-date changes and keeps monetary fields as reference details", () => {
-    const source = readFileSync(path.join(process.cwd(), "app/revisions/page.tsx"), "utf8");
+    const source = readFileSync(path.join(process.cwd(), "components/RevisionsContent.tsx"), "utf8");
     expect(source).toContain("主判定項目");
     expect(source).toContain("現行使用料施行年月日");
     expect(source).toContain("R5からR6で変わった事業の一覧です");
@@ -118,7 +118,7 @@ describe("revision schedule correctness", () => {
   });
 
   it("uses a clear municipality band and semantic fee-delta states", () => {
-    const source = readFileSync(path.join(process.cwd(), "app/revisions/page.tsx"), "utf8");
+    const source = readFileSync(path.join(process.cwd(), "components/RevisionsContent.tsx"), "utf8");
     const css = readFileSync(path.join(process.cwd(), "app/ui-fidelity.css"), "utf8");
 
     expect(source).toContain("revisionFeeDeltaPresentation");
@@ -144,7 +144,7 @@ describe("revision schedule correctness", () => {
     expect(new Set(municipalityCodes).size).toBe(dataset.yearbookFeeComparison.changedMunicipalityCount);
     expect(municipalityCodes).toHaveLength(dataset.yearbookFeeComparison.changedBusinessCount);
 
-    const source = readFileSync(path.join(process.cwd(), "app/revisions/page.tsx"), "utf8");
+    const source = readFileSync(path.join(process.cwd(), "components/RevisionsContent.tsx"), "utf8");
     expect(source).toContain("function groupYearbookChangesByMunicipality");
     expect(source).toContain("const groupsByKey = new Map<string, RevisionMunicipalityGroup>()");
     expect(source).toContain("existing.items.push(item)");
@@ -157,7 +157,7 @@ describe("revision schedule correctness", () => {
   });
 
   it("keeps an empty prefecture suggestion list unselected and recoverable", () => {
-    const source = readFileSync(path.join(process.cwd(), "app/revisions/page.tsx"), "utf8");
+    const source = readFileSync(path.join(process.cwd(), "components/RevisionsContent.tsx"), "utf8");
 
     expect(source).toContain("if (options.length === 0) return -1;");
     expect(source).toContain("activeOption !== undefined");
@@ -170,10 +170,12 @@ describe("revision schedule correctness", () => {
   });
 
   it("never presents zero results while revision data is loading or unavailable", () => {
-    const source = readFileSync(path.join(process.cwd(), "app/revisions/page.tsx"), "utf8");
+    const source = readFileSync(path.join(process.cwd(), "components/RevisionsContent.tsx"), "utf8");
 
     expect(source).toContain('type RevisionLoadState = "loading" | "ready" | "error";');
-    expect(source).toContain('useState<RevisionLoadState>("loading")');
+    expect(source).toContain('useState<RevisionLoadState>("ready")');
+    expect(source).toContain("useState<StaticRevisionDataset | null>(initialDataset)");
+    expect(source).toContain("if (loadAttempt === 0) return;");
     expect(source).toContain('setLoadState("ready")');
     expect(source).toContain('setLoadState("error")');
     expect(source).toContain('aria-busy={isLoading}');

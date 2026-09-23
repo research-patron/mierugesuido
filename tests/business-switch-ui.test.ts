@@ -38,7 +38,7 @@ describe("municipality business switch UI", () => {
 
   it("keeps the current detail view when switching business groups", () => {
     expect(pageSource).toContain("router.push(detailHref(municipalityCode, event.currentTarget.value, view))");
-    expect(pageSource).toContain("function detailHref(municipalityCode: string, business: string, view: DetailView)");
+    expect(pageSource).toContain("function baseDetailHref(municipalityCode: string, business: string, view: DetailView)");
   });
 
   it("passes the selected business into the citizen diagnosis", () => {

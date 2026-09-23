@@ -4,8 +4,7 @@ import type { LucideIcon } from "lucide-react";
 import { CircleHelp, Database, FileText, Info, Scale } from "lucide-react";
 import { formulaCopy, operatingRatioExplanation } from "@/lib/copy";
 import { fieldDefinitions } from "@/lib/fieldDefinitions";
-import { formatSettlementFiscalLabel } from "@/lib/format";
-import { getStaticDataSources } from "@/lib/staticData";
+import { getStaticDataSources, getStaticHomeData } from "@/lib/staticData";
 import { createPageMetadata } from "@/lib/siteMetadata";
 
 export const metadata: Metadata = createPageMetadata({
@@ -16,6 +15,7 @@ export const metadata: Metadata = createPageMetadata({
 
 export default async function DataSourcesPage() {
   const sources = await getStaticDataSources();
+  const { overview } = await getStaticHomeData();
 
   return (
     <div className="min-w-0">
@@ -46,9 +46,9 @@ export default async function DataSourcesPage() {
             <InfoCard icon={Database} title="対象データ">
               <ul className="grid gap-2 text-sm font-medium leading-7 text-slate-700">
                 <li>対象: 地方公共団体が経営する公共下水道・特定環境保全公共下水道等</li>
-                <li>対象年度: 取り込んだ公表年度の決算値</li>
+                <li>対象年度: 原資料の決算年度。比較は同一年度とし、過年度の値で補完しません</li>
                 <li>県内比較: 同じ会計基準で比較。公共下水道と特定環境保全公共下水道は一緒に集計</li>
-                <li>地図・一覧: 自治体ごとに1事業。最新年度・データ品質を優先し、会計区分・事業コード順で選定</li>
+                <li>地図・検索: 自治体ごとに代表1事業。指定区分内で品質・会計等を優先して選定。事業別ランキングは複数事業を別々に比較</li>
               </ul>
             </InfoCard>
             <div className="rounded-md border border-line bg-white p-4">
@@ -73,7 +73,7 @@ export default async function DataSourcesPage() {
                 <p><strong className="text-ink">経費回収率80%以上90%未満</strong></p>
                 <p><strong className="text-ink">経費回収率80%未満</strong></p>
                 <p className="rounded-md bg-panel px-3 py-2 text-xs leading-6 text-slate-600">
-                  全国地図は「公共下水道」と「特定環境保全公共下水道」を切り替え、選択した事業区分だけを対象に、各市区町村の最新年度の経費回収率を都道府県ごとに単純平均して色分けします。同一都道府県内の市町村マップでは、80%未満に限り使用料単価150円/m³以上等と150円/m³未満を分けて参考表示します。
+                  全国地図は「公共下水道」と「特定環境保全公共下水道」を切り替え、選択した事業区分だけを対象に、同一決算年度の市区町村別経費回収率を都道府県ごとに単純平均して色分けします。同一都道府県内の市町村マップでは、80%未満に限り使用料単価150円/m³以上等と150円/m³未満を分けて参考表示します。
                 </p>
               </div>
             </InfoCard>
@@ -196,6 +196,8 @@ export default async function DataSourcesPage() {
         <section className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_420px]">
           <div className="panel min-w-0 overflow-hidden p-4">
             <h2 className="text-xl font-black text-ink">5. データの出典</h2>
+            <p className="mt-3 text-sm leading-7">本サイト収録の最新決算年度は {overview.latestYear}年度（{overview.latestFiscalYearLabel}）です。下表の年はe-Statのカタログ年で、決算年度ではありません。取り込みでは原資料の「決算年度」を使います。カタログ年から一律に決算年度・公表年を推定しません。</p>
+            <p className="mt-2 text-sm leading-7">取得済みはファイル取得記録を示し、検証済み・全件公開済みを意味しません。公表日・取得日は取込時の記録です。ファイル単位の公開反映日・照合結果は未収録です。サイト更新日とは区別してください。商品版は後続段階で管理します。</p>
             <div className="mt-4 rounded-md border border-teal/25 bg-teal/5 p-4">
               <h3 className="font-black text-ink">公的統計（e-Stat / 総務省）</h3>
               <p className="mt-2 text-sm font-medium leading-7 text-slate-700">
@@ -214,23 +216,29 @@ export default async function DataSourcesPage() {
                 <caption className="sr-only">取り込んだ公的統計の一覧</caption>
                 <thead>
                   <tr>
-                    <th scope="col">決算</th>
+                    <th scope="col">カタログ年</th>
                     <th scope="col">区分</th>
                     <th scope="col">表番号</th>
                     <th scope="col">表名</th>
                     <th scope="col">出典種別</th>
-                    <th scope="col">取得状況</th>
+                    <th scope="col">公表日（記録）</th>
+                    <th scope="col">取得日（UTC）</th>
+                    <th scope="col">取得記録</th>
+                    <th scope="col">検証・公開反映</th>
                   </tr>
                 </thead>
                 <tbody>
                   {sources.map((source) => (
                     <tr key={source.id}>
-                      <td>{formatSettlementFiscalLabel({ surveyYear: source.surveyYear, fiscalYearLabel: source.fiscalYearLabel })}</td>
+                      <td>{source.surveyYear ?? "未収録"}</td>
                       <td>{accountingLabel(source.accountingType)}</td>
                       <td>{source.tableNo ?? "不明"}</td>
-                      <td>{source.tableName ?? "不明"}</td>
+                      <td>{source.sourceUrl?.startsWith("https://") ? <a className="inline-flex min-h-11 items-center text-teal underline" href={source.sourceUrl}>{source.tableName ?? "原資料"}</a> : source.tableName ?? "不明"}</td>
                       <td>{source.sourceUrl?.startsWith("manual://") ? "手動配置" : "e-Stat"}</td>
+                      <td>{source.publishedAt ?? "記録なし"}</td>
+                      <td>{source.downloadedAt?.slice(0, 10) ?? "記録なし"}</td>
                       <td>{source.available ? "取得済み" : "未取得"}</td>
+                      <td>ファイル単位の記録未収録</td>
                     </tr>
                   ))}
                 </tbody>
@@ -252,7 +260,7 @@ export default async function DataSourcesPage() {
                 ["将来の20m³料金を予測していますか？", "予測していません。費用と有収水量等が変わらず、すべての料金区分が同率で変わると仮定した場合だけ、現在額への単純換算を開閉式で示します。実際の改定率や料金体系は自治体の条例・経営戦略等で決まります。"],
                 ["資金不足比率が20%以上なら、すぐに起債できなくなりますか？", "20%以上は原則として経営健全化計画の策定基準です。地方債の発行が一律に禁じられる制度ではありませんが、計画の実行や地方債の協議・許可において経営見通しが確認されます。本サイトは総務省確報の会計単位の比率を表示します。"],
                 ["営業費用は営業収益で賄うべきですか？", "一般会計等が負担すべき経費を除き、企業の経営に伴う収入で経費を賄うのが地方公営企業法上の原則です。ただし、下水道の営業収益には雨水処理負担金等の正当な公費負担も含まれます。営業収益÷営業費用は営業損益を見る補足指標で、使用料による費用回収は経費回収率に表れます。"],
-                ["ランキングの並び順はどう決まりますか？", "算定不可を除外し、選択した指標の昇順または降順で並べます。"],
+                ["ランキングの並び順はどう決まりますか？", "算定不可を除外し、保存された指標値の昇順または降順で並べます。同値は同順位（1、2、2、4）です。表示の丸めは順位に使いません。自動チェック通過は欠損・分母・外れ値等の注意がないことを示し、原資料の全件照合を意味しません。"],
               ].map(([question, answer]) => (
                 <details key={question} className="rounded-md border border-line bg-white p-3">
                   <summary className="flex min-h-11 cursor-pointer items-center text-sm font-black text-ink">{question}</summary>

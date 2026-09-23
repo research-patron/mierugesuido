@@ -5,7 +5,7 @@ import { displayBusinessName } from "@/lib/businessDisplay";
 import { municipalityDetailHref } from "@/lib/municipalityLinks";
 
 const root = process.cwd();
-const municipalitySearchSource = readFileSync(path.join(root, "app/municipalities/page.tsx"), "utf8");
+const municipalitySearchSource = readFileSync(path.join(root, "components/MunicipalitiesContent.tsx"), "utf8");
 const municipalityTableSource = readFileSync(path.join(root, "components/MunicipalityTable.tsx"), "utf8");
 const rankingOverviewSource = readFileSync(path.join(root, "app/rankings/page.tsx"), "utf8");
 const rankingTypeSource = readFileSync(path.join(root, "app/rankings/[type]/page.tsx"), "utf8");
@@ -22,7 +22,7 @@ describe("citizen diagnosis entry copy", () => {
     expect(municipalityTableSource).not.toContain("・詳細で事業切替");
     expect(municipalityDetailHref("011002", "17-1-000")).toBe("/municipalities/011002?view=fees&business=17-1-000");
     for (const source of [municipalitySearchSource, municipalityTableSource]) {
-      expect(source).toContain("href={municipalityDetailHref(item.municipalityCode, item.businessKey)}");
+      expect(source).toContain("href={comparisonHref(municipalityDetailHref(item.municipalityCode, item.businessKey), new URLSearchParams(item.comparisonQuery))}");
     }
   });
 
@@ -36,7 +36,7 @@ describe("citizen diagnosis entry copy", () => {
     expect(rankingTableSource.match(/のこのまちの診断を見る/g)).toHaveLength(2);
     for (const source of [rankingComparisonSource, rankingTableSource]) {
       expect(source).toContain(accessibleLabel);
-      expect(source).toContain("href={municipalityDetailHref(item.municipalityCode, item.businessKey)}");
+      expect(source).toContain("href={comparisonHref(municipalityDetailHref(item.municipalityCode, item.businessKey), new URLSearchParams(item.comparisonQuery))}");
     }
   });
 

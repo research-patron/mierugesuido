@@ -21,6 +21,8 @@ import {
   Table2
 } from "lucide-react";
 import clsx from "clsx";
+import { QuerySync } from "@/components/QuerySync";
+import { comparisonHref, selectComparisonRows, summarizeMunicipalities } from "@/lib/comparison";
 import { Badge } from "@/components/Badge";
 import { accountingTypeLabel, displayBusinessName } from "@/lib/businessDisplay";
 import { getFeeAdequacyLabel } from "@/lib/calculations";
@@ -67,6 +69,7 @@ export type MapMunicipality = {
   prefectureName: string;
   municipalityName: string;
   municipalityNameKana?: string | null;
+  comparisonQuery?: string;
   latestYear?: number | null;
   businessKey?: string | null;
   businessType?: string | null;
@@ -134,6 +137,7 @@ type OverviewStats = {
 export type MapScopeKey = "public" | "tokkan";
 
 export type MapScopeData = {
+  excludedYearCount?: number;
   key: MapScopeKey;
   categoryCode: "17/1" | "17/4";
   label: string;
@@ -209,28 +213,35 @@ export function JapanMapSelector({
   mapScopes?: Partial<Record<MapScopeKey, MapScopeData>>;
   initialScope?: MapScopeKey;
 }) {
-  const [activeScope, setActiveScope] = useState<MapScopeKey>(initialScope);
+  const [query, setQuery] = useState("");
+  const params = useMemo(() => new URLSearchParams(query), [query]);
+  const activeScope: MapScopeKey = params.get("businessType") === "17/4" ? "tokkan" : params.get("businessType") === "17/1" ? "public" : initialScope;
+  const router = useRouter();
+  function setActiveScope(scope: MapScopeKey) {
+    const next = new URLSearchParams(params);
+    next.set("businessType", scope === "tokkan" ? "17/4" : "17/1");
+    router.replace(`?${next}`, { scroll: false });
+  }
   const selectedScope = mapScopes?.[activeScope];
-  const selectedSummaries = selectedScope?.prefectureSummaries ?? summaries;
-  const selectedMunicipalities = selectedScope?.mapMunicipalities ?? municipalities;
-  const selectedOverview = selectedScope?.overview ?? overview ?? {
-    municipalityCount: selectedMunicipalities.length,
-    latestYear: null,
-    below100Rate: null,
-    revisionEventCount: selectedMunicipalities.filter((item) => item.hasRevisionEvent).length
-  };
+  const year = params.get("fiscalYear") ? Number(params.get("fiscalYear")) : selectedScope?.overview.latestYear ?? overview?.latestYear ?? 0;
+  const selectedMunicipalities = selectComparisonRows(selectedScope?.mapMunicipalities ?? municipalities, params, year);
+  const selectedOverview = summarizeMunicipalities(selectedMunicipalities, year);
+  const selectedSummaries = (selectedScope?.prefectureSummaries ?? summaries).map(summary => ({
+    ...summary, ...summarizeMunicipalities(selectedMunicipalities.filter(row => row.prefectureName === summary.prefectureName), year)
+  }));
 
   return (
-    <NationalMapExplorer
+    <><QuerySync onChange={setQuery} /><NationalMapExplorer
       key={activeScope}
       summaries={selectedSummaries}
       municipalities={selectedMunicipalities}
       variant={variant}
       overview={selectedOverview}
       activeScope={activeScope}
+      comparisonConditions={query}
       mapScopes={mapScopes}
       onScopeChange={setActiveScope}
-    />
+    /></>
   );
 }
 
@@ -241,7 +252,8 @@ export function NationalMapExplorer({
   variant,
   activeScope,
   mapScopes,
-  onScopeChange
+  onScopeChange,
+  comparisonConditions = ""
 }: {
   summaries: PrefectureSummary[];
   municipalities: MapMunicipality[];
@@ -250,6 +262,7 @@ export function NationalMapExplorer({
   activeScope: MapScopeKey;
   mapScopes?: Partial<Record<MapScopeKey, MapScopeData>>;
   onScopeChange: (scope: MapScopeKey) => void;
+  comparisonConditions?: string;
 }) {
   const [data, setData] = useState<GisData | null>(null);
   const [error, setError] = useState(false);
@@ -270,7 +283,7 @@ export function NationalMapExplorer({
   const router = useRouter();
   const compactAtlas = useMediaQuery("(max-width: 767px)");
 
-  useGisData(setData, setError);
+  const retryGis = useGisData(setData, setError);
 
   const summaryMap = useMemo(
     () => new Map(summaries.map((summary) => [displayPrefectureName(summary.prefectureName), summary])),
@@ -427,7 +440,7 @@ export function NationalMapExplorer({
       return;
     }
     if (!compactAtlas) {
-      router.push(`/map/${feature.code}`);
+      router.push(prefectureHref(feature.code));
       return;
     }
     clearNationalHover();
@@ -493,7 +506,12 @@ export function NationalMapExplorer({
     suppressMapClickRef.current = true;
   }
 
-  const MapHeading = variant === "home" ? "h1" : "h2";
+  const MapHeading = "h2";
+  const comparisonQuery = new URLSearchParams(comparisonConditions);
+  comparisonQuery.set("businessType", activeScope === "public" ? "17/1" : "17/4");
+  comparisonQuery.set("fiscalYear", String(overview.latestYear));
+  comparisonQuery.set("rowUnit", "municipality");
+  const prefectureHref = (code: string) => comparisonHref(`/map/${code}`, comparisonQuery);
   const activeScopeLabel = mapScopes?.[activeScope]?.label
     ?? (activeScope === "public" ? "公共下水道" : "特定環境保全公共下水道");
 
@@ -530,11 +548,12 @@ export function NationalMapExplorer({
               </div>
               <InfoDisclosure label="全国マップの使い方">
                 {variant === "home"
-                  ? `都道府県を選ぶと、市区町村別の詳細マップへ移動します。色は${activeScopeLabel}の経費回収率を、都道府県ごとに単純平均したものです（各市町村の最新年度）。`
-                  : `都道府県を選ぶと、市区町村別の詳細マップを表示します。色は${activeScopeLabel}の経費回収率を、都道府県ごとに単純平均したものです（各市町村の最新年度）。`}
+                  ? `都道府県を選ぶと、市区町村別の詳細マップへ移動します。色は${activeScopeLabel}の経費回収率を、都道府県ごとに単純平均したものです（同一決算年度）。`
+                  : `都道府県を選ぶと、市区町村別の詳細マップを表示します。色は${activeScopeLabel}の経費回収率を、都道府県ごとに単純平均したものです（同一決算年度）。`}
               </InfoDisclosure>
             </div>
           </div>
+          <p className="mb-3 text-xs leading-6 text-slate-600">{overview.latestYear}年度決算・{activeScopeLabel}・{comparisonQuery.get("accountingType") ? accountingTypeLabel(comparisonQuery.get("accountingType")) : "法適用／法非適用（参考）"}。自治体ごとの代表1事業 {municipalities.length} 自治体、経費回収率の有効値 {municipalities.filter(item => item.expenseRecoveryRate != null).length} 自治体の単純平均。異年度の {mapScopes?.[activeScope]?.excludedYearCount ?? 0} 自治体を除外。<Link href="/data-sources" className="text-teal underline">出典</Link></p>
           <div
             ref={mapSurfaceRef}
             className={clsx(
@@ -559,7 +578,7 @@ export function NationalMapExplorer({
             }}
           >
             {!data && !error ? <LoadingMap label="全国マップを読み込み中" /> : null}
-            {error ? <FallbackPrefectureList summaries={summaries} /> : null}
+            {error ? <div role="alert"><p>地図を読み込めませんでした。都道府県一覧から選べます。</p><button className="button-secondary" onClick={retryGis}>再試行</button><FallbackPrefectureList summaries={summaries} /></div> : null}
             {data ? (
               <>
                 <div className="home-national-map-legend">
@@ -576,7 +595,7 @@ export function NationalMapExplorer({
                   focusedRegion={focusedRegion}
                   compact={compactAtlas}
                   onOpen={selectOrOpenPrefecture}
-                  onKeyboardOpen={(feature) => router.push(`/map/${feature.code}`)}
+                  onKeyboardOpen={(feature) => router.push(prefectureHref(feature.code))}
                   onActivate={setActivePrefectureCode}
                   onHover={scheduleNationalHover}
                 />
@@ -619,7 +638,7 @@ export function NationalMapExplorer({
                       <span>選択中</span>
                       <strong>{displayPrefectureName(selectedMobilePrefecture.name)}</strong>
                     </div>
-                    <Link href={`/map/${selectedMobilePrefecture.code}`}>
+                    <Link href={prefectureHref(selectedMobilePrefecture.code)}>
                       {displayPrefectureName(selectedMobilePrefecture.name)}を開く
                       <ChevronRight size={17} aria-hidden="true" />
                     </Link>
@@ -632,6 +651,7 @@ export function NationalMapExplorer({
           ) : null}
         </div>
         <PrefectureSelectorPanel
+          comparisonQuery={comparisonQuery.toString()}
           summaries={summaries}
           activeRegion={focusedRegion}
           onRegionChange={focusRegion}
@@ -639,7 +659,7 @@ export function NationalMapExplorer({
       </div>
 
       <div className="home-support-grid grid gap-4">
-        <RankingPair items={municipalities} />
+        <RankingPair items={municipalities} comparisonQuery={comparisonQuery.toString()} />
         <HowToCards />
       </div>
     </section>
@@ -1085,10 +1105,12 @@ function FlatPrefectureShape({
 }
 
 function PrefectureSelectorPanel({
+  comparisonQuery,
   summaries,
   activeRegion,
   onRegionChange
 }: {
+  comparisonQuery: string;
   summaries: PrefectureSummary[];
   activeRegion: RegionName | null;
   onRegionChange: (region: RegionName) => void;
@@ -1155,7 +1177,7 @@ function PrefectureSelectorPanel({
                   return (
                     <Link
                       key={prefecture.code}
-                      href={`/map/${prefecture.code}`}
+                      href={comparisonHref(`/map/${prefecture.code}`, new URLSearchParams(comparisonQuery))}
                       className="prefecture-button"
                       aria-label={`${prefecture.name}${summary?.municipalityCount != null ? `（${summary.municipalityCount.toLocaleString("ja-JP")}自治体）` : ""}の詳細マップへ`}
                     >
@@ -1198,7 +1220,7 @@ export function PrefectureMapExplorer({
   const [sort, setSort] = useState("recovery-desc");
   const prefectureName = getPrefectureName(prefectureCode) ?? municipalities[0]?.prefectureName ?? "都道府県";
 
-  useGisData(setData, setError);
+  const retryGis = useGisData(setData, setError);
 
   const summary = summaries.find((item) => item.prefectureName === prefectureName);
   const municipalityLookup = useMemo(
@@ -1450,6 +1472,7 @@ export function PrefectureMapExplorer({
 }
 
 function useGisData(setData: (data: GisData) => void, setError: (value: boolean) => void) {
+  const [retry, setRetry] = useState(0);
   useEffect(() => {
     let cancelled = false;
     fetch("/gis/mlit-n03-simplified.json")
@@ -1467,7 +1490,8 @@ function useGisData(setData: (data: GisData) => void, setError: (value: boolean)
     return () => {
       cancelled = true;
     };
-  }, [setData, setError]);
+  }, [setData, setError, retry]);
+  return () => { setError(false); setRetry(value => value + 1); };
 }
 
 function useMediaQuery(query: string) {
@@ -1577,7 +1601,7 @@ function MapFeatureLabel({
   );
 }
 
-function RankingPair({ items }: { items: MapMunicipality[] }) {
+function RankingPair({ items, comparisonQuery }: { items: MapMunicipality[]; comparisonQuery: string }) {
   const highRows = [...items]
     .filter((item) => item.expenseRecoveryRate != null)
     .sort((a, b) => nullsLast(a.expenseRecoveryRate, b.expenseRecoveryRate, "desc"))
@@ -1591,16 +1615,16 @@ function RankingPair({ items }: { items: MapMunicipality[] }) {
     <section className="panel home-ranking-panel overflow-hidden p-4">
       <div className="mb-3 flex items-center justify-between gap-3">
         <div className="flex items-center gap-1">
-          <h2>使用料水準ランキング（経費回収率）</h2>
+          <h2>経費回収率ランキング</h2>
           <InfoDisclosure label="ランキングの算出条件">
-            市区町村ごとに1事業を掲載。最新年度とデータ品質を優先し、会計区分・事業コード順で選んでいます。
+            地図と同じ決算年度・事業区分の市区町村ごとの代表1事業です。欠損は順位対象外です。
           </InfoDisclosure>
         </div>
-        <Link href="/rankings/expense-recovery-low" className="text-xs font-black text-ink hover:text-teal">もっと見る →</Link>
+        <Link href={comparisonHref("/rankings/expense-recovery-low", new URLSearchParams(comparisonQuery))} className="text-xs font-black text-ink hover:text-teal">もっと見る →</Link>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
-        <RankingList title="高い自治体 TOP5" rows={highRows} tone="high" />
-        <RankingList title="低い自治体 TOP5" rows={lowRows} tone="low" />
+        <RankingList title="高い自治体 TOP5" rows={highRows.map(row => ({ ...row, comparisonQuery }))} tone="high" />
+        <RankingList title="低い自治体 TOP5" rows={lowRows.map(row => ({ ...row, comparisonQuery }))} tone="low" />
       </div>
     </section>
   );
@@ -1625,11 +1649,11 @@ function RankingList({
         </thead>
         <tbody>
           {rows.map((item, index) => {
-            const href = municipalityHref(item);
+            const href = comparisonHref(municipalityHref(item), new URLSearchParams(item.comparisonQuery));
             return (
               <tr key={`${tone}-${item.municipalityCode}-${index}`}>
                 <td>
-                  <span>{index + 1}</span>
+                  <span>{rows.findIndex(row => row.expenseRecoveryRate === item.expenseRecoveryRate) + 1}</span>
                 </td>
                 <td><Link href={href} className="home-ranking-row-link" title={`${item.prefectureName} ${item.municipalityName}`}>{item.prefectureName} {item.municipalityName}{item.accountingType === "non_legal_applied" ? "※" : ""}</Link></td>
                 <td>{formatPercent(item.expenseRecoveryRate)}</td>

@@ -1,3 +1,4 @@
+import { comparisonHref } from "@/lib/comparison";
 import Link from "next/link";
 import { ChevronRight, Info } from "lucide-react";
 import { Badge } from "@/components/Badge";
@@ -20,7 +21,7 @@ export function MunicipalityTable({ items }: { items: any[] }) {
               <div className="min-w-0">
                 <div className="text-xs font-bold text-muted">{item.prefectureName}</div>
                 <Link
-                  href={municipalityDetailHref(item.municipalityCode, item.businessKey)}
+                  href={comparisonHref(municipalityDetailHref(item.municipalityCode, item.businessKey), new URLSearchParams(item.comparisonQuery))}
                   className="mt-1 inline-flex items-center gap-1 text-lg font-black text-blue hover:underline"
                   aria-label={`${item.prefectureName} ${item.municipalityName}のこのまちの診断を見る`}
                 >
@@ -88,7 +89,7 @@ export function MunicipalityTable({ items }: { items: any[] }) {
                 <td className="text-slate-600">{item.prefectureName}</td>
                 <td>
                   <Link
-                    href={municipalityDetailHref(item.municipalityCode, item.businessKey)}
+                    href={comparisonHref(municipalityDetailHref(item.municipalityCode, item.businessKey), new URLSearchParams(item.comparisonQuery))}
                     className="municipality-link"
                     aria-label={`${item.prefectureName} ${item.municipalityName}のこのまちの診断を見る`}
                   >
@@ -110,7 +111,7 @@ export function MunicipalityTable({ items }: { items: any[] }) {
                 <td><Badge>{compactRecoveryBand(item.diagnosis?.expenseRecoveryRate)}</Badge></td>
                 <td><MunicipalityFeeRevisionDisplay comparison={item.feeRevisionComparison} /></td>
                 <td>
-                  <Link href={municipalityDetailHref(item.municipalityCode, item.businessKey)} className="row-chevron" aria-label={`${item.municipalityName}・${businessLabel}のこのまちの診断を見る`}>
+                  <Link href={comparisonHref(municipalityDetailHref(item.municipalityCode, item.businessKey), new URLSearchParams(item.comparisonQuery))} className="row-chevron" aria-label={`${item.municipalityName}・${businessLabel}のこのまちの診断を見る`}>
                     <ChevronRight size={20} />
                   </Link>
                 </td>

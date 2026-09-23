@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { QuerySync } from "@/components/QuerySync";
+import { comparisonHref } from "@/lib/comparison";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -29,8 +31,7 @@ import {
   buildCitizenMunicipalityAssessment,
   buildCitizenR6DataAvailability
 } from "@/lib/citizenMunicipalityAssessment";
-import { formulaCopy } from "@/lib/copy";
-import { mergeCostCompositionIntoDetail, type StaticCostCompositionBundle } from "@/lib/costCompositionStatic";
+import { formulaCopy, siteName } from "@/lib/copy";
 import { formatSettlementFiscalLabel } from "@/lib/format";
 import {
   fundShortageAssessmentSelectionKey,
@@ -69,6 +70,9 @@ type PeerComparisonLoadState = {
 };
 
 type MunicipalityDetailClientProps = {
+  canonicalBase: string;
+  initialTitle: string;
+  initialMunicipality: MunicipalityDetail;
   municipalityCode: string;
   fundShortageAssessments: Record<string, FundShortageAssessment>;
   feeRevisionComparison: MunicipalityFeeRevisionComparison | null;
@@ -88,6 +92,9 @@ export function selectPeerComparisonView(
 }
 
 export function MunicipalityDetailClient({
+  initialTitle,
+  canonicalBase,
+  initialMunicipality,
   municipalityCode,
   fundShortageAssessments,
   feeRevisionComparison,
@@ -95,36 +102,31 @@ export function MunicipalityDetailClient({
   availableMunicipalityDetailCodes
 }: MunicipalityDetailClientProps) {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const [municipality, setMunicipality] = useState<MunicipalityDetail | null>(null);
-  const [loadFailed, setLoadFailed] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoadFailed(false);
-    const detailRequest = fetch(`/data/static/municipalities/${municipalityCode}.json`)
-      .then((response) => {
-        if (!response.ok) throw new Error("Municipality detail unavailable");
-        return response.json();
-      });
-    const costCompositionRequest = fetch(`/data/static/cost-composition/${municipalityCode}.json`)
-      .then((response) => response.ok ? response.json() as Promise<StaticCostCompositionBundle> : null)
-      .catch(() => null);
-    Promise.all([detailRequest, costCompositionRequest])
-      .then(([detail, costComposition]) => {
-        if (!cancelled) setMunicipality(mergeCostCompositionIntoDetail(detail, costComposition));
-      })
-      .catch(() => { if (!cancelled) setLoadFailed(true); });
-    return () => { cancelled = true; };
-  }, [municipalityCode]);
-
+  function detailHref(code: string, business: string, targetView: DetailView) {
+    const context = new URLSearchParams(searchParams);
+    const category = businessCategoryCode({ businessKey: business });
+    if (category) context.set("businessType", category);
+    return comparisonHref(baseDetailHref(code, business, targetView), context);
+  }
+  const [query, setQuery] = useState("");
+  const searchParams = useMemo(() => new URLSearchParams(query), [query]);
+  const municipality = initialMunicipality;
+  const [peerRetry, setPeerRetry] = useState(0);
   const groups = useMemo(
-    () => municipality ? buildBusinessGroups(municipality.businesses) : [],
-    [municipality]
+    () => municipality ? buildBusinessGroups(municipality.businesses.map((business: any) => ({
+      ...business, annualFinancials: business.annualFinancials.filter((annual: any) => (!searchParams.has("fiscalYear") || annual.surveyYear === Number(searchParams.get("fiscalYear"))) && (!searchParams.get("accountingType") || business.accountingType === searchParams.get("accountingType")))
+    }))) : [],
+    [municipality, query]
   );
   const requestedBusiness = searchParams.get("business") ?? undefined;
   const view = parseDetailView(searchParams.get("view") ?? undefined);
-  const selectedGroup = selectBusinessGroup(groups, requestedBusiness);
+  const selectedGroup = requestedBusiness ? groups.find(group => group.key === requestedBusiness) ?? null : selectBusinessGroup(groups, requestedBusiness);
+  const canonicalUrl = new URL(canonicalBase);
+  if (requestedBusiness && selectedGroup) canonicalUrl.searchParams.set("business", selectedGroup.key);
+  if (searchParams.has("fiscalYear") && selectedGroup) canonicalUrl.searchParams.set("fiscalYear", String(selectedGroup.latest.surveyYear));
+  const detailTitle = !requestedBusiness && !searchParams.has("fiscalYear") ? initialTitle : selectedGroup
+    ? `${municipality.prefectureName} ${municipality.municipalityName}・${displayBusinessName(selectedGroup.latestBusiness)}（${formatSettlementFiscalLabel({ surveyYear: selectedGroup.latest.surveyYear, fiscalYearLabel: selectedGroup.latest.fiscalYearLabel })}） | ${siteName}`
+    : `${municipality.prefectureName} ${municipality.municipalityName}・指定データ未収録 | ${siteName}`;
   const peerRequestKey = municipality && selectedGroup
     ? [
         municipality.municipalityCode,
@@ -179,20 +181,14 @@ export function MunicipalityDetailClient({
         }
       });
     return () => { cancelled = true; };
-  }, [municipality, peerRequestKey, selectedGroup]);
+  }, [municipality, peerRequestKey, selectedGroup, peerRetry]);
 
-  if (loadFailed) {
-    return <div className={styles.page}><div className={styles.container}><p className={styles.emptySupport}>自治体データを読み込めませんでした。</p></div></div>;
-  }
-  if (!municipality) {
-    return <div className={styles.page}><div className={styles.container}><p className={styles.emptySupport}>自治体データを読み込んでいます…</p></div></div>;
-  }
   if (!selectedGroup) {
-    return (
+    return (<><title>{detailTitle}</title><link rel="canonical" href={canonicalUrl.toString()} /><QuerySync onChange={setQuery} /><p className="p-4" role="status">指定した年度・事業のデータは未収録です。過年度では補完していません。</p>
       <EmptyMunicipality
         municipality={municipality}
         availableJointOperatorMunicipalityCodes={availableJointOperatorMunicipalityCodes}
-      />
+      /></>
     );
   }
 
@@ -270,11 +266,14 @@ export function MunicipalityDetailClient({
 
   return (
     <div className={styles.page}>
+      <title>{detailTitle}</title><link rel="canonical" href={canonicalUrl.toString()} />
+      <QuerySync onChange={setQuery} />
+      <noscript><p className="mx-auto max-w-[1491px] px-4 py-2 text-sm">標準事業を表示しています。URLで指定した別事業・年度・タブへの切り替えにはJavaScriptが必要です。</p></noscript>
       <div className={styles.container}>
         <nav className={styles.breadcrumb} aria-label="パンくず">
           <Link href="/">ホーム</Link>
           <span aria-hidden="true">/</span>
-          <Link href="/municipalities">自治体検索</Link>
+          <Link href={comparisonHref("/municipalities", searchParams)}>自治体検索</Link>
           <span aria-hidden="true">/</span>
           <span aria-current="page">自治体詳細</span>
         </nav>
@@ -298,7 +297,7 @@ export function MunicipalityDetailClient({
               </div>
             </div>
           </div>
-          <Link href="/municipalities" className={styles.backLink}>
+          <Link href={comparisonHref("/municipalities", searchParams)} className={styles.backLink}>
             <ArrowLeft size={16} aria-hidden="true" />
             自治体を変更
           </Link>
@@ -327,6 +326,8 @@ export function MunicipalityDetailClient({
           </section>
         ) : null}
 
+        <p className="text-xs leading-6 text-slate-600">家庭用料金は第33表の一般家庭用20m³／月使用料です。収録年度の値で、現在の請求額とは異なる場合があります。地域や事業ごとに料金が異なります。<Link href="/data-sources" className="text-teal underline">出典・比較条件</Link>{latestBusiness.evidenceEntries?.find(([field]: [string]) => field === "householdFee20m3Yen")?.[1]?.sourceUrl ? <a className="ml-3 inline-flex min-h-11 items-center text-teal underline" href={latestBusiness.evidenceEntries.find(([field]: [string]) => field === "householdFee20m3Yen")[1].sourceUrl}>収録最新年度の第33表（公式資料）</a> : null}</p>
+        {peerComparisonState.status === "error" ? <div role="alert" className="rounded border border-line p-3 text-sm">県内比較データを読み込めませんでした。<button className="button-secondary ml-3" onClick={() => setPeerRetry(value => value + 1)}>再試行</button></div> : null}
         {qualityFlags.length > 0 ? (
           <aside className={styles.qualityWarning} role="note" aria-label="データ品質の注記">
             <AlertTriangle size={18} aria-hidden="true" />
@@ -461,6 +462,7 @@ export function MunicipalityDetailClient({
           </section>
         ) : selectedPeerComparison ? (
           <section className={styles.financeSection} aria-label={`${localComparisonLabel}の比較`}>
+            <p className="mb-3 text-sm leading-7">この県内比較はR6・法適用の公共下水道＋特環が対象です。地図・ランキングの事業区分や会計区分とは範囲が異なります。共同会計は1事業体として数えます。</p>
             <PrefecturePeerComparison
               model={selectedPeerComparison}
               businessLabel={displayBusinessName(latestBusiness)}
@@ -707,7 +709,7 @@ function findAnnual(group: BusinessGroup, year: number, preferredAccountingType?
     })[0]?.annual;
 }
 
-function detailHref(municipalityCode: string, business: string, view: DetailView) {
+function baseDetailHref(municipalityCode: string, business: string, view: DetailView) {
   const query = new URLSearchParams({ business, view });
   return `/municipalities/${municipalityCode}?${query.toString()}`;
 }

@@ -4,7 +4,7 @@ import path from "node:path";
 
 const root = process.cwd();
 const homeSource = readFileSync(path.join(root, "app/page.tsx"), "utf8");
-const searchSource = readFileSync(path.join(root, "app/municipalities/page.tsx"), "utf8");
+const searchSource = readFileSync(path.join(root, "components/MunicipalitiesContent.tsx"), "utf8");
 const searchFilterSource = readFileSync(path.join(root, "components/MunicipalitySearchFilters.tsx"), "utf8");
 const municipalityTableSource = readFileSync(path.join(root, "components/MunicipalityTable.tsx"), "utf8");
 const mapPageSource = readFileSync(path.join(root, "app/map/page.tsx"), "utf8");
@@ -115,7 +115,7 @@ describe("UI fidelity rebuild v2 guardrails", () => {
     expect(homeSource).toContain("changedBusinessCount");
     expect(homeSource).toContain("施行年月日の変更一覧を見る");
     expect(homeSource).toContain('href="/revisions"');
-    expect(mapComponentSource).toContain("<RankingPair items={municipalities} />");
+    expect(mapComponentSource).toContain("<RankingPair items={municipalities} comparisonQuery={comparisonQuery.toString()} />");
     expect(mapComponentSource).toContain("<HowToCards />");
     expect(mapComponentSource).toContain('href="/municipalities" className="prefecture-all-link"');
     expect(mapComponentSource).not.toContain("<img");
@@ -137,7 +137,8 @@ describe("UI fidelity rebuild v2 guardrails", () => {
     expect(searchSource).toContain("function MunicipalityCardGrid");
     expect(searchSource).toContain('view === "card" ? <MunicipalityCardGrid items={data.items} /> : <MunicipalityTable items={data.items} />');
     expect(searchSource).toContain('const requestedLimit = Number(searchParams.get("limit") || 10);');
-    expect(searchSource).toContain('fetch("/data/static/municipalities.json")');
+    expect(searchSource).toContain("const dataset = initialDataset;");
+    expect(readFileSync(path.join(root, "app/municipalities/page.tsx"), "utf8")).toContain("getStaticSearchDataset()");
     expect(searchSource).toContain("page-size-menu");
     expect(searchSource).toContain("search-summary-footer");
     expect(cssSource).toContain("filter-advanced-grid");

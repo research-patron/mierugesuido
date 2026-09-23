@@ -340,7 +340,7 @@ describe("national map UI guardrails", () => {
     expect(explorer).toContain("setSelectedMobilePrefecture(feature);");
     expect(explorer).toContain('className="mobile-national-map-confirmation"');
     expect(explorer).toContain("地図を上下左右にスワイプ");
-    expect(explorer).toContain("<Link href={`/map/${selectedMobilePrefecture.code}`}>");
+    expect(explorer).toContain("<Link href={prefectureHref(selectedMobilePrefecture.code)}>");
     expect(insetRenderer).toContain("onKeyboardOpen(feature);");
     expect(atlasLayer).toContain("handleAtlasRegionKey(event, feature, onKeyboardOpen);");
     expect(fidelityCssBlock('.gis-map-surface--home-national[data-pannable="true"]')).toContain("touch-action: none");

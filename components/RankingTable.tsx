@@ -1,3 +1,4 @@
+import { comparisonHref, competitionRanks } from "@/lib/comparison";
 import Link from "next/link";
 import { Badge } from "@/components/Badge";
 import { accountingTypeLabel, displayBusinessName } from "@/lib/businessDisplay";
@@ -6,6 +7,7 @@ import { municipalityDetailHref } from "@/lib/municipalityLinks";
 import { formatRankingMetric, rankingMetricLabels } from "@/lib/rankingDisplay";
 
 export function RankingTable({ items, type }: { items: any[]; type: RankingType }) {
+  const ranks = competitionRanks(items, type);
   return (
     <div>
       <div className="grid gap-3 md:hidden">
@@ -13,9 +15,9 @@ export function RankingTable({ items, type }: { items: any[]; type: RankingType 
           <article key={`${item.municipalityCode}-${item.businessName}-${index}-card`} className="rounded-md border border-line bg-white p-4 shadow-sm">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <div className="text-xs font-bold text-muted">順位 {index + 1}</div>
+                <div className="text-xs font-bold text-muted">順位 {ranks[index]}</div>
                 <Link
-                  href={municipalityDetailHref(item.municipalityCode, item.businessKey)}
+                  href={comparisonHref(municipalityDetailHref(item.municipalityCode, item.businessKey), new URLSearchParams(item.comparisonQuery))}
                   className="mt-1 block text-base font-bold text-blue hover:underline"
                   aria-label={`${item.prefectureName} ${item.municipalityName}・${displayBusinessName(item)}のこのまちの診断を見る`}
                 >
@@ -48,10 +50,10 @@ export function RankingTable({ items, type }: { items: any[]; type: RankingType 
           <tbody>
             {items.map((item, index) => (
               <tr key={`${item.municipalityCode}-${item.businessName}-${index}`}>
-                <td className="font-bold text-muted">{index + 1}</td>
+                <td className="font-bold text-muted">{ranks[index]}</td>
                 <td>
                   <Link
-                    href={municipalityDetailHref(item.municipalityCode, item.businessKey)}
+                    href={comparisonHref(municipalityDetailHref(item.municipalityCode, item.businessKey), new URLSearchParams(item.comparisonQuery))}
                     className="font-bold text-blue hover:underline"
                     aria-label={`${item.prefectureName} ${item.municipalityName}・${displayBusinessName(item)}のこのまちの診断を見る`}
                   >
@@ -74,8 +76,9 @@ export function RankingTable({ items, type }: { items: any[]; type: RankingType 
 }
 
 function QualityNote({ flags }: { flags: string[] | null | undefined }) {
-  if (!flags?.length) return <span className="text-xs font-bold text-slate-600">確認済み</span>;
-  return <span className="text-xs font-bold text-amber-700" title={flags.join("、")}>要確認（{flags.length}）</span>;
+  if (!flags) return <span className="text-xs font-bold text-slate-600">検証記録なし</span>;
+  if (!flags.length) return <span className="text-xs font-bold text-slate-600">自動チェック通過</span>;
+  return <details className="text-xs font-bold text-amber-700"><summary>自動チェックの注意（{flags.length}）</summary><p className="mt-2 leading-6">{flags.join("、")}。原資料との不一致を確定したものではありません。対応状況：照合記録未収録。</p></details>;
 }
 
 function MobileMetric({ label, value, strong = false }: { label: string; value: string; strong?: boolean }) {

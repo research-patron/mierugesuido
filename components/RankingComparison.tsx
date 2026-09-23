@@ -1,3 +1,4 @@
+import { comparisonHref, competitionRanks } from "@/lib/comparison";
 import Link from "next/link";
 import { accountingTypeLabel, displayBusinessName } from "@/lib/businessDisplay";
 import type { RankingType } from "@/lib/rankings";
@@ -6,6 +7,7 @@ import { formatRankingMetric, rankingMetricLabels, rankingMetricValue } from "@/
 
 export function RankingComparison({ items, type }: { items: any[]; type: RankingType }) {
   const rows = items.slice(0, 3);
+  const ranks = competitionRanks(rows, type);
   if (rows.length === 0) {
     return (
       <section className="panel p-4">
@@ -22,13 +24,13 @@ export function RankingComparison({ items, type }: { items: any[]; type: Ranking
           <article key={`${item.municipalityCode}-${index}-summary`} className="rounded-md border border-line bg-white p-3">
             <div className="flex items-center justify-between gap-3">
               <Link
-                href={municipalityDetailHref(item.municipalityCode, item.businessKey)}
+                href={comparisonHref(municipalityDetailHref(item.municipalityCode, item.businessKey), new URLSearchParams(item.comparisonQuery))}
                 className="font-black text-teal hover:underline"
                 aria-label={`${item.prefectureName} ${item.municipalityName}・${displayBusinessName(item)}のこのまちの診断を見る`}
               >
                 {item.prefectureName} {item.municipalityName}
               </Link>
-              <span className="rounded bg-teal px-2 py-1 text-xs font-black text-white">{index + 1}位</span>
+              <span className="rounded bg-teal px-2 py-1 text-xs font-black text-white">{ranks[index]}位</span>
             </div>
             <p className="mt-1 text-[11px] font-bold text-muted">{item.entityType === "joint_operator" ? "組合等の運営団体・" : ""}{accountingTypeLabel(item.accountingType)}{item.accountingType === "non_legal_applied" ? "・料金指標は参考" : ""}</p>
             <div className="mt-3 rounded-md border border-line text-center">

@@ -1,3 +1,12 @@
+# Goal Extension (2026-09-23 — free comparison accuracy, phase 1)
+
+- Treat `gesuido_codex_improvement_spec.md` as requirements; implement investigation and phase 1 only. Separate household fees from management metrics; preserve existing business URLs and free outputs.
+- Use a common fiscal year, explicit business/accounting/row scopes and denominators. Never fill a missing year silently, derive household tariffs from fee unit price, or call a changed effective date a price increase.
+- Distinguish catalog year, settlement year, acquisition, validation and publication. Automated flags are not proof of manual source review.
+- Preserve existing unrelated work, database, source files and public financial payloads. Validate with tracked data in a temporary directory when local files are missing.
+- Record later product settings without inventing prices, note URLs, seller details or terms. No purchase controls until approved complete settings exist. note outbound clicks are not purchases.
+- This scope does not authorize commit, push, production/note publication, external transmission, advertisements or paid contracts.
+
 # Current Goal: R2-R6 Accounting Eligibility, Data Completion, and Financial Storytelling
 
 ## Goal Extension (2026-09-23 — detailed mainland boundaries and visible island list)

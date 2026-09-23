@@ -1,10 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { RankingNav } from "@/components/RankingNav";
-import { RankingComparison } from "@/components/RankingComparison";
-import { RankingTable } from "@/components/RankingTable";
+import { RankingExplorer } from "@/components/RankingExplorer";
 import { isRankingType, rankingLabels, rankingSelection } from "@/lib/rankings";
-import { getStaticManifest, getStaticRankings } from "@/lib/staticData";
+import { getStaticManifest, getStaticRankings, getStaticHomeData, getStaticRankingCoverage } from "@/lib/staticData";
 import { createPageMetadata } from "@/lib/siteMetadata";
 
 export async function generateStaticParams() {
@@ -51,12 +49,11 @@ export default async function RankingTypePage({
               対象年度の公表値を全国で比較。法非適用事業は料金指標の参考比較です。
             </p>
           </div>
-          <RankingNav current={rankingType} />
+
         </div>
       </section>
       <section className="mx-auto grid max-w-[1500px] gap-5 px-4 py-5 sm:px-6 lg:px-8">
-        <RankingComparison items={items} type={rankingType} />
-        <RankingTable items={items} type={rankingType} />
+        <RankingExplorer items={items} type={rankingType} home={await getStaticHomeData()} coverage={await getStaticRankingCoverage(rankingType)} />
       </section>
     </div>
   );

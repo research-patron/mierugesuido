@@ -526,7 +526,7 @@ function MunicipalityLink({
     );
   }
   const view = row.isJointOperation ? "finance" : "prefecture";
-  const query = new URLSearchParams({ business: row.businessKey, view });
+  const query = new URLSearchParams({ business: row.businessKey, view, fiscalYear: "2024", accountingType: "legal_applied" });
   const hash = row.isJointOperation ? "" : "#prefecture-comparison";
   return <Link href={`/municipalities/${row.detailMunicipalityCode}?${query.toString()}${hash}`}>{row.municipalityName}</Link>;
 }

@@ -34,7 +34,7 @@ describe("public-enterprise accounting copy audit", () => {
 
   it("limits nationwide map colors to expense recovery and confines the fee-unit split to prefecture context", () => {
     expect(dataSourcesSource).toContain("全国地図は経費回収率だけで色分け");
-    expect(dataSourcesSource).toContain("最新年度の経費回収率を都道府県ごとに単純平均");
+    expect(dataSourcesSource).toContain("同一決算年度の市区町村別経費回収率を都道府県ごとに単純平均");
     expect(dataSourcesSource).toContain("同一都道府県内の市町村マップでは");
   });
 

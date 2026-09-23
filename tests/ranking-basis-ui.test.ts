@@ -17,7 +17,7 @@ const root = process.cwd();
 const dataSource = readFileSync(path.join(root, "lib/data.ts"), "utf8");
 const rankingPageSource = readFileSync(path.join(root, "app/rankings/page.tsx"), "utf8");
 const searchFilterSource = readFileSync(path.join(root, "components/MunicipalitySearchFilters.tsx"), "utf8");
-const searchPageSource = readFileSync(path.join(root, "app/municipalities/page.tsx"), "utf8");
+const searchPageSource = readFileSync(path.join(root, "components/MunicipalitiesContent.tsx"), "utf8");
 const prefectureSelectorSource = readFileSync(path.join(root, "components/JapanMapSelector.tsx"), "utf8");
 const rankingDataSource = dataSource.slice(
   dataSource.indexOf("export async function getRankings"),

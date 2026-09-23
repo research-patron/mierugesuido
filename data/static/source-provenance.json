@@ -1,0 +1,775 @@
+{
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": 23,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040327218&fileKind=0",
+      "catalogYear": 2025,
+      "publishedAt": "2025-09-30",
+      "downloadedAt": "2026-06-20T12:17:36.314000Z"
+    },
+    {
+      "id": 24,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040327226&fileKind=0",
+      "catalogYear": 2025,
+      "publishedAt": "2025-09-30",
+      "downloadedAt": "2026-06-20T12:17:38.003000Z"
+    },
+    {
+      "id": 25,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040327228&fileKind=0",
+      "catalogYear": 2025,
+      "publishedAt": "2025-09-30",
+      "downloadedAt": "2026-06-20T12:17:44.186000Z"
+    },
+    {
+      "id": 26,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040327230&fileKind=0",
+      "catalogYear": 2025,
+      "publishedAt": "2025-09-30",
+      "downloadedAt": "2026-06-20T12:17:46.132000Z"
+    },
+    {
+      "id": 27,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040327232&fileKind=0",
+      "catalogYear": 2025,
+      "publishedAt": "2025-09-30",
+      "downloadedAt": "2026-06-20T12:17:48.084000Z"
+    },
+    {
+      "id": 29,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040327235&fileKind=0",
+      "catalogYear": 2025,
+      "publishedAt": "2025-09-30",
+      "downloadedAt": "2026-06-19T10:24:17.955000Z"
+    },
+    {
+      "id": 28,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040327234&fileKind=0",
+      "catalogYear": 2025,
+      "publishedAt": "2025-09-30",
+      "downloadedAt": "2026-06-20T12:17:50.325000Z"
+    },
+    {
+      "id": 30,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040327244&fileKind=0",
+      "catalogYear": 2025,
+      "publishedAt": "2025-09-30",
+      "downloadedAt": "2026-06-20T12:17:51.393000Z"
+    },
+    {
+      "id": 31,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040327245&fileKind=0",
+      "catalogYear": 2025,
+      "publishedAt": "2025-09-30",
+      "downloadedAt": "2026-06-20T12:17:52.331000Z"
+    },
+    {
+      "id": 32,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040327246&fileKind=0",
+      "catalogYear": 2025,
+      "publishedAt": "2025-09-30",
+      "downloadedAt": "2026-06-20T12:17:52.769000Z"
+    },
+    {
+      "id": 33,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040327247&fileKind=0",
+      "catalogYear": 2025,
+      "publishedAt": "2025-09-30",
+      "downloadedAt": "2026-06-20T12:17:54.111000Z"
+    },
+    {
+      "id": 36,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040327251&fileKind=0",
+      "catalogYear": 2025,
+      "publishedAt": "2025-09-30",
+      "downloadedAt": "2026-06-20T12:17:55.759000Z"
+    },
+    {
+      "id": 35,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040327250&fileKind=0",
+      "catalogYear": 2025,
+      "publishedAt": "2025-09-30",
+      "downloadedAt": "2026-06-20T12:17:58.010000Z"
+    },
+    {
+      "id": 34,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040327249&fileKind=0",
+      "catalogYear": 2025,
+      "publishedAt": "2025-09-30",
+      "downloadedAt": "2026-06-20T12:18:01.093000Z"
+    },
+    {
+      "id": 37,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040327271&fileKind=0",
+      "catalogYear": 2025,
+      "publishedAt": "2025-09-30",
+      "downloadedAt": "2026-06-20T12:18:01.449000Z"
+    },
+    {
+      "id": 38,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040327281&fileKind=0",
+      "catalogYear": 2025,
+      "publishedAt": "2025-09-30",
+      "downloadedAt": "2026-06-20T12:18:02.234000Z"
+    },
+    {
+      "id": 39,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040327282&fileKind=0",
+      "catalogYear": 2025,
+      "publishedAt": "2025-09-30",
+      "downloadedAt": "2026-06-20T12:18:03.529000Z"
+    },
+    {
+      "id": 40,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040327284&fileKind=0",
+      "catalogYear": 2025,
+      "publishedAt": "2025-09-30",
+      "downloadedAt": "2026-06-20T12:18:04.350000Z"
+    },
+    {
+      "id": 41,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040327286&fileKind=0",
+      "catalogYear": 2025,
+      "publishedAt": "2025-09-30",
+      "downloadedAt": "2026-06-20T12:18:04.783000Z"
+    },
+    {
+      "id": 42,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040327287&fileKind=0",
+      "catalogYear": 2025,
+      "publishedAt": "2025-09-30",
+      "downloadedAt": "2026-06-20T12:18:05.108000Z"
+    },
+    {
+      "id": 43,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040327288&fileKind=0",
+      "catalogYear": 2025,
+      "publishedAt": "2025-09-30",
+      "downloadedAt": "2026-06-20T12:18:05.798000Z"
+    },
+    {
+      "id": 44,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040327289&fileKind=0",
+      "catalogYear": 2025,
+      "publishedAt": "2025-09-30",
+      "downloadedAt": "2026-06-20T12:18:06.312000Z"
+    },
+    {
+      "id": 45,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040327290&fileKind=0",
+      "catalogYear": 2025,
+      "publishedAt": "2025-09-30",
+      "downloadedAt": "2026-06-20T12:18:08.137000Z"
+    },
+    {
+      "id": 2,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040328383&fileKind=0",
+      "catalogYear": 2024,
+      "publishedAt": "2024-09-27",
+      "downloadedAt": "2026-06-20T12:18:09.053000Z"
+    },
+    {
+      "id": 3,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040328391&fileKind=0",
+      "catalogYear": 2024,
+      "publishedAt": "2024-09-27",
+      "downloadedAt": "2026-06-20T12:18:10.496000Z"
+    },
+    {
+      "id": 4,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040328393&fileKind=0",
+      "catalogYear": 2024,
+      "publishedAt": "2024-09-27",
+      "downloadedAt": "2026-06-20T12:18:12.196000Z"
+    },
+    {
+      "id": 5,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040328395&fileKind=0",
+      "catalogYear": 2024,
+      "publishedAt": "2024-09-27",
+      "downloadedAt": "2026-06-20T12:18:13.564000Z"
+    },
+    {
+      "id": 6,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040328397&fileKind=0",
+      "catalogYear": 2024,
+      "publishedAt": "2024-09-27",
+      "downloadedAt": "2026-06-20T12:18:15.374000Z"
+    },
+    {
+      "id": 8,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040328400&fileKind=0",
+      "catalogYear": 2024,
+      "publishedAt": "2024-09-27",
+      "downloadedAt": "2026-06-19T10:25:38.056000Z"
+    },
+    {
+      "id": 7,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040328399&fileKind=0",
+      "catalogYear": 2024,
+      "publishedAt": "2024-09-27",
+      "downloadedAt": "2026-06-20T12:18:17.451000Z"
+    },
+    {
+      "id": 9,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040328409&fileKind=0",
+      "catalogYear": 2024,
+      "publishedAt": "2024-09-27",
+      "downloadedAt": "2026-06-20T12:18:18.218000Z"
+    },
+    {
+      "id": 10,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040328410&fileKind=0",
+      "catalogYear": 2024,
+      "publishedAt": "2024-09-27",
+      "downloadedAt": "2026-06-20T12:18:19.080000Z"
+    },
+    {
+      "id": 11,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040328411&fileKind=0",
+      "catalogYear": 2024,
+      "publishedAt": "2024-09-27",
+      "downloadedAt": "2026-06-20T12:18:19.562000Z"
+    },
+    {
+      "id": 12,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040328412&fileKind=0",
+      "catalogYear": 2024,
+      "publishedAt": "2024-09-27",
+      "downloadedAt": "2026-06-20T12:18:20.948000Z"
+    },
+    {
+      "id": 13,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040328414&fileKind=0",
+      "catalogYear": 2024,
+      "publishedAt": "2024-09-27",
+      "downloadedAt": "2026-06-20T12:18:23.281000Z"
+    },
+    {
+      "id": 14,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040328435&fileKind=0",
+      "catalogYear": 2024,
+      "publishedAt": "2024-09-27",
+      "downloadedAt": "2026-06-20T12:18:23.937000Z"
+    },
+    {
+      "id": 15,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040328445&fileKind=0",
+      "catalogYear": 2024,
+      "publishedAt": "2024-09-27",
+      "downloadedAt": "2026-06-20T12:18:24.808000Z"
+    },
+    {
+      "id": 16,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040328446&fileKind=0",
+      "catalogYear": 2024,
+      "publishedAt": "2024-09-27",
+      "downloadedAt": "2026-06-20T12:18:26.255000Z"
+    },
+    {
+      "id": 17,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040328448&fileKind=0",
+      "catalogYear": 2024,
+      "publishedAt": "2024-09-27",
+      "downloadedAt": "2026-06-20T12:18:27.582000Z"
+    },
+    {
+      "id": 18,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040328450&fileKind=0",
+      "catalogYear": 2024,
+      "publishedAt": "2024-09-27",
+      "downloadedAt": "2026-06-20T12:18:28.241000Z"
+    },
+    {
+      "id": 19,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040328451&fileKind=0",
+      "catalogYear": 2024,
+      "publishedAt": "2024-09-27",
+      "downloadedAt": "2026-06-20T12:18:28.762000Z"
+    },
+    {
+      "id": 20,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040328452&fileKind=0",
+      "catalogYear": 2024,
+      "publishedAt": "2024-09-27",
+      "downloadedAt": "2026-06-20T12:18:29.432000Z"
+    },
+    {
+      "id": 21,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040328453&fileKind=0",
+      "catalogYear": 2024,
+      "publishedAt": "2024-09-27",
+      "downloadedAt": "2026-06-20T12:18:30.292000Z"
+    },
+    {
+      "id": 22,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040328454&fileKind=0",
+      "catalogYear": 2024,
+      "publishedAt": "2024-09-27",
+      "downloadedAt": "2026-06-20T12:18:33.562000Z"
+    },
+    {
+      "id": 46,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040107333&fileKind=0",
+      "catalogYear": 2023,
+      "publishedAt": "2023-09-29",
+      "downloadedAt": "2026-06-20T12:18:34.756000Z"
+    },
+    {
+      "id": 47,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040107341&fileKind=0",
+      "catalogYear": 2023,
+      "publishedAt": "2023-09-29",
+      "downloadedAt": "2026-06-20T12:18:37.879000Z"
+    },
+    {
+      "id": 48,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040107343&fileKind=0",
+      "catalogYear": 2023,
+      "publishedAt": "2023-09-29",
+      "downloadedAt": "2026-06-20T12:18:39.705000Z"
+    },
+    {
+      "id": 49,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040107345&fileKind=0",
+      "catalogYear": 2023,
+      "publishedAt": "2023-09-29",
+      "downloadedAt": "2026-06-20T12:18:41.831000Z"
+    },
+    {
+      "id": 50,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040107347&fileKind=0",
+      "catalogYear": 2023,
+      "publishedAt": "2023-09-29",
+      "downloadedAt": "2026-06-20T12:18:43.723000Z"
+    },
+    {
+      "id": 51,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040107349&fileKind=0",
+      "catalogYear": 2023,
+      "publishedAt": "2023-09-29",
+      "downloadedAt": "2026-06-20T12:18:46.404000Z"
+    },
+    {
+      "id": 52,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040107358&fileKind=0",
+      "catalogYear": 2023,
+      "publishedAt": "2023-09-29",
+      "downloadedAt": "2026-06-20T12:18:47.386000Z"
+    },
+    {
+      "id": 53,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040107359&fileKind=0",
+      "catalogYear": 2023,
+      "publishedAt": "2023-09-29",
+      "downloadedAt": "2026-06-20T12:18:48.562000Z"
+    },
+    {
+      "id": 54,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040107360&fileKind=0",
+      "catalogYear": 2023,
+      "publishedAt": "2023-09-29",
+      "downloadedAt": "2026-06-20T12:18:48.999000Z"
+    },
+    {
+      "id": 55,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040107361&fileKind=0",
+      "catalogYear": 2023,
+      "publishedAt": "2023-09-29",
+      "downloadedAt": "2026-06-20T12:18:50.534000Z"
+    },
+    {
+      "id": 56,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040107363&fileKind=0",
+      "catalogYear": 2023,
+      "publishedAt": "2023-09-29",
+      "downloadedAt": "2026-06-20T12:18:57.138000Z"
+    },
+    {
+      "id": 57,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040107364&fileKind=0",
+      "catalogYear": 2023,
+      "publishedAt": "2023-09-29",
+      "downloadedAt": "2026-06-20T12:18:53.940000Z"
+    },
+    {
+      "id": 58,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040107384&fileKind=0",
+      "catalogYear": 2023,
+      "publishedAt": "2023-09-29",
+      "downloadedAt": "2026-06-20T12:18:58.001000Z"
+    },
+    {
+      "id": 59,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040107394&fileKind=0",
+      "catalogYear": 2023,
+      "publishedAt": "2023-09-29",
+      "downloadedAt": "2026-06-20T12:18:59.130000Z"
+    },
+    {
+      "id": 60,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040107395&fileKind=0",
+      "catalogYear": 2023,
+      "publishedAt": "2023-09-29",
+      "downloadedAt": "2026-06-20T12:19:01.392000Z"
+    },
+    {
+      "id": 61,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040107397&fileKind=0",
+      "catalogYear": 2023,
+      "publishedAt": "2023-09-29",
+      "downloadedAt": "2026-06-20T12:19:02.497000Z"
+    },
+    {
+      "id": 62,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040107399&fileKind=0",
+      "catalogYear": 2023,
+      "publishedAt": "2023-09-29",
+      "downloadedAt": "2026-06-20T12:19:03.289000Z"
+    },
+    {
+      "id": 63,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040107400&fileKind=0",
+      "catalogYear": 2023,
+      "publishedAt": "2023-09-29",
+      "downloadedAt": "2026-06-20T12:19:04.007000Z"
+    },
+    {
+      "id": 64,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040107401&fileKind=0",
+      "catalogYear": 2023,
+      "publishedAt": "2023-09-29",
+      "downloadedAt": "2026-06-20T12:19:04.830000Z"
+    },
+    {
+      "id": 65,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040107402&fileKind=0",
+      "catalogYear": 2023,
+      "publishedAt": "2023-09-29",
+      "downloadedAt": "2026-06-20T12:19:05.792000Z"
+    },
+    {
+      "id": 66,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040107403&fileKind=0",
+      "catalogYear": 2023,
+      "publishedAt": "2023-09-29",
+      "downloadedAt": "2026-06-20T12:19:09.195000Z"
+    },
+    {
+      "id": 67,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000040107404&fileKind=0",
+      "catalogYear": 2023,
+      "publishedAt": "2023-09-29",
+      "downloadedAt": "2026-06-20T12:19:06.803000Z"
+    },
+    {
+      "id": 68,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032240218&fileKind=0",
+      "catalogYear": 2022,
+      "publishedAt": "2022-09-30",
+      "downloadedAt": "2026-06-20T12:19:10.172000Z"
+    },
+    {
+      "id": 69,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032240227&fileKind=0",
+      "catalogYear": 2022,
+      "publishedAt": "2022-09-30",
+      "downloadedAt": "2026-06-20T12:19:11.413000Z"
+    },
+    {
+      "id": 70,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032240229&fileKind=0",
+      "catalogYear": 2022,
+      "publishedAt": "2022-09-30",
+      "downloadedAt": "2026-06-20T12:19:12.785000Z"
+    },
+    {
+      "id": 71,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032240231&fileKind=0",
+      "catalogYear": 2022,
+      "publishedAt": "2022-09-30",
+      "downloadedAt": "2026-06-20T12:19:14.338000Z"
+    },
+    {
+      "id": 72,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032240233&fileKind=0",
+      "catalogYear": 2022,
+      "publishedAt": "2022-09-30",
+      "downloadedAt": "2026-06-20T12:19:15.823000Z"
+    },
+    {
+      "id": 73,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032240235&fileKind=0",
+      "catalogYear": 2022,
+      "publishedAt": "2022-09-30",
+      "downloadedAt": "2026-06-20T12:19:18.208000Z"
+    },
+    {
+      "id": 74,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032240244&fileKind=0",
+      "catalogYear": 2022,
+      "publishedAt": "2022-09-30",
+      "downloadedAt": "2026-06-20T12:19:19.310000Z"
+    },
+    {
+      "id": 75,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032240245&fileKind=0",
+      "catalogYear": 2022,
+      "publishedAt": "2022-09-30",
+      "downloadedAt": "2026-06-20T12:19:20.109000Z"
+    },
+    {
+      "id": 76,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032240246&fileKind=0",
+      "catalogYear": 2022,
+      "publishedAt": "2022-09-30",
+      "downloadedAt": "2026-06-20T12:19:20.615000Z"
+    },
+    {
+      "id": 77,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032240247&fileKind=0",
+      "catalogYear": 2022,
+      "publishedAt": "2022-09-30",
+      "downloadedAt": "2026-06-20T12:19:23.883000Z"
+    },
+    {
+      "id": 79,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032240250&fileKind=0",
+      "catalogYear": 2022,
+      "publishedAt": "2022-09-30",
+      "downloadedAt": "2026-06-20T12:19:28.006000Z"
+    },
+    {
+      "id": 78,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032240249&fileKind=0",
+      "catalogYear": 2022,
+      "publishedAt": "2022-09-30",
+      "downloadedAt": "2026-06-20T12:19:33.187000Z"
+    },
+    {
+      "id": 80,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032240270&fileKind=0",
+      "catalogYear": 2022,
+      "publishedAt": "2022-09-30",
+      "downloadedAt": "2026-06-20T12:19:34.124000Z"
+    },
+    {
+      "id": 81,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032240280&fileKind=0",
+      "catalogYear": 2022,
+      "publishedAt": "2022-09-30",
+      "downloadedAt": "2026-06-20T12:19:35.206000Z"
+    },
+    {
+      "id": 82,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032240281&fileKind=0",
+      "catalogYear": 2022,
+      "publishedAt": "2022-09-30",
+      "downloadedAt": "2026-06-20T12:19:38.135000Z"
+    },
+    {
+      "id": 83,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032240283&fileKind=0",
+      "catalogYear": 2022,
+      "publishedAt": "2022-09-30",
+      "downloadedAt": "2026-06-20T12:19:40.183000Z"
+    },
+    {
+      "id": 84,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032240285&fileKind=0",
+      "catalogYear": 2022,
+      "publishedAt": "2022-09-30",
+      "downloadedAt": "2026-06-20T12:19:41.288000Z"
+    },
+    {
+      "id": 85,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032240286&fileKind=0",
+      "catalogYear": 2022,
+      "publishedAt": "2022-09-30",
+      "downloadedAt": "2026-06-20T12:19:42.213000Z"
+    },
+    {
+      "id": 86,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032240287&fileKind=0",
+      "catalogYear": 2022,
+      "publishedAt": "2022-09-30",
+      "downloadedAt": "2026-06-20T12:19:42.903000Z"
+    },
+    {
+      "id": 87,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032240288&fileKind=0",
+      "catalogYear": 2022,
+      "publishedAt": "2022-09-30",
+      "downloadedAt": "2026-06-20T12:19:43.687000Z"
+    },
+    {
+      "id": 89,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032240290&fileKind=0",
+      "catalogYear": 2022,
+      "publishedAt": "2022-09-30",
+      "downloadedAt": "2026-06-20T12:19:45.683000Z"
+    },
+    {
+      "id": 88,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032240289&fileKind=0",
+      "catalogYear": 2022,
+      "publishedAt": "2022-09-30",
+      "downloadedAt": "2026-06-20T12:19:50.814000Z"
+    },
+    {
+      "id": 90,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032122244&fileKind=0",
+      "catalogYear": 2021,
+      "publishedAt": "2021-09-30",
+      "downloadedAt": "2026-06-20T12:19:52.023000Z"
+    },
+    {
+      "id": 91,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032122253&fileKind=0",
+      "catalogYear": 2021,
+      "publishedAt": "2021-09-30",
+      "downloadedAt": "2026-06-20T12:19:54.510000Z"
+    },
+    {
+      "id": 92,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032122254&fileKind=0",
+      "catalogYear": 2021,
+      "publishedAt": "2021-09-30",
+      "downloadedAt": "2026-06-20T12:19:56.208000Z"
+    },
+    {
+      "id": 93,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032122255&fileKind=0",
+      "catalogYear": 2021,
+      "publishedAt": "2021-09-30",
+      "downloadedAt": "2026-06-20T12:19:57.587000Z"
+    },
+    {
+      "id": 94,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032122256&fileKind=0",
+      "catalogYear": 2021,
+      "publishedAt": "2021-09-30",
+      "downloadedAt": "2026-06-20T12:19:59.213000Z"
+    },
+    {
+      "id": 95,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032122257&fileKind=0",
+      "catalogYear": 2021,
+      "publishedAt": "2021-09-30",
+      "downloadedAt": "2026-06-20T12:20:01.831000Z"
+    },
+    {
+      "id": 96,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032122263&fileKind=0",
+      "catalogYear": 2021,
+      "publishedAt": "2021-09-30",
+      "downloadedAt": "2026-06-20T12:20:03.206000Z"
+    },
+    {
+      "id": 97,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032122264&fileKind=0",
+      "catalogYear": 2021,
+      "publishedAt": "2021-09-30",
+      "downloadedAt": "2026-06-20T12:20:04.973000Z"
+    },
+    {
+      "id": 98,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032122265&fileKind=0",
+      "catalogYear": 2021,
+      "publishedAt": "2021-09-30",
+      "downloadedAt": "2026-06-20T12:20:05.831000Z"
+    },
+    {
+      "id": 99,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032122266&fileKind=0",
+      "catalogYear": 2021,
+      "publishedAt": "2021-09-30",
+      "downloadedAt": "2026-06-20T12:20:07.631000Z"
+    },
+    {
+      "id": 101,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032122268&fileKind=0",
+      "catalogYear": 2021,
+      "publishedAt": "2021-09-30",
+      "downloadedAt": "2026-06-20T12:20:10.188000Z"
+    },
+    {
+      "id": 100,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032122267&fileKind=0",
+      "catalogYear": 2021,
+      "publishedAt": "2021-09-30",
+      "downloadedAt": "2026-06-20T12:20:13.061000Z"
+    },
+    {
+      "id": 102,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032122287&fileKind=0",
+      "catalogYear": 2021,
+      "publishedAt": "2021-09-30",
+      "downloadedAt": "2026-06-20T12:20:14.225000Z"
+    },
+    {
+      "id": 103,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032122297&fileKind=0",
+      "catalogYear": 2021,
+      "publishedAt": "2021-09-30",
+      "downloadedAt": "2026-06-20T12:20:15.308000Z"
+    },
+    {
+      "id": 104,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032122298&fileKind=0",
+      "catalogYear": 2021,
+      "publishedAt": "2021-09-30",
+      "downloadedAt": "2026-06-20T12:20:17.245000Z"
+    },
+    {
+      "id": 105,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032122300&fileKind=0",
+      "catalogYear": 2021,
+      "publishedAt": "2021-09-30",
+      "downloadedAt": "2026-06-20T12:20:18.833000Z"
+    },
+    {
+      "id": 106,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032122302&fileKind=0",
+      "catalogYear": 2021,
+      "publishedAt": "2021-09-30",
+      "downloadedAt": "2026-06-20T12:20:20.030000Z"
+    },
+    {
+      "id": 107,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032122303&fileKind=0",
+      "catalogYear": 2021,
+      "publishedAt": "2021-09-30",
+      "downloadedAt": "2026-06-20T12:20:21.195000Z"
+    },
+    {
+      "id": 108,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032122304&fileKind=0",
+      "catalogYear": 2021,
+      "publishedAt": "2021-09-30",
+      "downloadedAt": "2026-06-20T12:20:22.142000Z"
+    },
+    {
+      "id": 109,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032122305&fileKind=0",
+      "catalogYear": 2021,
+      "publishedAt": "2021-09-30",
+      "downloadedAt": "2026-06-20T12:20:23.907000Z"
+    },
+    {
+      "id": 111,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032122307&fileKind=0",
+      "catalogYear": 2021,
+      "publishedAt": "2021-09-30",
+      "downloadedAt": "2026-06-20T12:20:26.173000Z"
+    },
+    {
+      "id": 110,
+      "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032122306&fileKind=0",
+      "catalogYear": 2021,
+      "publishedAt": "2021-09-30",
+      "downloadedAt": "2026-06-20T12:20:28.742000Z"
+    }
+  ]
+}

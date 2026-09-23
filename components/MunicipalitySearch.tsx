@@ -20,7 +20,7 @@ function loadSearchIndex() {
     .then((response) => {
       if (!response.ok) throw new Error("Search index unavailable");
       return response.json();
-    });
+    }).catch(error => { searchIndexPromise = null; throw error; });
   return searchIndexPromise;
 }
 
@@ -42,6 +42,8 @@ export function MunicipalitySearch({
   const router = useRouter();
   const [query, setQuery] = useState(defaultQuery);
   const [prefecture, setPrefecture] = useState(defaultPrefecture);
+  const [loadState, setLoadState] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [retry, setRetry] = useState(0);
   const [items, setItems] = useState<SearchItem[]>([]);
   const [isFocused, setIsFocused] = useState(false);
   const showPrefecture = !compact && variant !== "hero";
@@ -58,13 +60,16 @@ export function MunicipalitySearch({
     const q = query.trim();
     if (q.length < 1) {
       setItems([]);
+      setLoadState("idle");
       return;
     }
+    setLoadState("loading");
     const timer = setTimeout(() => {
       const needle = normalizeSearchText(q);
       loadSearchIndex()
         .then((allItems) => {
           if (cancelled) return;
+          setLoadState("ready");
           setItems(allItems.filter((item) => [
             item.municipalityName,
             item.municipalityNameKana,
@@ -72,14 +77,14 @@ export function MunicipalitySearch({
             item.municipalityCode
           ].some((value) => normalizeSearchText(value ?? "").includes(needle))).slice(0, 10));
         })
-        .catch(() => undefined);
+        .catch(() => { if (!cancelled) setLoadState("error"); });
     }, 180);
 
     return () => {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [query]);
+  }, [query, retry]);
 
   function submit(event: FormEvent) {
     event.preventDefault();
@@ -183,6 +188,9 @@ export function MunicipalitySearch({
           {variant !== "default" ? <ArrowRight size={18} /> : null}
         </button>
       </form>
+      {isFocused && loadState === "loading" ? <p role="status" className="mt-2 text-sm">検索候補を読み込んでいます…</p> : null}
+      {loadState === "error" ? <div role="alert" className="mt-2 text-sm">検索候補を読み込めませんでした。検索ボタンから検索できます。<button type="button" className="button-secondary ml-2" onClick={() => setRetry(value => value + 1)}>再試行</button></div> : null}
+      {isFocused && loadState === "ready" && items.length === 0 ? <p role="status" className="mt-2 text-sm">一致する候補がありません。検索語を変更してください。</p> : null}
       {showSuggestions ? (
         <div className="search-suggestions mt-3 grid gap-1 border-t border-line/80 pt-3" onMouseDown={(event) => event.preventDefault()}>
           {items.map((item) => (

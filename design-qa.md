@@ -2446,3 +2446,18 @@ final result: passed
 - Physical devices, distributed Safari and screen readers remain unverified; mobile is browser emulation. Gitleaks and added-content checks are required immediately before commit.
 
 final result: passed
+
+
+## 2026-09-23 — free comparison accuracy and note preparation, phase 1
+
+- Scope: household-fee and management entry points, common fiscal-year comparison, explicit business/accounting/row units and denominators, missing-data states, retries, static initial content, and existing URL compatibility. No product sales pages or purchase flow were published.
+- Investigated routing, static export, source imports, database identities, shared operators, representative selection, ranking populations, free CSV, tracking and existing tests. Findings and the 50-file change scope are in `docs/comparison-phase1.md`.
+- Reused existing source values and computations. R6 home cohorts are 1,168 public-sewer and 714 special-environment municipalities; older-year substitutions are excluded explicitly. Household tariffs remain the official Table 33 field. Effective-date changes remain distinct from price increases.
+- Captured and inspected before/after home and final desktop 1491×1055/mobile 390×844 search, detail, ranking, prefecture, source and revision states. No page-level horizontal overflow; wide source tables retain their existing scroll container. Navigation, readable labels, scope and missing states were reviewed.
+- Chrome 153 static-output QA: 15 checks passed, including no-JavaScript initial content on six routes, pointer/touch/keyboard navigation, scope across pages/reload/back, existing business links and intentional switching, one title/canonical per page, absent-year/empty states, and four forced-failure/retry flows. Runtime errors: zero.
+- Typecheck passed. Full regression suite: 56 files, 453 tests passed with the cached official workbooks, no skips. Static build and publication-output verification passed for 1,647 routes and sitemap URLs plus icons, 404, robots, manifest and headers.
+- Gitleaks found no leaks in this phase's changed-file scope; targeted added-content checks found no credentials, personal email addresses or absolute local paths. Pre-existing public-data, GIS, Prisma and conflict-copy status entries were preserved.
+- Limits: mobile is Chrome touch emulation; physical devices, OS IME composition, Safari/Firefox and screen readers are untested in this phase. Initial static HTML uses the standard business; query selections are applied after JavaScript. Production, Search Console, hosting-injected tracking, all-source manual verification and seller conditions remain unverified.
+- No staging, commit, push, deployment, note publication/purchase, advertising, external event sending or paid contract. The current request requires separate approval for publication. Future product settings, owner checks and rollback scope are documented in `docs/comparison-phase1.md`.
+
+final result: passed

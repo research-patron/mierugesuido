@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent, MouseEvent, PointerEvent as ReactPointerEvent } from "react";
+import { comparisonHref } from "@/lib/comparison";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -119,6 +120,7 @@ export function PrefectureMapExplorer({
   const touchFeatureRef = useRef<{ code: string | null } | null>(null);
   const [data, setData] = useState<GisData | null>(null);
   const [error, setError] = useState(false);
+  const [retry, setRetry] = useState(0);
   const [hover, setHover] = useState<HoverState | null>(null);
   const [selectedFeatureCode, setSelectedFeatureCode] = useState<string | null>(null);
   const [chosenFeatureCode, setChosenFeatureCode] = useState<string | null>(null);
@@ -155,7 +157,7 @@ export function PrefectureMapExplorer({
     return () => {
       cancelled = true;
     };
-  }, [prefectureCode]);
+  }, [prefectureCode, retry]);
 
   useEffect(() => {
     const media = window.matchMedia("(max-width: 767px)");
@@ -448,7 +450,7 @@ export function PrefectureMapExplorer({
       )),
       recovery: formatPercent(match?.expenseRecoveryRate),
       feeUnit: formatYenPerM3(match?.feeUnitPriceYenPerM3),
-      revision: match?.hasRevisionEvent ? "登録あり" : "未登録",
+      revision: match?.hasRevisionEvent ? "登録あり" : "未収録（改定の有無は未確認）",
       x,
       y
     };
@@ -577,7 +579,8 @@ export function PrefectureMapExplorer({
             }}
           >
             {!data && !error ? <div className={styles.loading}>地図を読み込んでいます…</div> : null}
-            {error || (data && features.length === 0) ? (
+            {error ? <div role="alert" className={styles.loading}>地図を読み込めませんでした。<button className="button-secondary" onClick={() => setRetry(value => value + 1)}>再試行</button></div> : null}
+            {data && features.length === 0 ? (
               <div className={styles.fallback}>
                 <strong>地図を読み込めませんでした</strong>
                 <p>下の比較データから自治体の詳細を開けます。</p>
@@ -722,9 +725,10 @@ export function PrefectureMapExplorer({
             <h2 id="municipality-comparison-title">比較データ <span>経費回収率順・先頭{Math.min(rows.length, 10)}件</span></h2>
           </div>
           <Link href={exportHref}>
-            <Download size={16} />{prefectureName}の{rows.length}件をCSVでダウンロード
+            <Download size={16} />{prefectureName}の無料CSV（既存の全区分・代表事業）
           </Link>
         </header>
+        <p className="px-4 pb-3 text-xs leading-6 text-slate-600">CSVは全区分の代表事業一覧です。画面の年度・事業・会計の絞り込みは反映しません。年度・対象はCSV内の列で確認できます。</p>
         <div className={styles.tableScroll}>
           <table>
             <thead>
@@ -814,7 +818,7 @@ function MapHoverCard({ hover }: { hover: HoverState }) {
       <dl>
         <div><dt>経費回収率</dt><dd>{hover.recovery}</dd></div>
         <div><dt>使用料単価</dt><dd>{hover.feeUnit}</dd></div>
-        <div><dt>公式改定情報</dt><dd>{hover.revision}</dd></div>
+        <div><dt>公式発表の収録</dt><dd>{hover.revision}</dd></div>
       </dl>
     </div>
   );
@@ -835,7 +839,7 @@ function municipalityHref(item: MapMunicipality) {
     const query = new URLSearchParams();
     if (item.businessKey) query.set("business", item.businessKey);
     query.set("view", "fees");
-    return `/municipalities/${item.municipalityCode}?${query.toString()}`;
+    return comparisonHref(`/municipalities/${item.municipalityCode}?${query.toString()}`, new URLSearchParams(item.comparisonQuery));
   }
   return `/municipalities?prefecture=${encodeURIComponent(item.prefectureName)}&q=${encodeURIComponent(item.municipalityName)}`;
 }

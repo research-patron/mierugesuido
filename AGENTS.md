@@ -1,5 +1,11 @@
 # Current Goal: R2-R6 Accounting Eligibility, Data Completion, and Financial Storytelling
 
+## Goal Extension (2026-09-23 — detailed mainland boundaries and visible island list)
+
+- Refine angular municipality outlines and artificial boundary gaps from the same official N03 source. Simplify shared boundaries together and regenerate display-only municipality paths; preserve source records, identities, geographic parts, national-map geometry, and financial data.
+- Show remote-island municipalities together in an always-visible list with direct detail/search links and explicit missing-data states. The final clarification makes remote islands list-only: remove individual island map actions, full-prefecture overview controls, and island entries in the on-map finder. Retain source GIS records.
+- Verify the Tokyo/Yamagata visual comparison, all 47 prefecture geometries, desktop/mobile island lists, real pointer/touch/keyboard navigation, full tests, and static build. The user explicitly authorized committing this completed refinement, including the final list-only clarification, to production main. Perform the publication checks before pushing.
+
 ## Goal Extension (2026-09-23 — P0 prefecture map scale and selection)
 
 - Treat MAP-01–06 and A25–A34 as a P0 bug fix. Reproduce Tokyo through national navigation, direct URL, reload, and back before changing code.

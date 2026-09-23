@@ -12,7 +12,6 @@ const browser = await ({ chromium, firefox, webkit })[engine].launch({ headless:
 const results = [{ name: "environment", passed: true, engine, browserVersion: browser.version(), platform: process.platform, realHardware: false }];
 const failures = [];
 const surface = page => page.locator('[data-map-zoom]');
-const region = page => page.getByLabel('地図の表示地域', { exact: true });
 const finder = page => page.getByLabel('自治体名から地図上の位置を探す', { exact: true });
 async function settle(page) {
   await page.locator('[data-municipality-region]').first().waitFor();
@@ -126,19 +125,26 @@ try {
       const table = await page.locator('table').innerText();
       const csv = page.getByRole('link', { name: /CSVでダウンロード/ }); const href = await csv.getAttribute('href');
       const content = await (await page.request.get(base + href)).body();
-      const choices = await region(page).locator('option').evaluateAll(es => es.map(e => e.value));
-      for (const id of choices) {
-        await region(page).selectOption(id);
-        assert.equal(await page.locator('.map-page-kpi-grid').innerText(), kpi);
-        assert.equal(await page.locator('table').innerText(), table);
-        assert.equal(await csv.getAttribute('href'), href);
-        if (/^(133|134)/.test(id)) assert(await pointInside(page, id.slice(0, 5)));
-        if (/^138/.test(id)) await page.getByText('この表示地域は地理情報のみ収録しています。自治体・事業の詳細データはありません。').waitFor();
+      const codes = await page.locator('[data-island-municipality]').evaluateAll(es => es.map(e => e.dataset.islandMunicipality));
+      assert.equal(codes.length, 9); assert.equal(new Set(codes).size, 9);
+      assert.equal(await page.getByRole('button', { name: '都道府県全域', exact: true }).count(), 0);
+      assert.equal(await page.locator('[data-island-municipality] button').count(), 0);
+      const finderCodes = await finder(page).locator('option').evaluateAll(es => es.map(e => e.value));
+      for (const code of codes) {
+        assert(!finderCodes.includes(code));
+        assert.equal(await page.locator(`[data-municipality-region="${code}"]`).count(), 0);
       }
+      await page.getByRole('button', { name: '拡大', exact: true }).click(); await reset(page);
+      assert.equal(await page.locator('.map-page-kpi-grid').innerText(), kpi);
+      assert.equal(await page.locator('table').innerText(), table);
+      assert.equal(await csv.getAttribute('href'), href);
       assert.deepEqual(await (await page.request.get(base + href)).body(), content);
-      await region(page).selectOption('13363-1'); await settle(page);
-      await page.screenshot({ path: path.join(output, `after-islands-${width}.png`) });
-      return { regions: choices.length, csvBytes: content.length, ...(await verifyDetail(page, '13363', touch)) };
+      await page.getByRole('region', { name: /離島の市町村/ }).screenshot({ path: path.join(output, `after-islands-${width}.png`) });
+      const link = page.locator('[data-island-municipality="13363"] a');
+      if (touch) await link.tap(); else await link.click();
+      await page.waitForURL('**/municipalities/133639/**');
+      assert.equal(new URL(page.url()).searchParams.get('business'), '17-4-000');
+      return { islands: codes.length, csvBytes: content.length };
     });
     await checkpoint(`Tokyo missing data and keyboard island selection ${width}`, async () => {
       await page.goto(`${base}/map/13/`); await settle(page);
@@ -147,10 +153,10 @@ try {
       assert(new URL(page.url()).pathname === '/map/13/');
       const codes = await finder(page).locator('option').evaluateAll(es => es.map(e => e.value));
       await finder(page).focus(); await page.keyboard.press('Home');
-      for (let i = 0; i < codes.indexOf('13363'); i++) await page.keyboard.press('ArrowDown');
-      assert.equal(await finder(page).inputValue(), '13363');
-      assert.equal(await surface(page).getAttribute('data-map-region'), '13363-1');
-      await page.getByRole('link', { name: '新島村の詳細を見る', exact: true }).focus(); await page.keyboard.press('Enter');
+      for (let i = 0; i < codes.indexOf('13202'); i++) await page.keyboard.press('ArrowDown');
+      assert.equal(await finder(page).inputValue(), '13202');
+      assert.equal(await surface(page).getAttribute('data-map-region'), 'main');
+      await page.locator('[data-island-municipality="13363"] a').focus(); await page.keyboard.press('Enter');
       await page.waitForURL('**/municipalities/133639/**');
     });
     await page.close();
@@ -193,12 +199,6 @@ try {
           await page.getByRole('button', { name: '拡大', exact: true }).click();
           await page.getByRole('button', { name: '縮小', exact: true }).click();
           await reset(page); assert.equal(await surface(page).getAttribute('data-map-zoom'), '1.00');
-          if (island) {
-            const options = await region(page).locator('option').evaluateAll(es => es.map(e => e.value));
-            await region(page).selectOption(options.find(id => id.startsWith(island + '-')));
-            await verifyDetail(page, island, touch);
-            await page.goto(`${base}/map/${pref}/`); await settle(page);
-          }
           await page.setViewportSize({ width: touch ? 844 : 768, height: touch ? 390 : 1024 }); await settle(page); await reset(page);
           assert(await pointInside(page, main));
           await verifyDetail(page, main, touch);
@@ -206,6 +206,28 @@ try {
           await page.setViewportSize({ width, height: touch ? 844 : 1055 }); await settle(page);
           await verifyDetail(page, main, touch);
           return { entry, afterPan, island, touchDrag: touch && engine === 'chromium' };
+        });
+        if (island) await checkpoint(`island list direct access ${pref} ${width}`, async () => {
+          await page.setViewportSize({ width, height: touch ? 844 : 1055 });
+          await page.goto(`${base}/map/${pref}/`); await settle(page);
+          const items = page.locator('[data-island-municipality]');
+          const expected = { '01': 4, '13': 9, '15': 2, '32': 4, '42': 5, '46': 18, '47': 14 }[pref];
+          assert.equal(await items.count(), expected);
+          const codes = await items.evaluateAll(es => es.map(e => e.dataset.islandMunicipality));
+          assert.equal(new Set(codes).size, expected);
+          for (let i = 0; i < expected; i++) assert(await items.nth(i).isVisible());
+          assert.equal(await page.getByLabel('地図の表示地域', { exact: true }).count(), 0);
+          assert.equal(await page.getByRole('button', { name: '都道府県全域', exact: true }).count(), 0);
+          assert.equal(await items.locator('button').count(), 0);
+          for (const code of codes) assert.equal(await page.locator(`[data-municipality-region="${code}"]`).count(), 0);
+          const data = JSON.parse(await fs.readFile(`data/static/prefectures/${pref}.json`, 'utf8'));
+          const municipality = data.municipalities.find(m => m.municipalityCode?.slice(0, 5) === island);
+          const link = page.locator(`[data-island-municipality="${island}"] a`);
+          if (touch) await link.tap(); else { await link.focus(); await page.keyboard.press('Enter'); }
+          await page.waitForFunction(code => location.pathname === `/municipalities/${code}/`, municipality.municipalityCode);
+          assert.equal(new URL(page.url()).searchParams.get('business'), municipality.businessKey);
+          await page.getByRole('heading', { level: 1 }).filter({ hasText: municipality.municipalityName }).waitFor();
+          return { count: expected, municipality: municipality.municipalityName, input: touch ? 'tap' : 'keyboard' };
         });
       }
       await page.close();

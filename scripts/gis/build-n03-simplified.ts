@@ -4,6 +4,7 @@ import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { simplifySharedBoundaries } from "./sharedBoundary";
 
 type Point = [number, number];
 type Ring = Point[];
@@ -102,7 +103,7 @@ const args = new Map(
 );
 
 const tolerance = Number(args.get("tolerance") ?? DEFAULT_TOLERANCE);
-const municipalityTolerance = Number(args.get("municipality-tolerance") ?? process.env.N03_MUNICIPALITY_TOLERANCE ?? 0.003);
+const municipalityTolerance = Number(args.get("municipality-tolerance") ?? process.env.N03_MUNICIPALITY_TOLERANCE ?? 0.00015);
 const selected = new Set((args.get("prefectures") ?? process.env.N03_PREFECTURES ?? PREFECTURES.map(([code]) => code).join(",")).split(","));
 const cacheDir = args.get("cache-dir") ?? process.env.N03_CACHE_DIR ?? path.join(os.tmpdir(), "sewer-fee-n03-2023");
 
@@ -182,10 +183,21 @@ async function main() {
       displayRings = requireSafeDesignatedCityDissolve(group, sourceRings, exteriorRings);
     }
 
-    group.rings = displayRings.map((ring) => simplifyRingPreservingGeometry(ring, municipalityTolerance));
+    group.rings = displayRings;
 
     if (isMunicipalityGroup(group)) {
       assertMunicipalityRingsPreserved(group, sourceRings, displayRings);
+    }
+  }
+
+  for (const [code] of PREFECTURES) {
+    const groups = [...municipalityGroups.values()].filter(group => group.prefectureCode === code);
+    const simplified = simplifySharedBoundaries(groups.flatMap(group => group.rings), municipalityTolerance);
+    let offset = 0;
+    for (const group of groups) {
+      const count = group.rings.length;
+      group.rings = simplified.slice(offset, offset + count);
+      offset += count;
     }
   }
 
@@ -301,7 +313,7 @@ async function main() {
       features
     }))
   )));
-  await writeFile(OUTPUT, JSON.stringify(output));
+  if (args.get("municipalities-only") !== "true") await writeFile(OUTPUT, JSON.stringify(output));
   console.log(JSON.stringify({
     output: OUTPUT,
     municipalityOutputDirectory: MUNICIPALITY_OUTPUT_DIR,

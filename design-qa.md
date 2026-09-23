@@ -2417,3 +2417,32 @@ final result: passed
 - Not verified: physical mobile devices, Windows/Linux, distributed Safari, screen-reader operation, Firefox/WebKit one-finger drag, or production deployment. Mobile testing is emulated; the recorded checks do not claim physical-device validation.
 
 final result: passed
+
+
+## 2026-09-23 — detailed shared boundaries and always-visible island municipalities
+
+- Supersedes the previous one-island-at-a-time region picker. The mainland and full overview remain; all remote municipality entries are visible together, with direct detail/search links, missing-data text, and optional map focus.
+- Inspected the supplied Tokyo/Yamagata screenshots and same-size rendered before/after captures. Rebuilt display-only paths from the same official N03 2023 source with shared-arc simplification at 0.00015 degrees. No CSS enlargement or invented smoothing is used. Actual water/other-prefecture gaps remain.
+- All 47 prefectures retain the same 1,761 feature identities and 34,009 parts, names, kinds, bounds, and source metadata. National geometry, DB, raw records, financial payloads, business IDs, statistics, and CSV remain unchanged.
+- Tokyo Hachioji has 731 path segments instead of 47; exactly shared edges with Akiruno increase from 3 to 160. Reviewed the Tokyo/Yamagata desktop/mobile outlines and Tokyo/Kagoshima/Okinawa island lists.
+- Static build tests: Chrome 153.0.8010.53, Firefox 153.0, WebKit 26.5, 110 checks each, 330 passed. Added 14 per-engine island-list checks for direct keyboard/touch navigation; all 47 prefectures render at mobile width. Additional Chromium desktop checks: 50 passed, including all 47 prefectures.
+- Full regression: 55 files, 445 passed, one existing skip. Typecheck and static build pass; publication output validates 1,647 routes.
+- Display geometry increases from 13.3MB to 27.5MB overall; only one prefecture is loaded per prefecture page. Largest gzip-equivalent file is Hokkaido at about 943KB. All source ZIPs and screenshots remain outside Git.
+- Physical devices, Windows/Linux, distributed Safari, screen readers, and Firefox/WebKit one-finger dragging remain unverified. This is local static-build validation, not a new production deployment.
+- Development scope and evidence: `docs/map-refinement-qa.md`, ignored `artifacts/map-refinement-20260923/`. Prior deleted/conflict-copy files remain untouched. No staging, commit, push, or deployment for this follow-up.
+
+- Gitleaks scanned the complete changed-file scope with no leaks; targeted added-content checks found no credentials, personal email addresses, or absolute local paths.
+
+final result: passed
+
+
+## 2026-09-23 — final clarification: remote islands as a list only
+
+- Supersedes the optional island-map/full-overview controls in the preceding gate. Removed both controls and the internal island-frame selection machinery. The mainland stays usable; its finder contains only mainland municipality shapes.
+- Remote municipalities appear once in the always-visible list. Their names link directly to the matching business detail or municipality search when unrecorded; geographic-only entries retain their explicit state. No island source geometry or financial records were deleted.
+- Inspected final 1491×1055 and 390×844 mainland/list captures. All 47 map/list partitions preserve the source records; map controls and keyboard selection remain functional for the mainland.
+- Final static-output checks: 110 passed each in Chromium, Firefox and WebKit (330 total); additional all-prefecture desktop suite 50 passed. Island-list tests assert no full-overview button, no island map buttons/shapes, and correct direct keyboard/tap navigation. Full suite 445 passed, one existing skip; typecheck and production build passed with 1,647 route checks.
+- The user explicitly approved reflecting this final scope on production main. Publication checks apply to the reviewed 58 files; source ZIPs, local screenshots/logs, DB files, and the pre-existing deletions/conflict copies are excluded.
+- Physical devices, distributed Safari and screen readers remain unverified; mobile is browser emulation. Gitleaks and added-content checks are required immediately before commit.
+
+final result: passed

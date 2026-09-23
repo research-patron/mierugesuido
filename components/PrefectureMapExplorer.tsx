@@ -34,7 +34,7 @@ import {
   type MapPan,
   type MapSurfaceSize
 } from "@/lib/mapGesture";
-import { buildPrefectureMapRegions } from "@/lib/prefectureMapRegions";
+import { fittedRegionViewBox, mainlandMapFeatures, remoteIslandFeatures } from "@/lib/prefectureMapRegions";
 import { getPrefectureName } from "@/lib/prefectures";
 import styles from "./PrefectureMapExplorer.module.css";
 
@@ -117,7 +117,6 @@ export function PrefectureMapExplorer({
   } | null>(null);
   const suppressNextRegionClickRef = useRef(false);
   const touchFeatureRef = useRef<{ code: string | null } | null>(null);
-  const [regionId, setRegionId] = useState<string | null>(null);
   const [data, setData] = useState<GisData | null>(null);
   const [error, setError] = useState(false);
   const [hover, setHover] = useState<HoverState | null>(null);
@@ -142,7 +141,6 @@ export function PrefectureMapExplorer({
     setFocusedFeatureCode(null);
     setPan({ x: 0, y: 0 });
     setZoom(minimumZoom);
-    setRegionId(null);
     fetch(`/gis/municipalities/${prefectureCode}.json`)
       .then((response) => {
         if (!response.ok) throw new Error("GIS data unavailable");
@@ -195,15 +193,16 @@ export function PrefectureMapExplorer({
       : [],
     [data, prefectureCode]
   );
-  const municipalityFeatures = useMemo(() => features.filter(isMunicipalityFeature), [features]);
+  const displayFeatures = useMemo(() => mainlandMapFeatures(prefectureCode, features), [prefectureCode, features]);
+  const municipalityFeatures = useMemo(() => displayFeatures.filter(isMunicipalityFeature), [displayFeatures]);
   const municipalityFinderOptions = useMemo(
     () => [...municipalityFeatures].sort((a, b) => a.name.localeCompare(b.name, "ja")),
     [municipalityFeatures]
   );
-  const regions = useMemo(() => buildPrefectureMapRegions(prefectureCode, features), [prefectureCode, features]);
-  const activeRegion = regions.find(region => region.id === regionId) ?? regions[0];
-  const displayFeatures = activeRegion?.features ?? [];
-  const baseViewBox = activeRegion?.viewBox ?? null;
+  const islands = useMemo(() => remoteIslandFeatures(prefectureCode, features), [prefectureCode, features]);
+  const islandMunicipalities = islands.filter(isMunicipalityFeature);
+  const islandGeography = islands.filter(feature => !isMunicipalityFeature(feature));
+  const baseViewBox = useMemo(() => fittedRegionViewBox(displayFeatures), [displayFeatures]);
   const visibleViewBox = useMemo(
     () => baseViewBox ? pannedZoomViewBox(baseViewBox, zoom, pan) : null,
     [baseViewBox, pan, zoom]
@@ -264,11 +263,6 @@ export function PrefectureMapExplorer({
     setChosenFeatureCode(null);
   }
 
-  function changeRegion(id: string) {
-    resetMap();
-    setRegionId(id);
-  }
-
   function changeZoom(direction: -1 | 1) {
     suppressNextRegionClickRef.current = false;
     const nextZoom = direction > 0
@@ -289,18 +283,12 @@ export function PrefectureMapExplorer({
     setSelectedFeatureCode(feature.code);
     setFocusedFeatureCode(feature.code);
     setHover(null);
-    const targetRegion = activeRegion?.id !== "all" && activeRegion?.features.some(item => item.code === feature.code)
-      ? activeRegion
-      : regions.find(region => region.id !== "all" && region.features.some(item => item.code === feature.code)) ?? activeRegion;
-    const focusViewBox = targetRegion?.viewBox;
-    if (!focusViewBox) return;
-    setRegionId(targetRegion.id);
-    const displayFeature = targetRegion.features.find(item => item.code === feature.code) ?? feature;
-    const featureBounds = primaryFeatureScreenBounds(displayFeature) ?? pathScreenBounds(displayFeature.path);
+    if (!baseViewBox) return;
+    const featureBounds = primaryFeatureScreenBounds(feature) ?? pathScreenBounds(feature.path);
     if (!featureBounds) return;
     const rect = surfaceRef.current?.getBoundingClientRect();
     const next = focusMapFeature({
-      baseViewBox: focusViewBox,
+      baseViewBox,
       featureBounds,
       surfaceSize: {
         width: surfaceSize.width || rect?.width || 320,
@@ -537,20 +525,7 @@ export function PrefectureMapExplorer({
             ))}
           </div>
 
-          {regions.length > 1 ? (
-            <div className={styles.regionPicker}>
-              <label htmlFor={`map-region-${prefectureCode}`}>地図の表示地域</label>
-              <select id={`map-region-${prefectureCode}`} value={activeRegion?.id ?? ""} onChange={event => changeRegion(event.target.value)}
-                onKeyDown={event => handleSelectNavigation(event, changeRegion)}>
-                {regions.map(region => <option key={region.id} value={region.id}>{region.label}</option>)}
-              </select>
-              <p>地域ごとに縮尺が変わります。比較データ・集計・CSVは都道府県全体です。</p>
-            </div>
-          ) : null}
-
-          {displayFeatures.length > 0 && displayFeatures.every(feature => !isMunicipalityFeature(feature)) ? (
-            <p className={styles.mapNote}>この表示地域は地理情報のみ収録しています。自治体・事業の詳細データはありません。</p>
-          ) : null}
+          {islands.length > 0 ? <p className={styles.mapNote}>離島の市町村は下の一覧から選べます。集計・CSVは都道府県全体です。</p> : null}
 
           <div className={styles.mobileMapFinder}>
             <label htmlFor={`municipality-map-finder-${prefectureCode}`}>自治体名から地図上の位置を探す</label>
@@ -580,7 +555,7 @@ export function PrefectureMapExplorer({
             className={styles.mapSurface}
             data-pannable={zoom > 1 ? "true" : "false"}
             data-pan-enabled={zoom > 1 ? "true" : "false"}
-            data-map-region={activeRegion?.id}
+            data-map-region="main"
             data-map-zoom={zoom.toFixed(2)}
             data-panning={isPanning ? "true" : "false"}
             data-tap-confirmation={isMobileViewport ? "true" : "false"}
@@ -721,6 +696,23 @@ export function PrefectureMapExplorer({
           <p className={styles.mapNote}>
             市町村の色は、表示中の事業の最新年度の経費回収率です。ほかの事業は自治体詳細で選べます。
           </p>
+          {islands.length > 0 ? (
+            <section className={styles.islandSection} aria-labelledby="island-list-title">
+              <header><h3 id="island-list-title">離島の市町村 <span>{islandMunicipalities.length}自治体</span></h3><p>市町村名から詳細・収録状況を確認できます。</p></header>
+              <ul className={styles.islandList}>
+                {islandMunicipalities.map(feature => {
+                  const municipality = lookupMunicipality(municipalityLookup, feature);
+                  return <li key={feature.code} data-island-municipality={feature.code}>
+                    <div>
+                      <Link href={municipalityFeatureHref(feature)}>{feature.name}<ChevronRight size={14} aria-hidden="true" /></Link>
+                      <small>{municipality ? `経費回収率 ${formatPercent(municipality.expenseRecoveryRate)}` : "事業データ未収録"}</small>
+                    </div>
+                  </li>;
+                })}
+              </ul>
+              {islandGeography.length ? <p className={styles.islandGeography}>地理情報のみ収録：{islandGeography.map(feature => feature.name).join("、")}。自治体・事業の詳細データはありません。</p> : null}
+            </section>
+          ) : null}
       </section>
 
       <section className={styles.comparisonPanel} aria-labelledby="municipality-comparison-title">

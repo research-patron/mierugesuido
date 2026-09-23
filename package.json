@@ -20,7 +20,8 @@
     "etl:calculate": "DATABASE_URL=${DATABASE_URL:-file:./dev.db} node --import tsx scripts/etl/cli.ts calculate",
     "etl:all": "DATABASE_URL=${DATABASE_URL:-file:./dev.db} node --import tsx scripts/db/migrate.ts && DATABASE_URL=${DATABASE_URL:-file:./dev.db} node --import tsx scripts/etl/cli.ts all && DATABASE_URL=${DATABASE_URL:-file:./dev.db} node --import tsx scripts/etl/importFinancialStatements.ts && DATABASE_URL=${DATABASE_URL:-file:./dev.db} node --import tsx scripts/db/migrate.ts",
     "gis:build": "tsx scripts/gis/build-n03-simplified.ts",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "test:map-browser": "node scripts/qa/prefecture-map.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.9.0",
@@ -38,6 +39,7 @@
     "@types/react": "^19.0.1",
     "@types/react-dom": "^19.0.1",
     "autoprefixer": "^10.4.20",
+    "playwright": "1.62.1",
     "postcss": "^8.4.49",
     "prisma": "^6.9.0",
     "tailwindcss": "^3.4.17",

@@ -2401,3 +2401,19 @@ This gate supersedes the August 30 progressive fee-analysis presentation and inc
 - No staging, commit, push, pull request, or deployment was performed. Publication requires a separate review and approval under AGENTS.md.
 
 final result: passed
+
+## 2026-09-23 — P0 prefecture map scale and selection (MAP-01–06 / A25–A34)
+
+- Reproduced Tokyo by national-map shape navigation, direct URL, reload, and back at 1491×1055 and 390×844. The shared full-prefecture fit reduced Tachikawa to 3.65×2.42px on desktop; mobile's initial 1.5× zoom also clipped the mainland.
+- Added display-only region settings and independently fitted viewBoxes. All official source rings and municipality identities remain available; full overview, comparisons, business keys, and CSV are retained. The pre-existing six Hokkaido non-municipality geography exclusions are unchanged.
+- Corrected SVG meet-scale pan conversion, focus-card pointer interception, native touch target adjustment, and label placement/halo scaling. Kept existing zoom/pan/selection; made the finder available on desktop and added explicit missing/geography-only states.
+- Removed only the hover card's duplicate detail action and automatic mobile 1.5× initial zoom. Municipality shape navigation and the selected municipality's detail action remain. Reset now fits the selected display region; full overview is a separate region choice.
+- Checked the rendered desktop/mobile mainland, island, geography-only, and priority-prefecture screenshots. Tokyo's fixed real-data fixtures navigate to their exact municipality and business. No forced clicks or DOM-dispatched events are used.
+- Static-output browser suite: Chrome 153.0.8010.53, Firefox 153.0, WebKit 26.5; 96 checks per engine (288 passed). Tokyo: 1491×1055, 768×1024, 390×844, 360×844. Priority and control prefectures: 01/11/13/15/20/32/42/46/47, desktop/mobile, zoom, pan, islands, reset, 768px/844px resize and actual selection afterward. Chromium additionally receives native browser-protocol touch drags.
+- All 47 prefectures pass source-ring partition/identity/finite-viewBox checks and rendered mobile checks on all three engines; desktop rendering passes on Chromium. Tokyo's scale regression fails on the original code at all four widths and passes after the fix. Regional switching leaves Tokyo KPI/table/CSV bytes unchanged.
+- Full regression: 54 files, 442 passed, one existing skip. Typecheck and production static build passed, including publication-output verification for 1,647 routes. Tested against tracked data in a temporary checkout; existing 1,177 deletions and conflict copies remain untouched.
+- Gitleaks scan of the changed-file scope found no leaks. Screenshots and raw logs remain ignored local artifacts; no staging, commit, push, or deployment occurred.
+- Evidence and per-prefecture table: `docs/map-p0-qa.md`; local images and JSON: `artifacts/map-p0-20260923/`.
+- Not verified: physical mobile devices, Windows/Linux, distributed Safari, screen-reader operation, Firefox/WebKit one-finger drag, or production deployment. Mobile testing is emulated; the recorded checks do not claim physical-device validation.
+
+final result: passed

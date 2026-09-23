@@ -18,7 +18,7 @@ describe("prefecture municipality map UI guardrails", () => {
   });
 
   it("keeps map controls functional and municipality keyboard navigation roving", () => {
-    for (const label of ["縮小", "拡大", "全域表示"]) {
+    for (const label of ["縮小", "拡大", "表示中の地域に合わせる"]) {
       expect(componentSource).toContain(`aria-label="${label}"`);
     }
     expect(componentSource).toContain('aria-label={labelsVisible ? "自治体名を非表示" : "自治体名を表示"}');

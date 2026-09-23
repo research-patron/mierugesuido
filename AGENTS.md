@@ -1,5 +1,12 @@
 # Current Goal: R2-R6 Accounting Eligibility, Data Completion, and Financial Storytelling
 
+## Goal Extension (2026-09-23 — P0 prefecture map scale and selection)
+
+- Treat MAP-01–06 and A25–A34 as a P0 bug fix. Reproduce Tokyo through national navigation, direct URL, reload, and back before changing code.
+- Keep Tokyo mainland usable initially and retain every island through independently fitted regions and a full overview. Reuse zoom, pan, selection, and municipality/business links; separate display regions from statistics and CSV.
+- Inspect all 47 prefectures and exercise Tokyo, Kagoshima, Okinawa, Nagasaki, Niigata, Shimane, Hokkaido, Saitama, and Nagano at desktop/mobile/tablet sizes with real pointer/touch input. Add a failing-before/passing-after Tokyo regression and preserve screenshots, causes, per-prefecture results, and untested environments.
+- Preserve source GIS, database, static financial payloads, and pre-existing deleted/conflict-copy files. Validate using tracked data in a temporary checkout. No commit, push, or production deployment without explicit approval.
+
 ## Goal Extension (2026-09-14 — concise municipality copy and visual fee comparison)
 
 - Reduce the municipality diagnosis to short conclusions and clearly labelled figures, with stronger ranking-inspired colors and comfortable spacing.

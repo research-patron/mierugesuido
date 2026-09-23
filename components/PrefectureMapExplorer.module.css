@@ -55,8 +55,8 @@
 .mapControls button,
 .mapControls > span {
   display: inline-flex;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   align-items: center;
   justify-content: center;
   border: 0;
@@ -148,9 +148,103 @@
   overflow-wrap: anywhere;
 }
 
-.mobileMapFinder,
+.mobileMapFinder {
+  display: grid;
+  gap: 6px;
+}
+
+.mobileMapFinder label {
+  color: #173754;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.5;
+}
+
+.mobileMapFinder select {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid #b9ced9;
+  border-radius: 7px;
+  background: #fff;
+  padding: 0 38px 0 12px;
+  color: #10264c;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.mobileMapFinder select:focus-visible {
+  border-color: #078891;
+  outline: 3px solid rgba(11, 154, 163, 0.2);
+  outline-offset: 2px;
+}
+
+.mobileMapFinder select:disabled {
+  background: #f3f6f8;
+  color: #8998a8;
+}
+
+
 .mobileSelection {
-  display: none;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #c9dbe5;
+  border-radius: 7px;
+  background: #f7fbfc;
+  padding: 10px;
+}
+
+.mobileSelection > div {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.mobileSelection span {
+  color: #617488;
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1.4;
+}
+
+.mobileSelection strong {
+  color: #0b1f4d;
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.mobileSelection small {
+  color: #52647a;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.mobileSelection > a {
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 1px solid #078891;
+  border-radius: 6px;
+  background: #078891;
+  padding: 8px 12px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.mobileSelection > a:focus-visible {
+  outline: 3px solid rgba(11, 154, 163, 0.25);
+  outline-offset: 2px;
 }
 
 .mapInteractionNote {
@@ -237,7 +331,6 @@
   stroke: rgba(255, 255, 255, 0.95);
   stroke-linejoin: round;
   stroke-width: 1.6px;
-  vector-effect: non-scaling-stroke;
 }
 
 .mapLabelCallout {
@@ -287,7 +380,7 @@
   background: rgba(255, 255, 255, 0.98);
   color: #0b1f4d;
   box-shadow: 0 12px 28px rgba(15, 46, 77, 0.16);
-  pointer-events: auto;
+  pointer-events: none;
 }
 
 .tooltipTitle {
@@ -521,42 +614,6 @@
     min-height: 34px;
   }
 
-  .mobileMapFinder {
-    display: grid;
-    gap: 6px;
-  }
-
-  .mobileMapFinder label {
-    color: #173754;
-    font-size: 12px;
-    font-weight: 900;
-    line-height: 1.5;
-  }
-
-  .mobileMapFinder select {
-    width: 100%;
-    min-height: 48px;
-    border: 1px solid #b9ced9;
-    border-radius: 7px;
-    background: #fff;
-    padding: 0 38px 0 12px;
-    color: #10264c;
-    font: inherit;
-    font-size: 16px;
-    font-weight: 800;
-  }
-
-  .mobileMapFinder select:focus-visible {
-    border-color: #078891;
-    outline: 3px solid rgba(11, 154, 163, 0.2);
-    outline-offset: 2px;
-  }
-
-  .mobileMapFinder select:disabled {
-    background: #f3f6f8;
-    color: #8998a8;
-  }
-
   .mapInteractionNote {
     display: block;
     padding: 9px 10px;
@@ -566,68 +623,6 @@
   .mapSurface {
     min-height: 380px;
     height: min(64vh, 470px);
-  }
-
-  .mobileSelection {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 10px;
-    border: 1px solid #c9dbe5;
-    border-radius: 7px;
-    background: #f7fbfc;
-    padding: 10px;
-  }
-
-  .mobileSelection > div {
-    display: grid;
-    min-width: 0;
-    gap: 2px;
-  }
-
-  .mobileSelection span {
-    color: #617488;
-    font-size: 9px;
-    font-weight: 900;
-    line-height: 1.4;
-  }
-
-  .mobileSelection strong {
-    color: #0b1f4d;
-    font-size: 16px;
-    font-weight: 900;
-    line-height: 1.4;
-    overflow-wrap: anywhere;
-  }
-
-  .mobileSelection small {
-    color: #52647a;
-    font-size: 10px;
-    font-weight: 700;
-    line-height: 1.5;
-    overflow-wrap: anywhere;
-  }
-
-  .mobileSelection > a {
-    display: inline-flex;
-    min-height: 48px;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    border: 1px solid #078891;
-    border-radius: 6px;
-    background: #078891;
-    padding: 8px 12px;
-    color: #fff;
-    font-size: 11px;
-    font-weight: 900;
-    line-height: 1.4;
-    text-align: center;
-  }
-
-  .mobileSelection > a:focus-visible {
-    outline: 3px solid rgba(11, 154, 163, 0.25);
-    outline-offset: 2px;
   }
 
   .comparisonPanel > header {
@@ -676,4 +671,34 @@
   .shape {
     transition: none;
   }
+}
+
+.regionPicker {
+  display: grid;
+  grid-template-columns: auto minmax(180px, 360px) 1fr;
+  align-items: center;
+  gap: 10px;
+  color: #173754;
+  font-size: 12px;
+}
+.regionPicker label { font-weight: 900; }
+.regionPicker select {
+  min-height: 44px;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #b9ced9;
+  border-radius: 6px;
+  background: #fff;
+  padding: 8px;
+  font: inherit;
+}
+.regionPicker select:focus-visible { outline: 3px solid #078891; outline-offset: 2px; }
+.regionPicker p { margin: 0; color: #52647a; line-height: 1.6; }
+@media (min-width: 768px) {
+  .mobileMapFinder { grid-template-columns: auto minmax(200px, 360px); align-items: center; justify-content: start; }
+  .mobileMapFinder select { font-size: 14px; }
+}
+@media (max-width: 767px) {
+  .regionPicker { grid-template-columns: 1fr; gap: 6px; }
+  .regionPicker select { font-size: 16px; }
 }

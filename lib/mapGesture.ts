@@ -71,9 +71,14 @@ export function panFromPointerDelta({
 }) {
   const visible = parseMapViewBox(pannedZoomViewBox(baseViewBox, zoom, startPan));
   if (!visible) return startPan;
+  // SVG xMidYMid meet uses one scale on both axes, including letterboxing.
+  const unitsPerPixel = Math.max(
+    visible.width / Math.max(surfaceSize.width, 1),
+    visible.height / Math.max(surfaceSize.height, 1)
+  );
   return clampMapPan(baseViewBox, zoom, {
-    x: startPan.x - (deltaX / Math.max(surfaceSize.width, 1)) * visible.width,
-    y: startPan.y - (deltaY / Math.max(surfaceSize.height, 1)) * visible.height
+    x: startPan.x - deltaX * unitsPerPixel,
+    y: startPan.y - deltaY * unitsPerPixel
   });
 }
 

@@ -23,7 +23,6 @@ import { formatPercent, formatRevisionRate, formatYenPerM3 } from "@/lib/format"
 import {
   pathScreenBounds,
   primaryFeatureScreenBounds,
-  screenViewBox,
   type Bounds
 } from "@/lib/gisMapLayout";
 import {
@@ -35,6 +34,7 @@ import {
   type MapPan,
   type MapSurfaceSize
 } from "@/lib/mapGesture";
+import { buildPrefectureMapRegions } from "@/lib/prefectureMapRegions";
 import { getPrefectureName } from "@/lib/prefectures";
 import styles from "./PrefectureMapExplorer.module.css";
 
@@ -116,8 +116,8 @@ export function PrefectureMapExplorer({
     captured: boolean;
   } | null>(null);
   const suppressNextRegionClickRef = useRef(false);
-  const mobileInitialZoomAppliedRef = useRef(false);
-  const hasViewportInitializedRef = useRef(false);
+  const touchFeatureRef = useRef<{ code: string | null } | null>(null);
+  const [regionId, setRegionId] = useState<string | null>(null);
   const [data, setData] = useState<GisData | null>(null);
   const [error, setError] = useState(false);
   const [hover, setHover] = useState<HoverState | null>(null);
@@ -141,7 +141,8 @@ export function PrefectureMapExplorer({
     setChosenFeatureCode(null);
     setFocusedFeatureCode(null);
     setPan({ x: 0, y: 0 });
-    setZoom(window.matchMedia("(max-width: 767px)").matches ? 1.5 : minimumZoom);
+    setZoom(minimumZoom);
+    setRegionId(null);
     fetch(`/gis/municipalities/${prefectureCode}.json`)
       .then((response) => {
         if (!response.ok) throw new Error("GIS data unavailable");
@@ -160,31 +161,7 @@ export function PrefectureMapExplorer({
 
   useEffect(() => {
     const media = window.matchMedia("(max-width: 767px)");
-    const update = () => {
-      if (!hasViewportInitializedRef.current) {
-        hasViewportInitializedRef.current = true;
-        setIsMobileViewport(media.matches);
-        if (media.matches) {
-          mobileInitialZoomAppliedRef.current = true;
-          setZoom((current) => current === minimumZoom ? 1.5 : current);
-        }
-        return;
-      }
-      setIsMobileViewport(media.matches);
-      if (media.matches && !mobileInitialZoomAppliedRef.current) {
-        mobileInitialZoomAppliedRef.current = true;
-        setZoom((current) => current === minimumZoom ? 1.5 : current);
-        return;
-      }
-      if (!media.matches) {
-        mobileInitialZoomAppliedRef.current = false;
-        setZoom(minimumZoom);
-        setPan({ x: 0, y: 0 });
-        setHover(null);
-        setSelectedFeatureCode(null);
-        setChosenFeatureCode(null);
-      }
-    };
+    const update = () => setIsMobileViewport(media.matches);
     update();
     media.addEventListener("change", update);
     return () => media.removeEventListener("change", update);
@@ -223,15 +200,20 @@ export function PrefectureMapExplorer({
     () => [...municipalityFeatures].sort((a, b) => a.name.localeCompare(b.name, "ja")),
     [municipalityFeatures]
   );
-  const baseViewBox = useMemo(() => screenViewBox(features, 22), [features]);
+  const regions = useMemo(() => buildPrefectureMapRegions(prefectureCode, features), [prefectureCode, features]);
+  const activeRegion = regions.find(region => region.id === regionId) ?? regions[0];
+  const displayFeatures = activeRegion?.features ?? [];
+  const baseViewBox = activeRegion?.viewBox ?? null;
   const visibleViewBox = useMemo(
     () => baseViewBox ? pannedZoomViewBox(baseViewBox, zoom, pan) : null,
     [baseViewBox, pan, zoom]
   );
 
   useEffect(() => {
-    if (!focusedFeatureCode && municipalityFeatures[0]) setFocusedFeatureCode(municipalityFeatures[0].code);
-  }, [focusedFeatureCode, municipalityFeatures]);
+    if (!displayFeatures.some(feature => feature.code === focusedFeatureCode)) {
+      setFocusedFeatureCode(displayFeatures.find(isMunicipalityFeature)?.code ?? null);
+    }
+  }, [focusedFeatureCode, displayFeatures]);
 
   const rows = useMemo(
     () => [...municipalities].sort((a, b) => nullsLast(a.expenseRecoveryRate, b.expenseRecoveryRate, "desc")),
@@ -244,7 +226,7 @@ export function PrefectureMapExplorer({
   const chosenMunicipality = chosenFeature ? lookupMunicipality(municipalityLookup, chosenFeature) : undefined;
   const labelLayout = useMemo(
     () => buildLabelLayout({
-      features,
+      features: displayFeatures,
       municipalityLookup,
       surfaceSize,
       viewBox: visibleViewBox ?? baseViewBox,
@@ -252,7 +234,7 @@ export function PrefectureMapExplorer({
       labelsVisible,
       activeFeatureCode: selectedFeatureCode ?? chosenFeatureCode
     }),
-    [baseViewBox, chosenFeatureCode, features, labelsVisible, municipalityLookup, selectedFeatureCode, surfaceSize, visibleViewBox, zoom]
+    [baseViewBox, chosenFeatureCode, displayFeatures, labelsVisible, municipalityLookup, selectedFeatureCode, surfaceSize, visibleViewBox, zoom]
   );
   const exportHref = `/data/static/csv/prefectures/${prefectureCode}.csv`;
 
@@ -265,16 +247,26 @@ export function PrefectureMapExplorer({
   }
 
   function openMunicipality(feature: GisFeature) {
+    if (!lookupMunicipality(municipalityLookup, feature)?.municipalityCode) {
+      selectAndFocusFeature(feature);
+      return;
+    }
     router.push(municipalityFeatureHref(feature));
   }
 
   function resetMap() {
     suppressNextRegionClickRef.current = false;
+    touchFeatureRef.current = null;
     setZoom(minimumZoom);
     setPan({ x: 0, y: 0 });
     setHover(null);
     setSelectedFeatureCode(null);
     setChosenFeatureCode(null);
+  }
+
+  function changeRegion(id: string) {
+    resetMap();
+    setRegionId(id);
   }
 
   function changeZoom(direction: -1 | 1) {
@@ -297,12 +289,18 @@ export function PrefectureMapExplorer({
     setSelectedFeatureCode(feature.code);
     setFocusedFeatureCode(feature.code);
     setHover(null);
-    if (!baseViewBox) return;
-    const featureBounds = primaryFeatureScreenBounds(feature) ?? pathScreenBounds(feature.path);
+    const targetRegion = activeRegion?.id !== "all" && activeRegion?.features.some(item => item.code === feature.code)
+      ? activeRegion
+      : regions.find(region => region.id !== "all" && region.features.some(item => item.code === feature.code)) ?? activeRegion;
+    const focusViewBox = targetRegion?.viewBox;
+    if (!focusViewBox) return;
+    setRegionId(targetRegion.id);
+    const displayFeature = targetRegion.features.find(item => item.code === feature.code) ?? feature;
+    const featureBounds = primaryFeatureScreenBounds(displayFeature) ?? pathScreenBounds(displayFeature.path);
     if (!featureBounds) return;
     const rect = surfaceRef.current?.getBoundingClientRect();
     const next = focusMapFeature({
-      baseViewBox,
+      baseViewBox: focusViewBox,
       featureBounds,
       surfaceSize: {
         width: surfaceSize.width || rect?.width || 320,
@@ -329,6 +327,13 @@ export function PrefectureMapExplorer({
     // Clear stale drag suppression as soon as a fresh tap or drag begins.
     // A compatibility click from the previous drag has no new pointerdown.
     suppressNextRegionClickRef.current = false;
+    // Touch browsers may retarget the compatibility click to a nearby SVG
+    // shape. Use the actual contact point and the browser's transformed SVG
+    // hit test, never a polygon's bounding rectangle or an enlarged hit area.
+    const hit = event.currentTarget.ownerDocument.elementFromPoint(event.clientX, event.clientY);
+    touchFeatureRef.current = event.pointerType === "touch"
+      ? { code: event.currentTarget.contains(hit) ? hit?.closest("[data-municipality-region]")?.getAttribute("data-municipality-region") ?? null : null }
+      : null;
     if (zoom <= 1) return;
     dragRef.current = {
       pointerId: event.pointerId,
@@ -345,7 +350,7 @@ export function PrefectureMapExplorer({
     const drag = dragRef.current;
     const surface = surfaceRef.current;
     if (!drag || drag.pointerId !== event.pointerId || !surface || !baseViewBox) return;
-    const rect = surface.getBoundingClientRect();
+    const rect = surface.querySelector("svg")?.getBoundingClientRect() ?? surface.getBoundingClientRect();
     const deltaX = event.clientX - drag.clientX;
     const deltaY = event.clientY - drag.clientY;
     if (!drag.moved) {
@@ -380,7 +385,7 @@ export function PrefectureMapExplorer({
     }
   }
 
-  function handleRegionClick(event: MouseEvent<SVGGElement>, feature: GisFeature) {
+  function handleRegionClick(event: MouseEvent<SVGGElement | HTMLDivElement>, feature: GisFeature) {
     if (suppressNextRegionClickRef.current) {
       suppressNextRegionClickRef.current = false;
       event.preventDefault();
@@ -507,7 +512,7 @@ export function PrefectureMapExplorer({
               <button type="button" onClick={() => changeZoom(1)} disabled={zoom >= maximumZoom} aria-label="拡大">
                 <Plus size={17} />
               </button>
-              <button type="button" onClick={resetMap} aria-label="全域表示" title="全域表示">
+              <button type="button" onClick={resetMap} aria-label="表示中の地域に合わせる" title="表示中の地域に合わせる">
                 <LocateFixed size={17} />
               </button>
               <button
@@ -532,12 +537,28 @@ export function PrefectureMapExplorer({
             ))}
           </div>
 
+          {regions.length > 1 ? (
+            <div className={styles.regionPicker}>
+              <label htmlFor={`map-region-${prefectureCode}`}>地図の表示地域</label>
+              <select id={`map-region-${prefectureCode}`} value={activeRegion?.id ?? ""} onChange={event => changeRegion(event.target.value)}
+                onKeyDown={event => handleSelectNavigation(event, changeRegion)}>
+                {regions.map(region => <option key={region.id} value={region.id}>{region.label}</option>)}
+              </select>
+              <p>地域ごとに縮尺が変わります。比較データ・集計・CSVは都道府県全体です。</p>
+            </div>
+          ) : null}
+
+          {displayFeatures.length > 0 && displayFeatures.every(feature => !isMunicipalityFeature(feature)) ? (
+            <p className={styles.mapNote}>この表示地域は地理情報のみ収録しています。自治体・事業の詳細データはありません。</p>
+          ) : null}
+
           <div className={styles.mobileMapFinder}>
             <label htmlFor={`municipality-map-finder-${prefectureCode}`}>自治体名から地図上の位置を探す</label>
             <select
               id={`municipality-map-finder-${prefectureCode}`}
               value={chosenFeatureCode ?? ""}
               onChange={(event) => handleFinderChange(event.target.value)}
+              onKeyDown={event => handleSelectNavigation(event, handleFinderChange)}
               disabled={municipalityFinderOptions.length === 0}
               aria-describedby="prefecture-map-instructions"
             >
@@ -559,6 +580,7 @@ export function PrefectureMapExplorer({
             className={styles.mapSurface}
             data-pannable={zoom > 1 ? "true" : "false"}
             data-pan-enabled={zoom > 1 ? "true" : "false"}
+            data-map-region={activeRegion?.id}
             data-map-zoom={zoom.toFixed(2)}
             data-panning={isPanning ? "true" : "false"}
             data-tap-confirmation={isMobileViewport ? "true" : "false"}
@@ -566,20 +588,27 @@ export function PrefectureMapExplorer({
             onPointerDown={startPan}
             onPointerMove={movePan}
             onPointerUp={endPan}
-            onPointerCancel={endPan}
+            onPointerCancel={event => { touchFeatureRef.current = null; endPan(event); }}
+            onClick={event => {
+              const touch = touchFeatureRef.current;
+              touchFeatureRef.current = null;
+              if (!touch) return;
+              const feature = displayFeatures.find(item => item.code === touch.code);
+              if (feature) handleRegionClick(event, feature);
+            }}
             onMouseLeave={() => {
               setHover(null);
               if (!isPanning) setSelectedFeatureCode(null);
             }}
           >
             {!data && !error ? <div className={styles.loading}>地図を読み込んでいます…</div> : null}
-            {error ? (
+            {error || (data && features.length === 0) ? (
               <div className={styles.fallback}>
                 <strong>地図を読み込めませんでした</strong>
                 <p>下の比較データから自治体の詳細を開けます。</p>
               </div>
             ) : null}
-            {data && features.length > 0 ? (
+            {data && displayFeatures.length > 0 ? (
               <svg
                 viewBox={visibleViewBox ?? `0 0 ${data.viewBox.width} ${data.viewBox.height}`}
                 role="group"
@@ -587,7 +616,7 @@ export function PrefectureMapExplorer({
                 aria-describedby="prefecture-map-instructions"
                 preserveAspectRatio="xMidYMid meet"
               >
-                {features.map((feature) => {
+                {displayFeatures.map((feature) => {
                   const match = lookupMunicipality(municipalityLookup, feature);
                   const status = match?.feeAdequacyLabel ?? labelFromMetrics(
                     match?.expenseRecoveryRate,
@@ -615,7 +644,7 @@ export function PrefectureMapExplorer({
                         role="link"
                         aria-label={`${feature.name}、経費回収率 ${formatPercent(match?.expenseRecoveryRate)}、区分 ${displayFeeRecoveryBandLabel(status)}。${isMobileViewport ? "選択して確認する" : "詳細を開く"}`}
                         tabIndex={focusedFeatureCode ? (focusedFeatureCode === feature.code ? 0 : -1) : municipalityFeatures[0]?.code === feature.code ? 0 : -1}
-                        onClick={(event) => handleRegionClick(event, feature)}
+                        onClick={(event) => { if (!touchFeatureRef.current) handleRegionClick(event, feature); }}
                         onKeyDown={(event) => handleRegionKey(event, feature)}
                         onBlur={() => {
                           setSelectedFeatureCode(null);
@@ -654,7 +683,7 @@ export function PrefectureMapExplorer({
                   data-fallback-label-count={labelLayout.fallbackFeatures.length}
                   aria-hidden="true"
                 >
-                  {features.map((feature) => {
+                  {displayFeatures.map((feature) => {
                     if (!labelLayout.codes.has(feature.code)) return null;
                     return (
                       <FeatureLabel
@@ -676,16 +705,16 @@ export function PrefectureMapExplorer({
               <div>
                 <span>選択中の自治体</span>
                 <strong>{chosenFeature.name}</strong>
-                <small>
+                {!chosenMunicipality ? <small>この地域の独立した事業データは未収録です。</small> : <small>
                   経費回収率 {formatPercent(chosenMunicipality?.expenseRecoveryRate)}・
                   {displayFeeRecoveryBandLabel(chosenMunicipality?.feeAdequacyLabel ?? labelFromMetrics(
                     chosenMunicipality?.expenseRecoveryRate,
                     chosenMunicipality?.feeUnitPriceYenPerM3
                   ))}
-                </small>
+                </small>}
               </div>
               <Link href={municipalityFeatureHref(chosenFeature)}>
-                {chosenFeature.name}の詳細を見る<ChevronRight size={16} aria-hidden="true" />
+                {chosenMunicipality ? `${chosenFeature.name}の詳細を見る` : `${chosenFeature.name}を自治体検索で確認`}<ChevronRight size={16} aria-hidden="true" />
               </Link>
             </div>
           ) : null}
@@ -751,7 +780,7 @@ function FeatureLabel({
 }) {
   const point = placement?.point ?? feature.labelPoint ?? centerOfFeature(feature);
   if (!point) return null;
-  const callout = placement?.callout ?? feature.callout;
+  const callout = placement ? placement.callout : feature.callout;
   const lines = feature.labelLines?.length ? feature.labelLines : splitLabel(feature.name);
   const fontSize = labelTargetPixels(feature, compact) / Math.max(mapScale, 0.001);
   const lineHeight = fontSize * 1.1;
@@ -775,6 +804,7 @@ function FeatureLabel({
         y={startY}
         textAnchor={placement?.anchor ?? feature.labelAnchor ?? "middle"}
         fontSize={fontSize}
+        style={{ strokeWidth: 1.6 / Math.max(mapScale, 0.001) }}
         aria-hidden="true"
       >
         {lines.map((line, index) => (
@@ -794,7 +824,6 @@ function MapHoverCard({ hover }: { hover: HoverState }) {
         <div><dt>使用料単価</dt><dd>{hover.feeUnit}</dd></div>
         <div><dt>公式改定情報</dt><dd>{hover.revision}</dd></div>
       </dl>
-      <Link href={hover.href}>詳細を見る<ChevronRight size={14} /></Link>
     </div>
   );
 }
@@ -912,7 +941,7 @@ function buildLabelLayout({
       || a.code.localeCompare(b.code, "ja"));
 
   for (const feature of candidates) {
-    const preferredPoint = feature.labelPoint ?? centerOfFeature(feature);
+    const preferredPoint = feature.callout?.from ?? feature.labelPoint ?? centerOfFeature(feature);
     const shapeAnchor = feature.callout?.from ?? centerOfFeature(feature) ?? preferredPoint;
     if (!preferredPoint || !shapeAnchor) continue;
     const lines = feature.labelLines?.length ? feature.labelLines : splitLabel(feature.name);
@@ -941,7 +970,7 @@ function buildLabelLayout({
         && rect.y + rect.height <= surfaceSize.height - 7;
       if (!withinSurface) continue;
 
-      const needsLeader = moved || Boolean(feature.callout);
+      const needsLeader = moved;
       const leader = needsLeader ? { from: shapeAnchorScreen, to: labelPoint } : null;
       const overlapsLabel = accepted.some((item) => screenRectsOverlap(item.rect, rect, collisionGap));
       const leaderHitsLabel = leader != null && accepted.some((item) => lineIntersectsRect(leader.from, leader.to, item.rect));
@@ -1086,4 +1115,18 @@ function labelSize(feature: GisFeature) {
   if (shortSide < 12) return 6.5;
   if (shortSide < 20 || feature.name.length >= 6) return 7.4;
   return feature.name.length >= 5 ? 8.2 : 9;
+}
+
+// Commit arrow-key selection without opening a platform-native popup. Focus
+// remains on the select while the corresponding map region becomes visible.
+function handleSelectNavigation(event: KeyboardEvent<HTMLSelectElement>, change: (value: string) => void) {
+  if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+  const select = event.currentTarget;
+  const last = select.options.length - 1;
+  const index = event.key === "Home" ? 0 : event.key === "End" ? last
+    : event.key === "ArrowDown" ? Math.min(select.selectedIndex + 1, last)
+    : event.key === "ArrowUp" ? Math.max(select.selectedIndex - 1, 0) : null;
+  if (index === null || !select.options[index]) return;
+  event.preventDefault();
+  change(select.options[index].value);
 }

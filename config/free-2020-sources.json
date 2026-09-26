@@ -1,0 +1,101 @@
+[
+  {
+    "tableNo": 10,
+    "accountingType": "legal_applied",
+    "tableName": "施設及び業務概況に関する調",
+    "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032122244&fileKind=0",
+    "file": "2021/legal_applied/10_2020460001000.xlsx",
+    "publishedAt": "2021-09-30",
+    "sha256": "51fb153cb6f808b51faf45c7bbe9c08928ffb12caed9317c3cc208ecae03ac49",
+    "fiscalYear": 2020,
+    "catalogYear": 2021
+  },
+  {
+    "tableNo": 20,
+    "accountingType": "legal_applied",
+    "tableName": "損益計算書",
+    "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032122253&fileKind=0",
+    "file": "2021/legal_applied/20_2020460002000.xlsx",
+    "publishedAt": "2021-09-30",
+    "sha256": "f019a918c8b36048c1ebe40674d220c454b4f28ccceb5baa9ab0ded5817eae22",
+    "fiscalYear": 2020,
+    "catalogYear": 2021
+  },
+  {
+    "tableNo": 21,
+    "accountingType": "legal_applied",
+    "tableName": "費用構成表",
+    "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032122254&fileKind=0",
+    "file": "2021/legal_applied/21_2020460002100.xlsx",
+    "publishedAt": "2021-09-30",
+    "sha256": "709d1e34e3743ef50b07ca308988015e88d7944858b11b903973cf64f680b460",
+    "fiscalYear": 2020,
+    "catalogYear": 2021
+  },
+  {
+    "tableNo": 32,
+    "accountingType": "legal_applied",
+    "tableName": "経営分析に関する調（一）",
+    "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032122263&fileKind=0",
+    "file": "2021/legal_applied/32_2020460003200.xlsx",
+    "publishedAt": "2021-09-30",
+    "sha256": "559cf2cd2d37c0b4fb46f598cb43c833e0da70d6bda1849bb55b90d4bbbf1e56",
+    "fiscalYear": 2020,
+    "catalogYear": 2021
+  },
+  {
+    "tableNo": 33,
+    "accountingType": "legal_applied",
+    "tableName": "経営分析に関する調（二）",
+    "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032122264&fileKind=0",
+    "file": "2021/legal_applied/33_2020460003300.xlsx",
+    "publishedAt": "2021-09-30",
+    "sha256": "9c3ee4f489de62b4066451366e60b78693eea16e39dedc20d0f464247165c8e7",
+    "fiscalYear": 2020,
+    "catalogYear": 2021
+  },
+  {
+    "tableNo": 10,
+    "accountingType": "non_legal_applied",
+    "tableName": "施設及び業務概況に関する調",
+    "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032122287&fileKind=0",
+    "file": "2021/non_legal_applied/10_2020470001000.xlsx",
+    "publishedAt": "2021-09-30",
+    "sha256": "812a5180544cff012fb9e07eb30a05b7a62e293f8e3c2de0601834b57ba4ec82",
+    "fiscalYear": 2020,
+    "catalogYear": 2021
+  },
+  {
+    "tableNo": 26,
+    "accountingType": "non_legal_applied",
+    "tableName": "歳入歳出決算に関する調",
+    "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032122300&fileKind=0",
+    "file": "2021/non_legal_applied/26_2020470002600.xlsx",
+    "publishedAt": "2021-09-30",
+    "sha256": "b9bc8d4bbcb8155d798f1e33f3242fc05fd60c519f139758e6f06e6c8cea9ebd",
+    "fiscalYear": 2020,
+    "catalogYear": 2021
+  },
+  {
+    "tableNo": 32,
+    "accountingType": "non_legal_applied",
+    "tableName": "経営分析に関する調（一）",
+    "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032122302&fileKind=0",
+    "file": "2021/non_legal_applied/32_2020470003200.xlsx",
+    "publishedAt": "2021-09-30",
+    "sha256": "3d5b24c50f7ce3479c5f930616007808b1517a736fd10804ce4a965aa11cc24c",
+    "fiscalYear": 2020,
+    "catalogYear": 2021
+  },
+  {
+    "tableNo": 33,
+    "accountingType": "non_legal_applied",
+    "tableName": "経営分析に関する調（二）",
+    "sourceUrl": "https://www.e-stat.go.jp/stat-search/file-download?&statInfId=000032122303&fileKind=0",
+    "file": "2021/non_legal_applied/33_2020470003300.xlsx",
+    "publishedAt": "2021-09-30",
+    "sha256": "f0d94d5160b07cd15aa10e4b4bfa6bdc70d8a8840c4cd63cd3baace59ad71ccd",
+    "fiscalYear": 2020,
+    "catalogYear": 2021
+  }
+]

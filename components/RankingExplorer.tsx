@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { DataViewEvent } from "@/components/DatasetActions";
 import { QuerySync } from "@/components/QuerySync";
 import { RankingNav } from "@/components/RankingNav";
 import { RankingTable } from "@/components/RankingTable";
@@ -38,7 +39,10 @@ export function RankingExplorer({ type, items, home, coverage }: { type: Ranking
         <Link className="text-teal underline" href={comparisonHref("/municipalities", comparison)}>{municipalMode ? "同じ年度・事業条件で自治体を探す" : "比較単位を変更：自治体ごとの代表事業を探す"}</Link>
       </div>
     </section>
-    <RankingComparison items={linked} type={type} />
+    <div>
+      {linked.length ? <DataViewEvent name="comparison_view" identity={`${type}:${query}`} expectedQuery={query} properties={{comparisonType:type,businessType:params.get("businessType")||"all",fiscalYear:Number(year),itemCount:linked.length,dataVersion:municipalMode?home.comparisonVersion:coverage.populationSha256}} /> : null}
+      <RankingComparison items={linked} type={type} />
+    </div>
     <RankingTable items={linked} type={type} />
   </>;
 }

@@ -1,0 +1,15 @@
+{
+  "productId": "public-sewer-2024-national",
+  "dataVersion": "cfbd4c19d1c43c1b0b0724101fb4f82466455bd5bfa343203361281168d5b436",
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-23T04:42:39.341Z",
+  "scope": "2024年度決算・全国・公共下水道・法適用／法非適用（参考）・自治体代表1事業",
+  "sampleCount": 5,
+  "totalCount": 1168,
+  "selection": "自治体コード昇順の先頭行",
+  "missingCounts": {
+    "expenseRecoveryRate": 6,
+    "feeUnitPriceYenPerM3": 6,
+    "treatmentCostYenPerM3": 6
+  }
+}

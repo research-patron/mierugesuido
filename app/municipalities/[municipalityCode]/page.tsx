@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import type { Metadata } from "next";
 import { siteName } from "@/lib/copy";
 
@@ -84,6 +85,7 @@ export default async function MunicipalityDetailPage({
   return (
     <>
       <MunicipalityDetailClient
+        dataVersion={createHash("sha256").update(JSON.stringify(municipality)).digest("hex")}
         initialTitle={`${municipalityPageTitle(municipality)} | ${siteName}`}
         canonicalBase={absoluteSiteUrl(`/municipalities/${municipalityCode}`)}
         initialMunicipality={mergeCostCompositionIntoDetail(municipality, await getStaticCostComposition(municipalityCode))}

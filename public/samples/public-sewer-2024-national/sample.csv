@@ -1,0 +1,6 @@
+﻿"rowId","municipalityCode","prefectureName","municipalityName","businessKey","accountingType","fiscalYear","expenseRecoveryRate","feeUnitPriceYenPerM3","treatmentCostYenPerM3","expenseRecoveryRank","qualityStatus","qualityFlags"
+"011002:17-1-000:legal_applied:2024","011002","北海道","札幌市","17-1-000","legal_applied","2024","91.7614","92.3235","100.6126","545","ok",""
+"012025:17-1-000:legal_applied:2024","012025","北海道","函館市","17-1-000","legal_applied","2024","151.3832","157.8608","104.2789","1149","ok",""
+"012033:17-1-000:legal_applied:2024","012033","北海道","小樽市","17-1-000","legal_applied","2024","89.3631","160.9543","180.1128","496","ok",""
+"012041:17-1-000:legal_applied:2024","012041","北海道","旭川市","17-1-000","legal_applied","2024","102.9893","163.6418","158.8921","945","ok",""
+"012050:17-1-000:legal_applied:2024","012050","北海道","室蘭市","17-1-000","legal_applied","2024","128.5961","198.783","154.5793","1121","ok",""

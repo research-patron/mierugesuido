@@ -1,0 +1,31 @@
+[
+  {
+    "productId": "public-sewer-2024-national",
+    "slug": "public-sewer-2024-national",
+    "title": "2024年度 全国・公共下水道の経営指標データ",
+    "status": "preview",
+    "fiscalYear": 2024,
+    "regions": [],
+    "businessType": "17/1",
+    "accountingType": null,
+    "rowUnit": "municipality",
+    "sampleSize": 5,
+    "priceJpy": null,
+    "noteUrl": null,
+    "verifiedNoteCustomOrigin": null,
+    "sellerName": null,
+    "contactUrl": null,
+    "sellerDisclosureUrl": null,
+    "licenseSummary": null,
+    "correctionPolicy": null,
+    "newEditionPolicy": null,
+    "refundSummary": null,
+    "deliverySummary": null,
+    "sourcesReviewed": false,
+    "sellerTermsReviewed": false,
+    "deliveryReviewed": false,
+    "publicationApproved": false,
+    "reviewedDataVersion": null,
+    "corrections": []
+  }
+]

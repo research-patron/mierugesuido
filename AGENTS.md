@@ -1,3 +1,18 @@
+# Goal Extension (2026-09-26 — 2020 free dataset and survey-first access)
+
+- Generate nationwide 2020 public-sewer data from the local official R2 workbooks using shared metric definitions. Include law-non-applied basic data, distinguish missing from zero, preserve shared accounts, and never borrow 2024 values.
+- Send the normal free-download entry directly to the verified Google questionnaire. The completion message links to the download page; this is a static soft gate, not purchaser authentication or proof of submission.
+- Supply raw calculation inputs, original-table row locations, calculation dependencies and official workbook download links. Preserve database, original workbooks and existing financial payloads.
+- Survey responses remain only in the owner-controlled Google Form and private response sheet. On 2026-09-26 the user explicitly approved publishing this prepared form, an identified test submission, and integrating the reviewed dataset changes into production main. Run all mandatory publication checks. Keep all sales settings unchanged.
+
+# Goal Extension (2026-09-23 — history repair and dataset products)
+
+- Preserve the complete business history when selecting a comparison fiscal year. Show the five years ending at the selected year, keeping missing years empty and retaining business/accounting provenance.
+- Place `自分のまちの下水道経営状況を見る` above the four home indicators without clipping the cards.
+- Implement dataset explanation, real free samples, shared edition generation and an optional note link. Unknown prices, seller details, URLs and terms remain null; unapproved products have no purchase link.
+- Full editorial packages belong only in ignored `private-products/`; public assets contain limited samples. No new API, checkout, authentication, subscription, external telemetry transmission, advertisements or note operations.
+- This extension is local development. Any new preview push or production publication requires approval for the new diff.
+
 # Goal Extension (2026-09-23 — free comparison accuracy, phase 1)
 
 - Treat `gesuido_codex_improvement_spec.md` as requirements; implement investigation and phase 1 only. Separate household fees from management metrics; preserve existing business URLs and free outputs.

@@ -1,0 +1,134 @@
+[
+  {
+    "productId": "public-sewer-2024-national",
+    "slug": "public-sewer-2024-national",
+    "dataVersion": "cfbd4c19d1c43c1b0b0724101fb4f82466455bd5bfa343203361281168d5b436",
+    "schemaVersion": 1,
+    "generatedAt": "2026-09-23T04:42:39.341Z",
+    "conditions": "2024年度決算・全国・公共下水道・法適用／法非適用（参考）・自治体代表1事業",
+    "rowCount": 1168,
+    "columnCount": 13,
+    "missingCounts": {
+      "expenseRecoveryRate": 6,
+      "feeUnitPriceYenPerM3": 6,
+      "treatmentCostYenPerM3": 6
+    },
+    "summary": {
+      "recoveryCount": 1162,
+      "averageExpenseRecoveryRate": 88.48641213425114
+    },
+    "sampleRows": [
+      {
+        "rowId": "011002:17-1-000:legal_applied:2024",
+        "municipalityCode": "011002",
+        "prefectureName": "北海道",
+        "municipalityName": "札幌市",
+        "businessKey": "17-1-000",
+        "accountingType": "legal_applied",
+        "fiscalYear": 2024,
+        "expenseRecoveryRate": 91.7614,
+        "feeUnitPriceYenPerM3": 92.3235,
+        "treatmentCostYenPerM3": 100.6126,
+        "expenseRecoveryRank": 545,
+        "qualityStatus": "ok",
+        "qualityFlags": ""
+      },
+      {
+        "rowId": "012025:17-1-000:legal_applied:2024",
+        "municipalityCode": "012025",
+        "prefectureName": "北海道",
+        "municipalityName": "函館市",
+        "businessKey": "17-1-000",
+        "accountingType": "legal_applied",
+        "fiscalYear": 2024,
+        "expenseRecoveryRate": 151.3832,
+        "feeUnitPriceYenPerM3": 157.8608,
+        "treatmentCostYenPerM3": 104.2789,
+        "expenseRecoveryRank": 1149,
+        "qualityStatus": "ok",
+        "qualityFlags": ""
+      },
+      {
+        "rowId": "012033:17-1-000:legal_applied:2024",
+        "municipalityCode": "012033",
+        "prefectureName": "北海道",
+        "municipalityName": "小樽市",
+        "businessKey": "17-1-000",
+        "accountingType": "legal_applied",
+        "fiscalYear": 2024,
+        "expenseRecoveryRate": 89.3631,
+        "feeUnitPriceYenPerM3": 160.9543,
+        "treatmentCostYenPerM3": 180.1128,
+        "expenseRecoveryRank": 496,
+        "qualityStatus": "ok",
+        "qualityFlags": ""
+      },
+      {
+        "rowId": "012041:17-1-000:legal_applied:2024",
+        "municipalityCode": "012041",
+        "prefectureName": "北海道",
+        "municipalityName": "旭川市",
+        "businessKey": "17-1-000",
+        "accountingType": "legal_applied",
+        "fiscalYear": 2024,
+        "expenseRecoveryRate": 102.9893,
+        "feeUnitPriceYenPerM3": 163.6418,
+        "treatmentCostYenPerM3": 158.8921,
+        "expenseRecoveryRank": 945,
+        "qualityStatus": "ok",
+        "qualityFlags": ""
+      },
+      {
+        "rowId": "012050:17-1-000:legal_applied:2024",
+        "municipalityCode": "012050",
+        "prefectureName": "北海道",
+        "municipalityName": "室蘭市",
+        "businessKey": "17-1-000",
+        "accountingType": "legal_applied",
+        "fiscalYear": 2024,
+        "expenseRecoveryRate": 128.5961,
+        "feeUnitPriceYenPerM3": 198.783,
+        "treatmentCostYenPerM3": 154.5793,
+        "expenseRecoveryRank": 1121,
+        "qualityStatus": "ok",
+        "qualityFlags": ""
+      }
+    ],
+    "sampleCount": 5,
+    "sourceMissingCount": 0,
+    "files": [
+      {
+        "name": "indicators.csv",
+        "bytes": 177941,
+        "sha256": "ff483feb3dabee17a443109b02be6aaaa0b8cafa39270fd94783c57b7c843f2b"
+      },
+      {
+        "name": "columns.csv",
+        "bytes": 1550,
+        "sha256": "37667ca91f8bcbfa987e3dff9885e1863139f60d780940bdc34add79e58d71af"
+      },
+      {
+        "name": "sources.csv",
+        "bytes": 2217146,
+        "sha256": "12f6ed935c9dc59ef7aa6db9abf215b630fe17714bf905a98d5ff01eabf82112"
+      },
+      {
+        "name": "README.md",
+        "bytes": 2066,
+        "sha256": "b8e8cf9ea840f9a0124fd2ef329dfe1650da5ff18a648748e5ee20cb995768df"
+      },
+      {
+        "name": "corrections.json",
+        "bytes": 3,
+        "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+      },
+      {
+        "name": "manifest.json",
+        "bytes": 148244,
+        "sha256": "f70645ae409d6e39c8bb33b86a13be1ef0e94bc21dc0ac00cf8d033f4bab8191"
+      }
+    ],
+    "filesReady": true,
+    "error": null
+  }
+]

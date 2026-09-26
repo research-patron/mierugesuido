@@ -33,8 +33,9 @@ export default async function HomePage() {
           <Link href="/data-sources">年度・指標・出典の見方</Link>
         </div>
       </section>
-      <section className="home-kpi-zone">
+      <section className="home-kpi-zone" aria-labelledby="management-heading">
         <div className="mx-auto max-w-[1491px] px-7 py-6">
+          <h2 id="management-heading" className="mb-5 text-2xl font-black text-ink sm:text-3xl">自分のまちの下水道経営状況を見る</h2>
           <div className="home-kpi-cards grid gap-5 lg:grid-cols-4">
             <StatCard icon={Users} label="公共下水道の収録自治体数" value={data.municipalityCount.toLocaleString("ja-JP")} unit="自治体" sub={latestFiscalWesternYear ? `${latestFiscalWesternYear}年度決算を収録` : `${latestFiscal}決算を収録`} tone="teal" />
             <StatCard icon={CalendarDays} label="本サイト収録の最新決算年度" value={latestFiscalWesternYear ? String(latestFiscalWesternYear) : latestFiscalLong} unit={latestFiscalWesternYear ? "年度" : undefined} sub="総務省決算状況調査" tone="blue" />
@@ -59,6 +60,11 @@ export default async function HomePage() {
 
       <section id="national-map" className="mx-auto max-w-[1491px] scroll-mt-24 px-7 py-5">
         <JapanMapSelector summaries={prefectureSummaries} municipalities={mapMunicipalities} overview={data} mapScopes={mapScopes} initialScope={defaultMapScope} />
+      </section>
+      <section className="mx-auto max-w-[1491px] border-t border-line px-7 py-8">
+        <h2 className="text-xl font-black">調査・資料作成に使う方へ</h2>
+        <p className="mt-3 text-sm leading-7">条件をそろえたCSV、列定義、出典対応をまとめた資料セットを準備しています。無料の検索・比較は引き続き利用できます。</p>
+        <Link className="mt-3 inline-flex min-h-11 items-center font-bold text-teal underline" href="/datasets">販売用データと無料見本を見る →</Link>
       </section>
     </div>
   );

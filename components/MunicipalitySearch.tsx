@@ -1,5 +1,7 @@
 "use client";
 
+import { emitUsage } from "@/lib/telemetry";
+
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -77,7 +79,7 @@ export function MunicipalitySearch({
             item.municipalityCode
           ].some((value) => normalizeSearchText(value ?? "").includes(needle))).slice(0, 10));
         })
-        .catch(() => { if (!cancelled) setLoadState("error"); });
+        .catch(() => { if (!cancelled) { setLoadState("error"); emitUsage("data_load_error",{routeType:"search",safeErrorCode:"suggestion_load"}); } });
     }, 180);
 
     return () => {

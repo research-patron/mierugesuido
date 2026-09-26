@@ -18,6 +18,7 @@ const staticRoutes = [
   "/rankings",
   "/revisions",
   "/data-sources",
+  "/datasets",
   "/about",
   "/disclaimer"
 ];
@@ -28,7 +29,23 @@ const publicRoutes = [
   ...manifest.rankingTypes.map((type) => `/rankings/${type}`),
   ...manifest.municipalityCodes.map((code) => `/municipalities/${code}`)
 ];
-const expectedUrls = new Set(publicRoutes.map(absoluteRouteUrl));
+const products = readJson(path.join(projectRoot,"config/dataset-products.json"));
+const editions = readJson(path.join(projectRoot,"data/static/dataset-catalog.json"));
+const visibleProducts = products.filter(product=>product.status!=="draft");
+const indexedProducts = [];
+for (const product of visibleProducts) {
+  const route = `/datasets/${product.slug}`;
+  const html = readFileSync(routeOutputPath(route),"utf8");
+  const noindex = /<meta name="robots" content="[^"]*noindex/.test(html);
+  if (!noindex) indexedProducts.push(route);
+  if (product.status !== "published") assert(!html.includes("noteで購入する（外部サイト）"), `${route}: inactive purchase link`);
+  const edition = editions.find(entry=>entry.slug===product.slug);
+  if (edition?.filesReady) assert(html.includes(edition.dataVersion),`${route}: edition missing`);
+  publicRoutes.push(route);
+}
+publicRoutes.push("/datasets/free-2020", "/datasets/free-2020/download");
+for (const route of ["/datasets/free-2020", "/datasets/free-2020/download"]) assert(/<meta name="robots" content="[^"]*noindex/.test(readFileSync(routeOutputPath(route),"utf8")), `${route}: noindex missing`);
+const expectedUrls = new Set([...publicRoutes.filter(route=>!route.startsWith("/datasets/")),...indexedProducts].map(absoluteRouteUrl));
 const routeByTitle = new Map();
 const routeByDescription = new Map();
 const routeByCanonical = new Map();

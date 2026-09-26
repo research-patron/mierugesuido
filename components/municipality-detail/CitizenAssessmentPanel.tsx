@@ -103,7 +103,7 @@ export function CitizenAssessmentPanel({
           </div>
         </div>
         <div className={styles.feeAmount}>
-          <strong>{householdFeeNotApplicable ? "対象外" : fee == null ? "未取得" : `${Math.round(fee).toLocaleString("ja-JP")}円`}</strong>
+          <strong data-usage-visible-value={fee != null && !householdFeeNotApplicable ? "household" : undefined}>{householdFeeNotApplicable ? "対象外" : fee == null ? "未取得" : `${Math.round(fee).toLocaleString("ja-JP")}円`}</strong>
           <span>{householdFeeNotApplicable ? "特定公共下水道" : "一般家庭用20m³／月・税込"}</span>
         </div>
         <div className={styles.rankAnswer} aria-live="polite">

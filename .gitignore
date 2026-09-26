@@ -22,3 +22,6 @@ tmp
 *.log
 tsconfig.tsbuildinfo
 .DS_Store
+
+# Editorial deliverables for note; never publish or commit the full package.
+private-products/

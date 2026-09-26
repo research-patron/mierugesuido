@@ -739,7 +739,7 @@ function nonNegativeFiniteOrNull(value: number | null | undefined) {
   return value == null || !Number.isFinite(value) || value < 0 ? null : value;
 }
 
-function costPerCubicMeter(
+export function costPerCubicMeter(
   amountThousandYen: number | null | undefined,
   annualBillableVolume: number | null | undefined
 ) {

@@ -77,6 +77,6 @@ function inferReiwaYearFromSurveyYear(surveyYear?: number | null) {
   if (surveyYear == null || !Number.isFinite(surveyYear)) return null;
   // Annual financial records store the workbook's 決算年度. Catalog years
   // belong to source-file metadata and must not be passed to this formatter.
-  if (surveyYear >= 2020) return surveyYear - 2018;
+  if (surveyYear >= 2019) return surveyYear - 2018;
   return null;
 }

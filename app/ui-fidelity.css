@@ -277,7 +277,7 @@ body {
 }
 
 .home-kpi-zone {
-  height: 145px;
+  height: auto;
   border-bottom: 1px solid #bde6ee;
   background-color: #f8fdfe;
   background-image: url("/images/water-flow-dashboard-v1.png");
@@ -287,7 +287,7 @@ body {
 }
 
 .home-kpi-zone > div {
-  height: 145px;
+  height: auto;
   padding: 20px 26px 15px;
 }
 
@@ -3194,4 +3194,10 @@ body {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
   }
+}
+
+/* Seven destinations remain in two mobile rows, with full labels and tap targets. */
+@media (max-width: 1023px) {
+  .site-mobile-nav { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .site-mobile-nav-link { flex-direction: column; min-height: 48px; gap: 4px; padding: 6px 2px; }
 }

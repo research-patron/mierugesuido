@@ -7,7 +7,7 @@
     "dev": "DATABASE_URL=${DATABASE_URL:-file:./dev.db} next dev --hostname 127.0.0.1",
     "static:data": "DATABASE_URL=${DATABASE_URL:-file:./dev.db} node --import tsx scripts/static/generate.ts",
     "static:citizen-data": "DATABASE_URL=${DATABASE_URL:-file:$PWD/prisma/dev.db} node --import tsx scripts/static/generateCitizenSupplemental.ts",
-    "build": "prisma generate && next build && pnpm run verify:publication",
+    "build": "pnpm run datasets:public && pnpm run datasets:free2020:check && prisma generate && next build && pnpm run verify:publication",
     "build:pages": "pnpm run build",
     "verify:publication": "node scripts/verify-publication-output.mjs",
     "lint": "tsc --noEmit",
@@ -21,7 +21,11 @@
     "etl:all": "DATABASE_URL=${DATABASE_URL:-file:./dev.db} node --import tsx scripts/db/migrate.ts && DATABASE_URL=${DATABASE_URL:-file:./dev.db} node --import tsx scripts/etl/cli.ts all && DATABASE_URL=${DATABASE_URL:-file:./dev.db} node --import tsx scripts/etl/importFinancialStatements.ts && DATABASE_URL=${DATABASE_URL:-file:./dev.db} node --import tsx scripts/db/migrate.ts",
     "gis:build": "tsx scripts/gis/build-n03-simplified.ts",
     "postinstall": "prisma generate",
-    "test:map-browser": "node scripts/qa/prefecture-map.mjs"
+    "test:map-browser": "node scripts/qa/prefecture-map.mjs",
+    "datasets:generate": "node --import tsx scripts/datasets/generate.ts",
+    "datasets:public": "node --import tsx scripts/datasets/generate.ts --public-only",
+    "datasets:free2020": "node --import tsx scripts/datasets/free2020.ts",
+    "datasets:free2020:check": "node --import tsx scripts/datasets/free2020.ts --check"
   },
   "dependencies": {
     "@prisma/client": "^6.9.0",

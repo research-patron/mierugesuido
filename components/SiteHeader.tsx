@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, CircleHelp, Home, MapPin, Search, Trophy } from "lucide-react";
+import { CalendarDays, CircleHelp, FileDown, Home, MapPin, Search, Trophy } from "lucide-react";
 import clsx from "clsx";
 import { siteName, siteSubtitle } from "@/lib/copy";
 
@@ -13,7 +13,8 @@ const navItems = [
   { href: "/municipalities", label: "自治体検索", icon: Search },
   { href: "/rankings", label: "ランキング", icon: Trophy },
   { href: "/revisions", label: "改定情報", icon: CalendarDays },
-  { href: "/data-sources", label: "データの見方", icon: CircleHelp }
+  { href: "/data-sources", label: "データの見方", icon: CircleHelp },
+  { href: "/datasets", label: "データ販売", icon: FileDown }
 ];
 
 export function SiteHeader() {

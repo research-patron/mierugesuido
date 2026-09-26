@@ -1,7 +1,10 @@
 "use client";
 
+import { emitUsage } from "@/lib/telemetry";
+
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { DataViewEvent } from "@/components/DatasetActions";
 import { QuerySync } from "@/components/QuerySync";
 import { comparisonHref } from "@/lib/comparison";
 import Link from "next/link";
@@ -72,6 +75,7 @@ type PeerComparisonLoadState = {
 type MunicipalityDetailClientProps = {
   canonicalBase: string;
   initialTitle: string;
+  dataVersion: string;
   initialMunicipality: MunicipalityDetail;
   municipalityCode: string;
   fundShortageAssessments: Record<string, FundShortageAssessment>;
@@ -93,6 +97,7 @@ export function selectPeerComparisonView(
 
 export function MunicipalityDetailClient({
   initialTitle,
+  dataVersion,
   canonicalBase,
   initialMunicipality,
   municipalityCode,
@@ -113,9 +118,7 @@ export function MunicipalityDetailClient({
   const municipality = initialMunicipality;
   const [peerRetry, setPeerRetry] = useState(0);
   const groups = useMemo(
-    () => municipality ? buildBusinessGroups(municipality.businesses.map((business: any) => ({
-      ...business, annualFinancials: business.annualFinancials.filter((annual: any) => (!searchParams.has("fiscalYear") || annual.surveyYear === Number(searchParams.get("fiscalYear"))) && (!searchParams.get("accountingType") || business.accountingType === searchParams.get("accountingType")))
-    }))) : [],
+    () => municipality ? buildBusinessGroups(municipality.businesses.filter((business: any) => !searchParams.get("accountingType") || business.accountingType === searchParams.get("accountingType")), searchParams.has("fiscalYear") ? Number(searchParams.get("fiscalYear")) : undefined) : [],
     [municipality, query]
   );
   const requestedBusiness = searchParams.get("business") ?? undefined;
@@ -178,6 +181,7 @@ export function MunicipalityDetailClient({
       .catch(() => {
         if (!cancelled) {
           setPeerComparisonState({ requestKey: peerRequestKey, status: "error", model: null });
+          emitUsage("data_load_error",{routeType:"municipality",safeErrorCode:"peer_load"});
         }
       });
     return () => { cancelled = true; };
@@ -268,6 +272,7 @@ export function MunicipalityDetailClient({
     <div className={styles.page}>
       <title>{detailTitle}</title><link rel="canonical" href={canonicalUrl.toString()} />
       <QuerySync onChange={setQuery} />
+      {view === "fees" && latest.householdFee20m3Yen != null ? <DataViewEvent name="municipality_data_view" selector="[data-usage-visible-value]" expectedQuery={query} identity={`${municipalityCode}:${selectedGroup.key}:${latest.surveyYear}`} properties={{entityCode:municipalityCode,fiscalYear:latest.surveyYear,businessType:selectedGroup.key,metric:"householdFee20m3Yen",dataVersion}} /> : null}
       <noscript><p className="mx-auto max-w-[1491px] px-4 py-2 text-sm">標準事業を表示しています。URLで指定した別事業・年度・タブへの切り替えにはJavaScriptが必要です。</p></noscript>
       <div className={styles.container}>
         <nav className={styles.breadcrumb} aria-label="パンくず">
@@ -416,7 +421,7 @@ export function MunicipalityDetailClient({
             <section className={styles.contentSection} aria-labelledby="trend-heading">
               <div className={styles.sectionHeading}>
                 <div>
-                  <span>R2—R6</span>
+                  <span>{formatSettlementFiscalLabel({ surveyYear: latest.surveyYear - 4 })}—{formatSettlementFiscalLabel({ surveyYear: latest.surveyYear })}</span>
                   <h2 id="trend-heading">5年間の料金指標</h2>
                 </div>
                 <p>料金と経営指標の推移（空欄はデータ未取得）</p>
@@ -589,7 +594,7 @@ function EmptyMunicipality({
   );
 }
 
-function buildBusinessGroups(businesses: DetailBusiness[]): BusinessGroup[] {
+export function buildBusinessGroups(businesses: DetailBusiness[], selectedYear?: number): BusinessGroup[] {
   const grouped = new Map<string, DetailBusiness[]>();
   for (const business of businesses) {
     if (isFlowSewerBusiness(business) || business.annualFinancials.length === 0) continue;
@@ -601,7 +606,7 @@ function buildBusinessGroups(businesses: DetailBusiness[]): BusinessGroup[] {
   return [...grouped.entries()]
     .flatMap(([key, rows]) => {
       const latestPair = rows
-        .flatMap((business: any) => business.annualFinancials.map((annual: any) => ({ business, annual })))
+        .flatMap((business: any) => business.annualFinancials.filter((annual: any) => selectedYear === undefined || annual.surveyYear === selectedYear).map((annual: any) => ({ business, annual })))
         .sort((a, b) => {
           if (a.annual.surveyYear !== b.annual.surveyYear) return b.annual.surveyYear - a.annual.surveyYear;
           return accountingPriority(b.business.accountingType) - accountingPriority(a.business.accountingType);
@@ -634,8 +639,8 @@ function isFlowSewerBusiness(business: Pick<DetailBusiness, "businessKey" | "bus
   return normalized.includes("流域下水道") || normalized.includes("下水道事業(一)事業コード3");
 }
 
-function buildTrendPoints(group: BusinessGroup): TrendPoint[] {
-  return [2020, 2021, 2022, 2023, 2024].map((year) => {
+export function buildTrendPoints(group: BusinessGroup): TrendPoint[] {
+  return Array.from({ length: 5 }, (_, index) => group.latest.surveyYear - 4 + index).map((year) => {
     const annual = findAnnual(group, year);
     const diagnosis = withExactRecoveryRate(
       sanitizeAmbiguousDiagnosis(

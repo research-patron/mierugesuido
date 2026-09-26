@@ -14,7 +14,7 @@ export const metadata: Metadata = createPageMetadata({
 });
 
 export default async function MapPage() {
-  const { overview, mapMunicipalities: municipalities, prefectureSummaries: summaries, mapScopes, defaultMapScope, yearbookFeeChangeSummary } = await getStaticHomeData();
+  const { overview, mapMunicipalities: municipalities, prefectureSummaries: summaries, mapScopes, defaultMapScope, yearbookFeeChangeSummary, mapRevisionChanges } = await getStaticHomeData();
   const latestFiscalLong = formatSettlementFiscalLabel({
     surveyYear: overview.latestYear,
     fiscalYearLabel: overview.latestFiscalYearLabel,
@@ -49,7 +49,7 @@ export default async function MapPage() {
         </div>
       </section>
       <section className="map-page-atlas-section mx-auto max-w-[1491px] px-4 py-3 sm:px-6 lg:px-7">
-        <JapanMapSelector summaries={summaries} municipalities={municipalities} overview={overview} variant="atlas" mapScopes={mapScopes} initialScope={defaultMapScope} />
+        <JapanMapSelector summaries={summaries} municipalities={municipalities} overview={overview} variant="atlas" mapRevisionChanges={mapRevisionChanges} mapScopes={mapScopes} initialScope={defaultMapScope} />
       </section>
     </div>
   );

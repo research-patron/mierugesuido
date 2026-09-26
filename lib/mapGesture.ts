@@ -21,18 +21,19 @@ export function parseMapViewBox(viewBox: string): ParsedMapViewBox | null {
   return { x, y, width, height };
 }
 
-export function clampMapPan(baseViewBox: string, zoom: number, pan: MapPan): MapPan {
+export function clampMapPan(baseViewBox: string, zoom: number, pan: MapPan, panMargin = 0): MapPan {
   const base = parseMapViewBox(baseViewBox);
-  if (!base || zoom <= 1) return { x: 0, y: 0 };
-  const maxX = (base.width - base.width / zoom) / 2;
-  const maxY = (base.height - base.height / zoom) / 2;
+  if (!base || (zoom <= 1 && panMargin === 0)) return { x: 0, y: 0 };
+  const safeZoom = Math.max(zoom, 1);
+  const maxX = (base.width - base.width / safeZoom) / 2 + base.width / safeZoom * panMargin;
+  const maxY = (base.height - base.height / safeZoom) / 2 + base.height / safeZoom * panMargin;
   return {
     x: clampMapNumber(pan.x, -maxX, maxX),
     y: clampMapNumber(pan.y, -maxY, maxY)
   };
 }
 
-export function pannedZoomViewBox(baseViewBox: string, zoom: number, pan: MapPan) {
+export function pannedZoomViewBox(baseViewBox: string, zoom: number, pan: MapPan, panMargin = 0) {
   const base = parseMapViewBox(baseViewBox);
   if (!base) return baseViewBox;
   const safeZoom = Math.max(zoom, 1);
@@ -40,7 +41,7 @@ export function pannedZoomViewBox(baseViewBox: string, zoom: number, pan: MapPan
   const height = base.height / safeZoom;
   const centeredX = base.x + (base.width - width) / 2;
   const centeredY = base.y + (base.height - height) / 2;
-  const clampedPan = clampMapPan(baseViewBox, safeZoom, pan);
+  const clampedPan = clampMapPan(baseViewBox, safeZoom, pan, panMargin);
   return `${centeredX + clampedPan.x} ${centeredY + clampedPan.y} ${width} ${height}`;
 }
 
@@ -60,7 +61,8 @@ export function panFromPointerDelta({
   startPan,
   deltaX,
   deltaY,
-  surfaceSize
+  surfaceSize,
+  panMargin = 0
 }: {
   baseViewBox: string;
   zoom: number;
@@ -68,8 +70,9 @@ export function panFromPointerDelta({
   deltaX: number;
   deltaY: number;
   surfaceSize: MapSurfaceSize;
+  panMargin?: number;
 }) {
-  const visible = parseMapViewBox(pannedZoomViewBox(baseViewBox, zoom, startPan));
+  const visible = parseMapViewBox(pannedZoomViewBox(baseViewBox, zoom, startPan, panMargin));
   if (!visible) return startPan;
   // SVG xMidYMid meet uses one scale on both axes, including letterboxing.
   const unitsPerPixel = Math.max(
@@ -79,7 +82,39 @@ export function panFromPointerDelta({
   return clampMapPan(baseViewBox, zoom, {
     x: startPan.x - deltaX * unitsPerPixel,
     y: startPan.y - deltaY * unitsPerPixel
-  });
+  }, panMargin);
+}
+
+/** WheelEvent pixel/line/page deltas share a bounded, continuous zoom response. */
+export function mapZoomFromWheel(zoom: number, deltaY: number, deltaMode: number, pageHeight: number, maximum = 4.5) {
+  const pixels = deltaY * (deltaMode === 1 ? 16 : deltaMode === 2 ? pageHeight : 1);
+  if (!Number.isFinite(pixels)) return zoom;
+  return clampMapNumber(zoom * Math.exp(-clampMapNumber(pixels, -240, 240) * 0.0025), 1, maximum);
+}
+
+/** Keep the SVG point under the cursor stationary, accounting for xMidYMid meet. */
+export function panForMapZoomAtPoint({
+  baseViewBox, currentZoom, nextZoom, pan, point, surfaceSize, panMargin = 0
+}: {
+  baseViewBox: string;
+  currentZoom: number;
+  nextZoom: number;
+  pan: MapPan;
+  point: MapPan;
+  surfaceSize: MapSurfaceSize;
+  panMargin?: number;
+}): MapPan {
+  const visible = parseMapViewBox(pannedZoomViewBox(baseViewBox, currentZoom, pan, panMargin));
+  const base = parseMapViewBox(baseViewBox);
+  if (!visible || !base) return pan;
+  const scale = Math.min(surfaceSize.width / visible.width, surfaceSize.height / visible.height);
+  if (!(scale > 0)) return pan;
+  const x = (point.x - (surfaceSize.width - visible.width * scale) / 2) / (visible.width * scale);
+  const y = (point.y - (surfaceSize.height - visible.height * scale) / 2) / (visible.height * scale);
+  return clampMapPan(baseViewBox, nextZoom, {
+    x: pan.x + (x - 0.5) * (visible.width - base.width / nextZoom),
+    y: pan.y + (y - 0.5) * (visible.height - base.height / nextZoom)
+  }, panMargin);
 }
 
 export function preserveMapCenterAcrossZoom({

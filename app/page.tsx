@@ -7,7 +7,7 @@ import { formatPercent, formatSettlementFiscalLabel } from "@/lib/format";
 import { getStaticHomeData } from "@/lib/staticData";
 
 export default async function HomePage() {
-  const { overview: data, mapMunicipalities, prefectureSummaries, mapScopes, defaultMapScope, yearbookFeeChangeSummary, prefectures } = await getStaticHomeData();
+  const { overview: data, mapMunicipalities, prefectureSummaries, mapScopes, defaultMapScope, yearbookFeeChangeSummary, prefectures, mapRevisionChanges } = await getStaticHomeData();
   const latestFiscal = formatSettlementFiscalLabel({
     surveyYear: data.latestYear,
     fiscalYearLabel: data.latestFiscalYearLabel
@@ -59,7 +59,7 @@ export default async function HomePage() {
       </section>
 
       <section id="national-map" className="mx-auto max-w-[1491px] scroll-mt-24 px-7 py-5">
-        <JapanMapSelector summaries={prefectureSummaries} municipalities={mapMunicipalities} overview={data} mapScopes={mapScopes} initialScope={defaultMapScope} />
+        <JapanMapSelector summaries={prefectureSummaries} municipalities={mapMunicipalities} overview={data} mapRevisionChanges={mapRevisionChanges} mapScopes={mapScopes} initialScope={defaultMapScope} />
       </section>
       <section className="mx-auto max-w-[1491px] border-t border-line px-7 py-8">
         <h2 className="text-xl font-black">調査・資料作成に使う方へ</h2>

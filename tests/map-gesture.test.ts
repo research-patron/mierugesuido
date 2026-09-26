@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   MOUSE_DRAG_THRESHOLD_PX,
+  mapZoomFromWheel,
+  panForMapZoomAtPoint,
   TOUCH_DRAG_THRESHOLD_PX,
   clampMapPan,
   dragThresholdForPointer,
@@ -162,5 +164,47 @@ describe("map gesture geometry", () => {
     expect(visible).not.toBeNull();
     expect(visible!.x + visible!.width).toBeCloseTo(1000, 8);
     expect(visible!.y + visible!.height).toBeCloseTo(800, 8);
+  });
+});
+
+
+describe("national map mouse camera", () => {
+  it("normalizes wheel modes and clamps zoom without a jump on trackpads", () => {
+    expect(mapZoomFromWheel(2, -1, 0, 500)).toBeGreaterThan(2);
+    expect(mapZoomFromWheel(2, -1, 0, 500)).toBeLessThan(2.01);
+    expect(mapZoomFromWheel(2, 16, 0, 500)).toBe(mapZoomFromWheel(2, 1, 1, 500));
+    expect(mapZoomFromWheel(2, 200, 0, 200)).toBe(mapZoomFromWheel(2, 1, 2, 200));
+    expect(mapZoomFromWheel(1, 1000, 0, 500)).toBe(1);
+    expect(mapZoomFromWheel(4.5, -1000, 0, 500)).toBe(4.5);
+    expect(mapZoomFromWheel(2, NaN, 0, 500)).toBe(2);
+  });
+
+  it.each([{ width: 980, height: 500 }, { width: 1400, height: 500 }, { width: 980, height: 800 }])(
+    "keeps the cursor anchored when zooming with letterboxing (%j)", surfaceSize => {
+      const baseViewBox = "0 0 980 500";
+      const currentZoom = 1.5, nextZoom = 2.3, pan = { x: 30, y: -20 };
+      const point = { x: surfaceSize.width * 0.6, y: surfaceSize.height * 0.4 };
+      const next = panForMapZoomAtPoint({baseViewBox, currentZoom, nextZoom, pan, point, surfaceSize, panMargin: 0.25});
+      const mapPoint = (zoom: number, pan: { x: number; y: number }) => {
+        const v = parseMapViewBox(pannedZoomViewBox(baseViewBox, zoom, pan, 0.25))!;
+        const scale = Math.min(surfaceSize.width / v.width, surfaceSize.height / v.height);
+        return { x: v.x + (point.x - (surfaceSize.width - v.width * scale) / 2) / scale,
+          y: v.y + (point.y - (surfaceSize.height - v.height * scale) / 2) / scale };
+      };
+      const before = mapPoint(currentZoom, pan), after = mapPoint(nextZoom, next);
+      expect(after.x).toBeCloseTo(before.x, 8);
+      expect(after.y).toBeCloseTo(before.y, 8);
+      const back = panForMapZoomAtPoint({baseViewBox, currentZoom: nextZoom, nextZoom: currentZoom, pan: next, point, surfaceSize, panMargin: 0.25});
+      expect(back.x).toBeCloseTo(pan.x, 8);
+      expect(back.y).toBeCloseTo(pan.y, 8);
+    }
+  );
+
+  it("allows bounded dragging in either axis even at initial desktop scale", () => {
+    for (const [dx,dy] of [[80,0],[-80,0],[0,60],[0,-60]]) {
+      expect(panFromPointerDelta({baseViewBox:"0 0 980 500", zoom:1, startPan:{x:0,y:0}, deltaX:dx, deltaY:dy,
+        surfaceSize:{width:980,height:500}, panMargin:0.25})).toEqual({x:-dx || 0,y:-dy || 0});
+    }
+    expect(clampMapPan("0 0 980 500",1,{x:9999,y:-9999},0.25)).toEqual({x:245,y:-125});
   });
 });

@@ -1,3 +1,4 @@
+import { nationalMapStroke } from "@/lib/nationalMapStyle";
 import { describe, expect, it } from "vitest";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -67,8 +68,8 @@ function statusColorForCode(code: string) {
 
 function flatShapeSvg(displayPath: string, fillColor: string) {
   return [
-    `<path d="${displayPath}" fill="${fillColor}" fill-rule="nonzero" stroke="#263744" stroke-opacity="0.62" stroke-linecap="round" stroke-linejoin="round" stroke-width="4.5" vector-effect="non-scaling-stroke" paint-order="stroke fill" shape-rendering="geometricPrecision"/>`,
-    `<path d="${displayPath}" fill="${fillColor}" fill-rule="nonzero" stroke="${fillColor}" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.7" vector-effect="non-scaling-stroke" paint-order="stroke fill" shape-rendering="geometricPrecision"/>`
+    `<path d="${displayPath}" fill="${fillColor}" fill-rule="nonzero" stroke="${nationalMapStroke.color}" stroke-opacity="${nationalMapStroke.opacity}" stroke-linecap="round" stroke-linejoin="round" stroke-width="${nationalMapStroke.silhouetteWidth}" vector-effect="non-scaling-stroke" paint-order="stroke fill" shape-rendering="geometricPrecision"/>`,
+    `<path d="${displayPath}" fill="${fillColor}" fill-rule="nonzero" stroke="${fillColor}" stroke-opacity="1" stroke-linecap="round" stroke-linejoin="round" stroke-width="${nationalMapStroke.fillWidth}" vector-effect="non-scaling-stroke" paint-order="stroke fill" shape-rendering="geometricPrecision"/>`
   ].join("");
 }
 
@@ -281,6 +282,13 @@ describe("national map browserless pixel audit", () => {
       .filter(({ x }) => x >= firstEdge!.x && x < firstFill!.x)
       .map(({ value }) => colorDistance(value, "#ffffff")));
     expect(strongestEdgeContrast).toBeGreaterThan(70);
+    const previousSvg = svg.replace(`stroke-opacity="${nationalMapStroke.opacity}"`, 'stroke-opacity="0.62"')
+      .replace(`stroke-width="${nationalMapStroke.silhouetteWidth}"`, 'stroke-width="4.5"');
+    const previousImage = await rasterize(previousSvg);
+    // Compare only the exposed edge (the exact fill naturally has high contrast too).
+    const oldEdge = Math.max(...scanline.filter(({ x }) => x >= firstEdge!.x && x < firstFill!.x)
+      .map(({ x }) => colorDistance(pixel(previousImage, x, 40), "#ffffff")));
+    expect(strongestEdgeContrast).toBeGreaterThan(oldEdge * 1.1);
     expect(colorDistance(pixel(image, 24, 40), "#ffffff")).toBeLessThan(4);
     expect(colorDistance(pixel(image, 36, 40), fillColor)).toBeLessThan(4);
   });

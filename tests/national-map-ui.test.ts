@@ -22,6 +22,7 @@ import {
   screenViewBox,
   splitSubpaths
 } from "@/lib/gisMapLayout";
+import { nationalMapStroke } from "@/lib/nationalMapStyle";
 import { positionNationalHover } from "@/components/JapanMapSelector";
 import {
   getPrefectureCode,
@@ -276,7 +277,7 @@ describe("national map UI guardrails", () => {
     expect(componentSource).not.toContain("ATLAS_VIEWBOX");
     expect(componentSource).not.toContain("ATLAS_CONNECTORS");
     expect(componentSource).not.toContain("map-control-stack--atlas");
-    expect(homeRenderer).toContain('const viewBox = compact ? "0 0 390 440" : "0 0 980 500";');
+    expect(homeRenderer).toContain('const viewBox = compact ? "0 0 390 440" : pannedZoomViewBox(NATIONAL_DESKTOP_VIEWBOX, manualZoom, pan, NATIONAL_DESKTOP_PAN_MARGIN);');
     expect(homeRenderer).toContain('{ title: "北海道", name: "北海道", x: 232, y: 16, width: 232, height: 162 }');
     expect(homeRenderer).toContain('{ title: "沖縄県", name: "沖縄県", x: 796, y: 360, width: 170, height: 116 }');
     const insetRenderer = componentFunctionBlock("HomeInsetMap");
@@ -319,9 +320,9 @@ describe("national map UI guardrails", () => {
     expect(explorer).toContain("setManualZoom(1);");
     expect(explorer).toContain("setMapPan({ x: 0, y: 0 });");
     expect(homeRenderer).toContain("pannedZoomViewBox(renderedBaseViewBox, manualZoom, pan)");
-    expect(homeRenderer).toContain("compact || desktopHomeZoom === 1");
+    expect(homeRenderer).toContain("pannedZoomViewBox(NATIONAL_DESKTOP_VIEWBOX, manualZoom, pan, NATIONAL_DESKTOP_PAN_MARGIN)");
 
-    expect(explorer).toContain('data-pannable={compactAtlas && manualZoom > 1 ? "true" : "false"}');
+    expect(explorer).toContain('data-pannable={!compactAtlas || manualZoom > 1 ? "true" : "false"}');
     expect(explorer).toContain('data-panning={isPanning ? "true" : "false"}');
     expect(explorer).toContain("data-map-zoom={manualZoom.toFixed(2)}");
     expect(panStart).toContain("!event.isPrimary");
@@ -332,7 +333,7 @@ describe("national map UI guardrails", () => {
     expect(explorer).toContain("suppressMapClickRef.current = true;");
     expect(panStart).toContain("suppressMapClickRef.current = false;");
     expect(panStart.indexOf("suppressMapClickRef.current = false;"))
-      .toBeLessThan(panStart.indexOf(".map-control-stack, .home-map-inset"));
+      .toBeLessThan(panStart.indexOf(".map-control-stack, .map-tooltip"));
     expect(panStart.indexOf("suppressMapClickRef.current = false;"))
       .toBeLessThan(panStart.indexOf("manualZoom <= 1"));
     expect(explorer).not.toContain("clickSuppressionTimerRef");
@@ -454,22 +455,24 @@ describe("national map UI guardrails", () => {
     const fillIndex = shapeBlock.indexOf('className={clsx("gis-shape"');
     const silhouettePath = componentPathElementAround('className="gis-prefecture-silhouette"');
     const coverPath = componentPathElementAround('className={clsx("gis-shape"');
-    const boundaryWidth = numericJsxProp(silhouettePath, "strokeWidth");
-    const boundaryOpacity = numericJsxProp(silhouettePath, "strokeOpacity");
-    const coverWidth = numericJsxProp(coverPath, "strokeWidth");
+    const boundaryWidth = nationalMapStroke.silhouetteWidth;
+    const boundaryOpacity = nationalMapStroke.opacity;
+    const coverWidth = nationalMapStroke.fillWidth;
     const exposedBoundaryWidth = (boundaryWidth - coverWidth) / 2;
 
     expect(silhouetteIndex).toBeGreaterThanOrEqual(0);
     expect(fillIndex).toBeGreaterThan(silhouetteIndex);
-    expect(shapeBlock).toContain('stroke="#263744"');
+    expect(silhouettePath).toContain("stroke={nationalMapStroke.color}");
+    expect(silhouettePath).toContain("strokeWidth={nationalMapStroke.silhouetteWidth}");
+    expect(coverPath).toContain("strokeWidth={nationalMapStroke.fillWidth}");
     expect(shapeBlock).toContain("stroke={fillColor}");
     expect(shapeBlock.match(/fillRule="nonzero"/g)).toHaveLength(2);
-    expect(boundaryWidth).toBe(4.5);
-    expect(boundaryOpacity).toBe(0.62);
+    expect(boundaryWidth).toBe(4.9);
+    expect(boundaryOpacity).toBe(0.78);
     expect(coverWidth).toBe(2.7);
-    expect(exposedBoundaryWidth).toBeCloseTo(0.9, 5);
-    expect(exposedBoundaryWidth).toBeGreaterThanOrEqual(0.85);
-    expect(exposedBoundaryWidth).toBeLessThanOrEqual(1.05);
+    expect(exposedBoundaryWidth).toBeCloseTo(1.1, 5);
+    expect(exposedBoundaryWidth).toBeGreaterThanOrEqual(1.05);
+    expect(exposedBoundaryWidth).toBeLessThanOrEqual(1.2);
     expect(shapeBlock).toContain('pointerEvents="none"');
     expect(componentSource).not.toContain("prefectureOutlinePath");
     expect(componentSource).not.toContain("gis-prefecture-outline");
@@ -493,7 +496,7 @@ describe("national map UI guardrails", () => {
   });
 
   it("keeps the national hover popup informational and removes its unreachable CTA", () => {
-    const tooltipOpeningTag = componentOpeningTagAround('className="map-tooltip absolute z-20 w-[224px] p-4"');
+    const tooltipOpeningTag = componentOpeningTagAround('className="map-tooltip absolute z-20 p-4"');
     const hoverCardBlock = componentFunctionBlock("MapHoverCard");
     const hoverStateBlock = componentFunctionBlock("hoverStateFromEvent");
 

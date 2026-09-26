@@ -2515,3 +2515,82 @@ final result: pending form publication approval and end-to-end verification
 最終設定で型検査、58ファイル471テスト、1,651静的ルート・1,648サイトマップURLのビルドを再実行し成功。回答シートE2の識別付きテスト行と、フォーム・シートのアクセス者が所有者1人のみであることをUI確認。回答フォームのみ一般回答を許可。実機スマートフォン、Safari/Firefox、Excelアプリの目視は未実施で、IABの指定画面幅と機械的CSV検証を対象とする。
 
 final result: passed
+
+
+## 2026-09-26 — National-map popup width and revision municipalities
+
+Scope: this gate covers only the national-map popup change in this task. The existing worktree includes unrelated changes, deleted tracked data and conflict copies, all preserved. Validation used an isolated local validation copy: tracked HEAD files plus existing working files; missing tracked data was supplied only in that temporary directory. Database, source workbooks, GIS paths and existing financial JSON were not changed.
+
+### Findings and implementation
+
+- Reproduced the supplied Akita popup wrap using real pointer input: the 224px flex header squeezed the prefecture name to two lines.
+- Set a shared 300px card width, capped to the available surface width and reused in edge positioning. Prefecture title cannot shrink or wrap. Verified 28px single-line title height for Akita, Kanagawa and Kagoshima; cards stay within the map. Home remains informational; the atlas retains its detail link.
+- Replaced the popup's old manual `revisionEventCount` source and `公式改定情報` label with `改定情報（R5→R6）`. Counts derive from the revision list's changed `現行使用料施行年月日` records, deduplicated by municipality code (identified shared operators remain one record), filtered by selected business category/accounting type. Monetary differences alone do not count. No evidence or unsupported year is `未確認`; a verified empty count is `0自治体`.
+- Browser-verified public counts: Akita 2, Kanagawa 2, Wakayama 0, Kagoshima 3, Okinawa 5. Switching Kagoshima to special-environment sewerage changes its count to 1. The regression test compares counts to the existing revision list across prefectures/categories and covers duplicate records, shared operators, accounting filters, zero/unavailable years and unchanged dates.
+
+### Visual and interaction checks
+
+1. Home at 1491 × 1055 CSS viewport: pointer popup, long names, zero count, edge positioning and category switching passed. Okinawa card is left of the island and inside the map. Zoom and national reset passed.
+2. Atlas at 1491 × 1055 CSS viewport: Kanagawa single-line title and 2 municipalities, full 206px card including detail link, keyboard Enter to Kanagawa detail and browser back passed.
+3. Home at 390 × 844 CSS viewport: existing mobile selection replaces hover, Akita selection and explicit detail link passed. Document width 379px within the 390px viewport; no horizontal overflow. Mobile viewport pointer input was tested, not physical-device touch.
+4. Blur audit: DOM/computed styles show vector SVG paths, `geometricPrecision`, no CSS filter or raster image substitution. The four existing pixel audits (desktop/mobile boundary seams, silhouette and 1–3px synthetic edge transition) passed. No demonstrated rendering defect justified changing map geometry, stroke or antialiasing. Browser screenshot bytes are compressed JPEG (desktop capture 1480 × 1047 despite a 1491 × 1055 CSS viewport); screenshots cannot establish lossless device-pixel sharpness. Native-device/HiDPI inspection is not claimed.
+
+Evidence: an isolated local validation copy
+- `01-before-desktop.jpg`, `02-after-desktop-akita.jpg`: reproduced bug / corrected state.
+- `03-after-desktop-kanagawa.jpg`, `04-after-desktop-okinawa.jpg`, `05-mobile-selection.jpg`, `06-map-page-desktop.jpg`: inspected final states.
+- `07-popup-comparison.png`: inspected before (left) / after (right), cropped from the actual captures without added sharpening.
+- `08-boundary-capture-crop.png`: inspected boundary crop; subject to the screenshot compression limitation above.
+
+### Gates and publication status
+
+- Full suite: 59 files passed; 475 tests passed, 1 existing skipped.
+- `pnpm lint`: passed.
+- `pnpm build`: passed after allowing the existing next/font build-time font download; static generation completed 1660 pages.
+- Publication-output verifier: passed (1651 routes, 1648 sitemap URLs and existing assets/headers checks).
+- Gitleaks task-file scan: no leaks. No staging, commit, push or deployment.
+- Changed files for this task: `AGENTS.md`, `app/page.tsx`, `app/map/page.tsx`, `components/JapanMapSelector.tsx`, `lib/staticData.ts`, `lib/nationalMapRevisions.ts`, `tests/national-map-ui.test.ts`, `tests/national-map-revisions.test.ts`, `design-qa.md`.
+- Current branch: `codex/table33-fee-revision`; origin: `research-patron/mierugesuido`. Any proposed public release targets production `main`, requires explicit approval for this task's reviewed diff and all pre-publication checks, and must exclude unrelated worktree changes.
+
+final result: passed
+
+
+## 2026-09-26 — National-map boundary clarity and mouse gestures
+
+Scope: the follow-up boundary/gesture request supersedes the preceding blur interpretation. A vector SVG with no blur filter can still look soft at normal scale. The previous exposed boundary was only 0.9 CSS px at 0.62 opacity; enlarged geography made it easier to distinguish. The shared boundary style now exposes 1.1 CSS px at 0.78 opacity while preserving the fill mask, antialiasing and official geometry. No raster replacement or post-capture sharpening was used.
+
+### Implementation and observed behavior
+
+- Desktop home and atlas use the whole SVG viewBox for continuous pointer-anchored wheel zoom from 1 to 4.5, including Hokkaido and Okinawa. The old desktop button mapping changed the map by only 2.16% per click; buttons now change real scale by 0.5.
+- Left-button dragging moves both axes at initial and enlarged scales. Bounded overscroll keeps the map recoverable. The existing drag threshold and click suppression preserve normal prefecture links; controls, tooltip and legend are excluded from gesture starts.
+- `全国を表示` resets scale and position. Region and business-scope changes retain their established reset behavior. Mobile keeps its mainland camera, inset selection and explicit detail action.
+- Wheel events outside the map scroll the page normally. Ctrl/meta wheel is left to the browser by the handler; actual modifier-wheel input was not exercised. No new dependency or external request was introduced.
+
+### Rendered and interaction verification
+
+1. Final static home at 1491 × 1055: wheel changed zoom 1 to 1.69 while the map point under the cursor remained equal within floating-point precision and page scroll stayed 448. Initial-scale left drags in all four directions and enlarged dragging changed the viewBox without navigation. Repeated wheel reached 4.5; map-external wheel scrolled the page without zooming.
+2. Final static atlas at 1491 × 1055: wheel and two-axis drag changed the full composition, kept the URL and page scroll, and reset returned viewBox `0 0 980 500`. Hokkaido moved by the exact drag displacement and an ordinary click after reset opened its prefecture page. Enter activated reset. Region selection and business-scope switching restored the intended camera state.
+3. Mobile 390 × 844: mainland drag preserved the page and URL; subsequent Akita selection displayed its detail action. Document width 379px was within the viewport. These were browser pointer interactions at mobile dimensions, not physical touch-device tests. Safari/Firefox and native HiDPI rendering remain untested.
+4. Inspected aligned before/after boundary crops at their captured resolution. The final boundary is more distinct without conspicuous thick seams. The four existing pixel audits pass, including a new comparison requiring greater exposed-edge contrast than the old style. Screenshots are JPEG captures (1480 × 1047 for the desktop CSS viewport), not lossless device-pixel evidence. A capture during the existing 210ms opacity transition was rejected; accepted final comparison uses computed stage opacity 1.
+
+Evidence: an isolated local validation copy
+- `before-aligned.jpg`, `after-aligned.jpg`, `05-boundary-comparison.png`: inspected baseline/final crops, before on the left, final on the right; no resizing or sharpening.
+- `03-wheel-zoom.jpg`, `04-mobile.jpg`, `06-atlas-zoom-drag.jpg`: inspected wheel/mobile/atlas states.
+- `wheel.json`, `drags.json`, `production-checks.json`, `atlas-gestures.json`: observed camera, scroll and navigation values. The atlas JSON's diagnostic point is fixed at a different screen coordinate from its wheel input; only the home JSON is used for pointer-anchor equality evidence.
+
+### Gates and scope
+
+- Isolated validation directory: an isolated local validation copy, using tracked data restored only in the temporary copy. Full suite: 59 files passed, 480 tests passed, 1 existing skipped. Typecheck and production build passed; publication-output verification passed for 1651 routes and 1648 sitemap URLs.
+- The original worktree's full suite has two failures caused by its pre-existing missing `data/static/manifest.json`; those missing files and conflict copies were preserved. No database, source workbook, GIS geometry or financial payload was changed by this task.
+- Current follow-up changes: `AGENTS.md`, `components/JapanMapSelector.tsx`, `lib/mapGesture.ts`, new `lib/nationalMapStyle.ts`, `app/ui-fidelity.css`, three map tests and `design-qa.md`. Earlier popup changes remain local alongside unrelated prior work.
+- Removed the ineffective desktop zoom transform because the whole SVG now uses the camera; retained existing map features and navigation.
+- Gitleaks scan of the task files: no leaks. Build inputs matched the reviewed working files. Scoped whitespace checks passed.
+- No staging, commit, push or deployment. Current branch `codex/table33-fee-revision`, origin `research-patron/mierugesuido`; production target `main` remains unapproved for this new diff. This gate covers development, not publication.
+
+final result: passed
+
+
+## 2026-09-26 — National-map production publication approval
+
+The user explicitly approved reflecting the reviewed popup, boundary and mouse-gesture changes on production main. The release is isolated from unrelated working files and based on the current remote main. Local evidence files, screenshots and absolute local paths are excluded from the publication diff. The production build and full regression suite are rerun against this exact release tree before commit. Publication completion is reported only after the new main SHA passes Cloudflare Pages and its markers are verified at the production origin.
+
+final result: passed

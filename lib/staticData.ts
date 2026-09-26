@@ -2,6 +2,7 @@ import { isStaticRevisionDataset } from "@/lib/staticRevisionDataset";
 import { createHash } from "node:crypto";
 import type { RankingCoverage } from "@/lib/rankingCoverage";
 import { normalizeHomeComparison } from "@/lib/comparison";
+import { nationalMapRevisions } from "@/lib/nationalMapRevisions";
 import { cache } from "react";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
@@ -23,7 +24,8 @@ export const getStaticManifest = cache(() => readJson<{
 
 export const getStaticHomeData = cache(async () => {
   const source = await readJson<any>("data", "static", "home.json");
-  return { ...normalizeHomeComparison(source), comparisonVersion: createHash("sha256").update(JSON.stringify(source)).digest("hex") };
+  const revisions = await getStaticRevisions();
+  return { ...normalizeHomeComparison(source), mapRevisionChanges: nationalMapRevisions(revisions.yearbookFeeComparison.items), comparisonVersion: createHash("sha256").update(JSON.stringify(source)).digest("hex") };
 });
 export const getStaticDataSources = cache(async () => {
   const sources = await readJson<any[]>("data", "static", "data-sources.json");

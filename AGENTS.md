@@ -1,3 +1,17 @@
+# Goal Extension (2026-09-26 — national map boundary clarity and mouse gestures)
+
+- Verify reduced-scale boundary softness against enlarged rendering; improve visible boundary contrast without changing GIS geometry, values or anti-aliasing to jagged edges.
+- On the home and national maps, support wheel zoom around the pointer and left-button drag in both axes, including at the initial desktop scale. Keep Hokkaido and Okinawa reachable, preserve click/keyboard links, reset, regions, scope switching and mobile selection.
+- Prevent drag release from navigating, preserve page scrolling outside the map and browser modifier zoom, and verify real pointer/wheel behavior, mobile layout, full tests and static build.
+- On 2026-09-26 the user explicitly authorized publishing the reviewed popup, boundary and mouse-gesture changes to production main. Complete the mandatory publication checks and preserve unrelated work.
+
+# Goal Extension (2026-09-26 — national map popup)
+
+- Keep prefecture names on one line in national-map popups; widen the card and keep it inside the map surface.
+- Label the item `改定情報` and show distinct municipality counts from the revision list's R5–R6 effective-date changes, respecting the selected business/accounting scope. Distinguish zero from unavailable.
+- Inspect actual SVG rendering for blur, preserve official geometry and financial payloads, and verify desktop/mobile rendering and navigation in an isolated directory with tracked missing data.
+- Production main publication was explicitly approved on 2026-09-26 together with the boundary and mouse-gesture follow-up.
+
 # Goal Extension (2026-09-26 — 2020 free dataset and survey-first access)
 
 - Generate nationwide 2020 public-sewer data from the local official R2 workbooks using shared metric definitions. Include law-non-applied basic data, distinguish missing from zero, preserve shared accounts, and never borrow 2024 values.

@@ -492,6 +492,7 @@ body {
 }
 
 .gis-map-surface--home-national[data-pannable="true"] {
+  user-select: none;
   cursor: grab;
   touch-action: none;
 }
@@ -506,6 +507,7 @@ body {
   user-select: none;
 }
 
+.national-map-guide,
 .mobile-national-map-guide {
   margin: 9px 2px 0;
   color: var(--ui-muted);
